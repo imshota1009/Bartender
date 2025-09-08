@@ -76,6 +76,9 @@
             position: absolute; background: rgba(255, 255, 255, 0.7);
             border: 1px solid rgba(255, 255, 255, 0.9); border-radius: 4px;
         }
+
+        .button-pulse { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); } 70% { transform: scale(1.05); box-shadow: 0 0 10px 15px rgba(59, 130, 246, 0); } }
     </style>
 </head>
 <body class="text-white flex items-center justify-center min-h-screen">
@@ -133,8 +136,8 @@
         <div id="game-overlay" class="absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-500">
             <h1 class="font-title text-6xl md:text-8xl mb-4">Bartender</h1>
             <h2 id="final-score" class="text-4xl mb-8 hidden font-jp"></h2>
-            <button id="start-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg text-2xl shadow-lg transition-transform transform hover:scale-105 font-jp">スタート</button>
-            <button id="retry-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg text-2xl shadow-lg transition-transform transform hover:scale-105 hidden font-jp">もう一度プレイ</button>
+            <button id="start-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg text-2xl shadow-lg transition-transform transform hover:scale-105 font-jp button-pulse">スタート</button>
+            <button id="retry-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg text-2xl shadow-lg transition-transform transform hover:scale-105 hidden font-jp button-pulse">もう一度プレイ</button>
         </div>
     </div>
 
@@ -375,7 +378,6 @@
     </script>
 </body>
 </html>
-
 
 
 
