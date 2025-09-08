@@ -3,13 +3,14 @@
 # 🍸 バーテンダーゲーム (Bartender Game) 🍹  
 **ブラウザで遊べるシンプルなバーテンダーシミュレーション**
 
-<img src="images/bartender_screenshot.jpg" alt="ゲームスクリーンショット">
 
 </div>
 
 <p align="center">
   <i>「あなたはバーのマスター。注文通りのカクテルを作り、最高のバーテンダーを目指そう！」</i>
 </p>
+
+ここから遊べます⇒https://imshota1009.github.io/Bartender/
 
 ---
 
