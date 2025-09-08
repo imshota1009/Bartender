@@ -86,9 +86,11 @@
             <div id="score-display">
                 <h2 class="text-xl md:text-2xl font-bold">スコア: <span id="score">0</span></h2>
             </div>
-            <button id="sound-toggle" class="p-2 bg-gray-700 rounded-full hover:bg-gray-600 transition-colors">🔇</button>
-            <div id="timer-display" class="bg-red-600 rounded-full px-4 py-2 transition-all duration-300">
-                <h2 class="text-xl md:text-2xl font-bold">時間: <span id="timer">60</span></h2>
+            <div class="flex items-center gap-4">
+                <div id="timer-display" class="bg-red-600 rounded-full px-4 py-2 transition-all duration-300">
+                    <h2 class="text-xl md:text-2xl font-bold">時間: <span id="timer">60</span></h2>
+                </div>
+                <button id="sound-toggle" class="p-2 bg-gray-700 rounded-full hover:bg-gray-600 transition-colors">🔇</button>
             </div>
         </header>
 
