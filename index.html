@@ -385,12 +385,17 @@
             dom.soundToggleEl.addEventListener('click', () => {
                 state.isMuted = !state.isMuted;
                 dom.soundToggleEl.textContent = state.isMuted ? '🔇' : '🔊';
-                if (!state.isMuted) {
-                    if (Tone.context.state !== 'running') Tone.start();
-                    if (Tone.Transport.state !== 'started') {
+
+                if (!state.isMuted && Tone.context.state !== 'running') {
+                    // 初めて音を出す時だけTone.jsを起動し、BGMを開始する
+                    Tone.start().then(() => {
                         Tone.Transport.start();
                         sounds.bgm.start(0);
-                    }
+                        Tone.Master.mute = false; // ミュート解除
+                    });
+                } else {
+                    // 2回目以降は全体のミュートを切り替えるだけ
+                    Tone.Master.mute = state.isMuted;
                 }
             });
 
@@ -410,6 +415,7 @@
     </script>
 </body>
 </html>
+
 
 
 
