@@ -92,7 +92,8 @@
             <div id="score-display">
                 <h2 class="text-xl md:text-2xl font-bold">スコア: <span id="score">0</span></h2>
             </div>
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2 md:gap-4">
+                 <button id="prepare-button" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-3 rounded-lg shadow-md text-sm font-jp transition-transform transform hover:scale-105">材料補充</button>
                 <div id="timer-display" class="bg-red-600 rounded-full px-4 py-2 transition-all duration-300">
                     <h2 class="text-xl md:text-2xl font-bold">時間: <span id="timer">60</span></h2>
                 </div>
@@ -112,7 +113,7 @@
                 </div>
             </div>
 
-            <div id="bar-counter" class="p-4 flex-grow flex items-center justify-between gap-4 rounded-lg relative">
+            <div id="bar-counter" class="p-4 flex-grow flex items-center justify-between gap-4 rounded-lg">
                 <div class="w-1/3 flex flex-col items-center justify-around h-full">
                     <div id="shaker-area" class="w-24 h-40 bg-gray-400 rounded-t-lg border-4 border-gray-300 relative flex items-end overflow-hidden shadow-inner">
                         <div id="shaker-ice-cubes" class="absolute inset-0"></div>
@@ -124,14 +125,13 @@
                         <button id="reset-button" class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 font-jp">リセット</button>
                     </div>
                 </div>
-                <div class="w-2/3 flex items-center justify-center relative">
+                <div class="w-2/3 flex flex-col items-center justify-center">
                     <div id="cocktail-glass" class="w-32 h-40 relative">
                         <svg viewBox="0 0 100 120" class="w-full h-full filter drop-shadow-lg"><path d="M 10 120 L 40 50 L 60 50 L 90 120 Z" fill="rgba(255,255,255,0.1)"/><path d="M 0 40 L 100 40 L 95 50 L 5 50 Z" fill="rgba(255,255,255,0.1)"/><path d="M 45 40 L 55 0 L 55 40 Z" fill="rgba(255,255,255,0.1)"/></svg>
                         <div id="final-cocktail" class="absolute bottom-[2px] left-1/2 -translate-x-12 w-[78%] h-0 bg-transparent rounded-sm"></div>
                     </div>
-                     <div id="result-text" class="absolute top-0 text-2xl font-bold mt-2 h-8 font-jp"></div>
+                     <div id="result-text" class="text-2xl font-bold mt-2 h-8 font-jp"></div>
                 </div>
-                <button id="prepare-button" class="absolute bottom-4 right-4 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-3 rounded-lg shadow-md text-sm font-jp transition-transform transform hover:scale-105">材料補充</button>
             </div>
         </main>
         
@@ -208,6 +208,9 @@
         function getContrastingTextColor(hex){ const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); return((r*299)+(g*587)+(b*114))/1000>=128?'#111':'#fff'; }
 
         function startGame() {
+             if (dom.ingredientShelfEl.childElementCount === 0) {
+                populateShelf();
+            }
             Object.assign(state, { score: 0, timeLeft: 60, isGameRunning: true, canInteract: false, isDeathCustomerActive: false, currentCustomer: null });
             updateScore(); resetShaker();
             dom.gameOverlayEl.style.opacity = '0'; dom.gameOverlayEl.style.pointerEvents = 'none';
@@ -362,8 +365,8 @@
         function updateScore() { if (state.score < 0) state.score = 0; dom.scoreEl.textContent = state.score; }
 
         function initializeGame() {
-            populateShelf();
             setupSounds();
+            populateShelf();
 
             dom.soundToggleEl.addEventListener('click', () => {
                 state.isMuted = !state.isMuted;
@@ -393,5 +396,8 @@
     </script>
 </body>
 </html>
+
+
+
 
 
