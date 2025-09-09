@@ -98,7 +98,6 @@
                 <div id="timer-display" class="bg-red-600 rounded-full px-4 py-2 transition-all duration-300">
                     <h2 class="text-xl md:text-2xl font-bold">時間: <span id="timer">60</span></h2>
                 </div>
-                <button id="sound-toggle" class="p-2 bg-gray-700 rounded-full hover:bg-gray-600 transition-colors">🔇</button>
             </div>
         </header>
 
@@ -151,22 +150,25 @@
         // --- Game Data ---
         const INGREDIENTS = { vodka: { name: 'ウォッカ', color: '#e0f7fa', glow: '#80deea' }, gin: { name: 'ジン', color: '#e8f5e9', glow: '#a5d6a7' }, rum: { name: 'ラム', color: '#ffecb3', glow: '#ffe082' }, cassis: { name: 'カシス', color: '#4a148c', glow: '#ce93d8' }, lime: { name: 'ライム', color: '#d4e157', glow: '#e6ee9c' }, orangeJuice: { name: 'オレンジJ', color: '#ff9800', glow: '#ffb74d' }, tonic: { name: 'トニック', color: '#cfd8dc', glow: '#eceff1' }, cola: { name: 'コーラ', color: '#3e2723', glow: '#a1887f' }, gingerAle: { name: 'ジンジャーエール', color: '#fbc02d', glow: '#fff176' }};
         const COCKTAILS = [ { name: 'スクリュードライバー', ingredients: ['vodka', 'orangeJuice'], needsIce: true }, { name: 'ジントニック', ingredients: ['gin', 'tonic', 'lime'], needsIce: true }, { name: 'キューバリブレ', ingredients: ['rum', 'cola', 'lime'], needsIce: true }, { name: 'モスコミュール', ingredients: ['vodka', 'gingerAle', 'lime'], needsIce: true }, { name: 'カシスオレンジ', ingredients: ['cassis', 'orangeJuice'], needsIce: true }, { name: 'ラムコーク', ingredients: ['rum', 'cola'], needsIce: true }, { name: 'ジンバック', ingredients: ['gin', 'gingerAle', 'lime'], needsIce: true }];
-        const CUSTOMERS = [ { name: "バーの常連", emoji: '🧑‍💼', quotes: { order: ["いつもの頼むよ", "今日はスクリュードライバー気分だ"], success: ["これだよ、これ！", "うまい！また来るよ"], fail: ["うーん、味が違うな…", "これは頼んでないぞ"] }}, { name: "科学者", emoji: '👩‍🔬', quotes: { order: ["完璧な比率で頼む", "実験成功の祝いだ"], success: ["計算通り、完璧な味だ", "素晴らしい！"], fail: ["配合を間違えたな？", "これは失敗作だ"] }}, { name: "芸術家", emoji: '👨‍🎨', quotes: { order: ["インスピレーションが欲しい", "芸術的な一杯を"], success: ["色彩豊かな味だ！", "傑作だね！"], fail: ["君には才能がないな", "色が濁っている…"] }}, { name: "宇宙飛行士", emoji: '👩‍🚀', quotes: { order: ["宇宙の味を頼む", "無重力な感じで"], success: ["まるで星屑のようだ…", "交信成功！"], fail: ["地球の味はこんなものか", "軌道がずれている"] }}];
+        const CUSTOMERS = [ { name: "バーの常連", emoji: '🧑‍💼', quotes: { order: ["いつもの頼むよ", "今日はスクリュードライバー気分だ"], success: ["これだよ、これ！", "うまい！また来るよ"], fail: ["うーん、味が違うな…", "これは頼んでないぞ"] }}, { name: "科学者", emoji: '👩‍🔬', quotes: { order: ["完璧な比率で頼む", "実験成功の祝いだ"], success: ["計算通り、完璧な味だ", "素晴らしい！"], fail: ["配合を間違えたな？", "これは失敗作だ"] }}, { name: "芸術家", emoji: '👨‍🎨', quotes: { order: ["インスピレーションが欲しい", "芸術的な一杯を"], success: ["色彩豊かな味だ！", "傑作だね！"], fail: ["君には才能がないな", "色が濁っている…"] }}, { name: "宇宙飛行士", emoji: '👩‍🚀', quotes: { order: ["宇宙の味を頼む", "無重力な感じで"], success: ["まるで星屑のようだ…", "交信成功！"], fail: ["地球の味はこんなものか", "軌道がずれている"] }}, { name: "探偵", emoji: '🕵️', quotes: { order: ["事件の匂いがする一杯を", "ハードボイルドに頼む"], success: ["なるほど、そういうことか…", "謎は全て解けた"], fail: ["犯人はお前だな…", "まだ甘いな、坊や"] }}, { name: "ロックスター", emoji: '👩‍🎤', quotes: { order: ["最高にクレイジーなやつを！", "喉を潤したいんだ"], success: ["ロックンロール！", "オーディエンスも満足だぜ！"], fail: ["ノイズが多いな", "チューニングがずれてるぜ"] }}, { name: "マジシャン", emoji: '🎩', quotes: { order: ["タネも仕掛けもないやつを", "サプライズを頼む"], success: ["ブラボー！見事な手品だ", "それでは、種明かしと行こうか"], fail: ["タネがみえみえだ", "イリュージョンには程遠い"] }}, { name: "観光客", emoji: '🤳', quotes: { order: ["オススメはどれデスカ？", "映えるやつをお願いします！"], success: ["オー！ビューティフル！", "これはマストバイね！"], fail: ["ちょっとガッカリ…", "ガイドブックと違う…"] }}];
+        const MILLIONAIRE_CUSTOMER = { name: "大富豪", emoji: '🤑', quotes: { order: ["最高級のものを頼む", "君の腕を見せてみろ"], success: ["素晴らしい！チップだ、とっておきたまえ", "気に入った、また来よう"], fail: ["がっかりだ、時間は金なりだぞ", "私の舌はごまかせんよ"] }};
         const DEATH_CUSTOMER = { name: "？？？", emoji: '💀', quotes: { order: ["…喉が渇いてな", "例のものを…頼めるか？", "魂を揺さぶる一杯を…"], success: ["…悪くない。また会おう", "フフ…魂が潤ったぞ", "…お前、気に入った"], fail: ["…次はないと思え", "愚かな人間め…", "お前の魂は濁っているな"] }};
         
         // --- DOM Elements ---
         const dom = {};
-        const elementIds = ['score', 'timer', 'timer-display', 'order-text', 'order-ingredients', 'ingredient-shelf', 'shaker-area', 'shaker-contents', 'shaker-ice-cubes', 'final-cocktail', 'result-text', 'customer', 'customer-name', 'shake-button', 'reset-button', 'start-button', 'retry-button', 'game-overlay', 'final-score', 'score-display', 'customer-dialogue', 'order-bubble', 'sound-toggle', 'add-ice-button', 'prepare-button'];
+        const elementIds = ['score', 'timer', 'timer-display', 'order-text', 'order-ingredients', 'ingredient-shelf', 'shaker-area', 'shaker-contents', 'shaker-ice-cubes', 'final-cocktail', 'result-text', 'customer', 'customer-name', 'shake-button', 'reset-button', 'start-button', 'retry-button', 'game-overlay', 'final-score', 'score-display', 'customer-dialogue', 'order-bubble', 'add-ice-button', 'prepare-button'];
         elementIds.forEach(id => {
             const camelCaseId = id.replace(/-(\w)/g, (_, c) => c.toUpperCase());
             dom[`${camelCaseId}El`] = document.getElementById(id);
         });
 
         // --- Game State ---
-        let state = { score: 0, timeLeft: 60, timerInterval: null, currentOrder: null, currentCustomer: null, shakerContents: [], shakerHasIce: false, isGameRunning: false, canInteract: true, isDeathCustomerActive: false, isMuted: true };
+        let state = { score: 0, timeLeft: 60, timerInterval: null, currentOrder: null, currentCustomer: null, shakerContents: [], shakerHasIce: false, isGameRunning: false, canInteract: true, isDeathCustomerActive: false, isMillionaireActive: false };
 
         // --- Sound Engine (Tone.js) ---
         let sounds = {};
+        let isAudioReady = false;
+        
         function setupSounds() {
             sounds = {
                 pour: new Tone.Synth({ oscillator: { type: 'fmsine' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.05, release: 0.2 } }).toDestination(),
@@ -175,21 +177,34 @@
                 success: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sine" }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.2 } }).toDestination(),
                 fail: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "square" }, envelope: { attack: 0.01, decay: 0.4, sustain: 0, release: 0.2 } }).toDestination(),
                 timeBonus: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "triangle" }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.2 } }).toDestination(),
+                tip: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sine" }, envelope: { attack: 0.01, decay: 0.4, sustain: 0.2, release: 0.3 } }).toDestination(),
                 bgm: new Tone.Loop(time => {
                     const synth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'fatsawtooth' }, envelope: { attack: 0.1, decay: 0.5, sustain: 0.2, release: 1 }, volume: -20 }).toDestination();
                     synth.triggerAttackRelease(['C3', 'G3', 'Bb3', 'F4'], '1n', time);
                 }, '1m')
             };
             Tone.Transport.bpm.value = 80;
+            isAudioReady = true;
+        }
+
+        async function startAudio() {
+            if (isAudioReady && Tone.context.state !== 'running') {
+                await Tone.start();
+            }
+            if (isAudioReady && Tone.Transport.state !== 'started') {
+                 Tone.Transport.start();
+                 sounds.bgm.start(0);
+            }
         }
 
         function playSound(sound, ...args) {
-            if (state.isMuted || !sounds[sound]) return;
+            if (!isAudioReady) return;
             if (sound === 'success') sounds.success.triggerAttackRelease(['C4', 'E4', 'G4'], '8n');
             else if (sound === 'fail') sounds.fail.triggerAttackRelease(['C3', 'C#3'], '4n');
             else if (sound === 'ice') sounds.ice.triggerAttackRelease('C3', '8n', Tone.now() + 0.05);
             else if (sound === 'timeBonus') sounds.timeBonus.triggerAttackRelease(['G4', 'C5', 'E5'], '8n');
-            else sounds[sound].triggerAttackRelease(...args);
+            else if (sound === 'tip') sounds.tip.triggerAttackRelease(['C5', 'E5', 'G5', 'C6'], '4n');
+            else if (sounds[sound]) sounds[sound].triggerAttackRelease(...args);
         }
         
         // --- Game Logic ---
@@ -214,7 +229,7 @@
              if (dom.ingredientShelfEl.childElementCount === 0) {
                 populateShelf();
             }
-            Object.assign(state, { score: 0, timeLeft: 60, isGameRunning: true, canInteract: false, isDeathCustomerActive: false, currentCustomer: null });
+            Object.assign(state, { score: 0, timeLeft: 60, isGameRunning: true, canInteract: false, isDeathCustomerActive: false, isMillionaireActive: false, currentCustomer: null });
             updateScore(); resetShaker();
             dom.gameOverlayEl.style.opacity = '0'; dom.gameOverlayEl.style.pointerEvents = 'none';
             dom.startButtonEl.classList.add('hidden'); dom.retryButtonEl.classList.add('hidden'); dom.finalScoreEl.classList.add('hidden');
@@ -244,6 +259,9 @@
 
         function generateOrder() {
             state.canInteract = false;
+            state.isDeathCustomerActive = false;
+            state.isMillionaireActive = false;
+
             if (state.currentCustomer) {
                 dom.customerEl.classList.remove('slide-in');
                 dom.customerEl.classList.add('slide-out');
@@ -254,13 +272,20 @@
                 state.currentOrder = COCKTAILS[Math.floor(Math.random() * COCKTAILS.length)];
                 dom.orderTextEl.textContent = state.currentOrder.name;
 
-                if (Math.random() < 0.25) {
-                    state.currentCustomer = DEATH_CUSTOMER; state.isDeathCustomerActive = true;
-                    dom.customerEl.classList.add('scale-125'); dom.timerDisplayEl.classList.add('timer-danger');
-                } else {
-                    state.currentCustomer = CUSTOMERS[Math.floor(Math.random() * CUSTOMERS.length)]; state.isDeathCustomerActive = false;
-                    dom.customerEl.classList.remove('scale-125'); dom.timerDisplayEl.classList.remove('timer-danger');
+                const rand = Math.random();
+                if (rand < 0.15) { // 15% chance for Millionaire
+                    state.currentCustomer = MILLIONAIRE_CUSTOMER;
+                    state.isMillionaireActive = true;
+                } else if (rand < 0.35) { // 20% chance for Death (0.35 - 0.15)
+                    state.currentCustomer = DEATH_CUSTOMER;
+                    state.isDeathCustomerActive = true;
+                } else { // 65% for regular
+                    state.currentCustomer = CUSTOMERS[Math.floor(Math.random() * CUSTOMERS.length)];
                 }
+
+                dom.customerEl.classList.toggle('scale-125', state.isDeathCustomerActive || state.isMillionaireActive);
+                dom.timerDisplayEl.classList.toggle('timer-danger', state.isDeathCustomerActive);
+                
                 dom.customerEl.textContent = state.currentCustomer.emoji;
                 dom.customerNameEl.textContent = state.currentCustomer.name;
                 dom.customerEl.classList.remove('slide-out');
@@ -350,10 +375,22 @@
             dom.finalCocktailEl.classList.add('animate-fill');
 
             if (isCorrect) {
-                const points = state.isDeathCustomerActive ? 300 : 100;
+                let points = 100;
+                if(state.isDeathCustomerActive) points = 300;
+                
                 state.score += points;
-                state.timeLeft += 10;
                 showFloatingText(`+${points}`, '#84cc16', dom.scoreDisplayEl);
+
+                if (state.isMillionaireActive) {
+                    const tip = 200;
+                    state.score += tip;
+                    setTimeout(() => { // Add a slight delay for the tip animation
+                        showFloatingText(`チップ +${tip}!`, '#ffd700', dom.scoreDisplayEl);
+                        playSound('tip');
+                    }, 300);
+                }
+
+                state.timeLeft += 10;
                 showFloatingText('+10s', '#34d399', dom.timerDisplayEl);
                 showDialogue(state.currentCustomer.quotes.success);
                 dom.resultTextEl.textContent = '成功！ 😋';
@@ -382,25 +419,8 @@
             setupSounds();
             populateShelf();
 
-            dom.soundToggleEl.addEventListener('click', () => {
-                state.isMuted = !state.isMuted;
-                dom.soundToggleEl.textContent = state.isMuted ? '🔇' : '🔊';
-
-                if (!state.isMuted && Tone.context.state !== 'running') {
-                    // 初めて音を出す時だけTone.jsを起動し、BGMを開始する
-                    Tone.start().then(() => {
-                        Tone.Transport.start();
-                        sounds.bgm.start(0);
-                        Tone.Master.mute = false; // ミュート解除
-                    });
-                } else {
-                    // 2回目以降は全体のミュートを切り替えるだけ
-                    Tone.Master.mute = state.isMuted;
-                }
-            });
-
             dom.startButtonEl.addEventListener('click', () => {
-                if (Tone.context.state !== 'running') Tone.start();
+                startAudio();
                 startGame();
             });
             dom.retryButtonEl.addEventListener('click', startGame);
@@ -415,7 +435,6 @@
     </script>
 </body>
 </html>
-
 
 
 
