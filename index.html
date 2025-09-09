@@ -86,7 +86,7 @@
     </style>
 </head>
 <body class="text-white flex items-center justify-center min-h-screen">
-
+    <audio id="bgm-audio" src="background/音楽はbackground" loop></audio>
     <div id="game-container" class="mx-auto rounded-2xl shadow-2xl p-4 md:p-6 flex flex-col relative overflow-hidden border-4 border-gray-700">
         
         <header class="flex justify-between items-center mb-4 px-2 relative">
@@ -156,7 +156,7 @@
         
         // --- DOM Elements ---
         const dom = {};
-        const elementIds = ['score', 'timer', 'timer-display', 'order-text', 'order-ingredients', 'ingredient-shelf', 'shaker-area', 'shaker-contents', 'shaker-ice-cubes', 'final-cocktail', 'result-text', 'customer', 'customer-name', 'shake-button', 'reset-button', 'start-button', 'retry-button', 'game-overlay', 'final-score', 'score-display', 'customer-dialogue', 'order-bubble', 'add-ice-button', 'prepare-button'];
+        const elementIds = ['score', 'timer', 'timer-display', 'order-text', 'order-ingredients', 'ingredient-shelf', 'shaker-area', 'shaker-contents', 'shaker-ice-cubes', 'final-cocktail', 'result-text', 'customer', 'customer-name', 'shake-button', 'reset-button', 'start-button', 'retry-button', 'game-overlay', 'final-score', 'score-display', 'customer-dialogue', 'order-bubble', 'add-ice-button', 'prepare-button', 'bgm-audio'];
         elementIds.forEach(id => {
             const camelCaseId = id.replace(/-(\w)/g, (_, c) => c.toUpperCase());
             dom[`${camelCaseId}El`] = document.getElementById(id);
@@ -178,22 +178,25 @@
                 fail: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "square" }, envelope: { attack: 0.01, decay: 0.4, sustain: 0, release: 0.2 } }).toDestination(),
                 timeBonus: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "triangle" }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.2 } }).toDestination(),
                 tip: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sine" }, envelope: { attack: 0.01, decay: 0.4, sustain: 0.2, release: 0.3 } }).toDestination(),
-                bgm: new Tone.Loop(time => {
-                    const synth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'fatsawtooth' }, envelope: { attack: 0.1, decay: 0.5, sustain: 0.2, release: 1 }, volume: -20 }).toDestination();
-                    synth.triggerAttackRelease(['C3', 'G3', 'Bb3', 'F4'], '1n', time);
-                }, '1m')
             };
-            Tone.Transport.bpm.value = 80;
             isAudioReady = true;
         }
 
         async function startAudio() {
+            // Start Tone.js for sound effects
             if (isAudioReady && Tone.context.state !== 'running') {
                 await Tone.start();
             }
-            if (isAudioReady && Tone.Transport.state !== 'started') {
-                 Tone.Transport.start();
-                 sounds.bgm.start(0);
+            // Play BGM audio file
+            if (dom.bgmAudioEl) {
+                dom.bgmAudioEl.play().catch(e => console.error("BGMの再生に失敗しました:", e));
+            }
+        }
+
+        function stopAudio() {
+            if (dom.bgmAudioEl) {
+                dom.bgmAudioEl.pause();
+                dom.bgmAudioEl.currentTime = 0;
             }
         }
 
@@ -239,6 +242,7 @@
         
         function endGame() {
             state.isGameRunning = false; clearInterval(state.timerInterval);
+            stopAudio();
             dom.timerDisplayEl.classList.remove('timer-danger');
             dom.gameOverlayEl.style.opacity = '1'; dom.gameOverlayEl.style.pointerEvents = 'auto';
             dom.finalScoreEl.textContent = `最終スコア: ${state.score}`;
@@ -384,7 +388,7 @@
                 if (state.isMillionaireActive) {
                     const tip = 200;
                     state.score += tip;
-                    setTimeout(() => { // Add a slight delay for the tip animation
+                    setTimeout(() => { 
                         showFloatingText(`チップ +${tip}!`, '#ffd700', dom.scoreDisplayEl);
                         playSound('tip');
                     }, 300);
@@ -435,6 +439,8 @@
     </script>
 </body>
 </html>
+
+
 
 
 
