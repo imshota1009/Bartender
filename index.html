@@ -215,14 +215,10 @@
         function updateTimer() { if (!state.isHappyHour) { state.timeLeft -= state.isDeathCustomerActive ? 2 : 1; } if (state.timeLeft < 0) state.timeLeft = 0; dom.timerEl.textContent = state.timeLeft; if (state.timeLeft <= 0) endGame(); }
         function showDialogue(lines) { dom.customerDialogueEl.textContent = lines[Math.floor(Math.random() * lines.length)]; dom.customerDialogueEl.classList.add('show'); }
 
-        function displayOrderUI() {
-            dom.orderTextEl.textContent = state.currentOrder.name;
-            dom.orderIngredientsEl.innerHTML = ''; [...state.currentOrder.ingredients].sort(() => 0.5 - Math.random()).forEach(key => { const div = document.createElement('div'); div.style.cssText = `width:24px; height:24px; background-color:${INGREDIENTS[key].color}; border-radius:9999px; border:3px solid #4b5563; box-shadow: 0 1px 3px rgba(0,0,0,0.2);`; div.title = INGREDIENTS[key].name; dom.orderIngredientsEl.appendChild(div); });
-        }
-
         function generateOrder() {
             state.canInteract = false; state.isDeathCustomerActive = false; state.isMillionaireActive = false; state.isCriticActive = false;
             if (state.currentCustomer) { dom.customerEl.classList.remove('slide-in'); dom.customerEl.classList.add('slide-out'); dom.orderBubbleEl.style.opacity = '0'; dom.customerDialogueEl.classList.remove('show'); }
+            
             setTimeout(() => {
                 const rand = Math.random();
                 if (rand < 0.10) { state.currentCustomer = MILLIONAIRE_CUSTOMER; state.isMillionaireActive = true; } 
@@ -230,20 +226,36 @@
                 else if (rand < 0.40) { state.currentCustomer = CRITIC_CUSTOMER; state.isCriticActive = true; }
                 else { state.currentCustomer = CUSTOMERS[Math.floor(Math.random() * CUSTOMERS.length)]; }
 
-                if(state.isCriticActive) { state.currentOrder = { name: '創作カクテル', ingredients: [] }; } 
-                else { state.currentOrder = COCKTAILS[Math.floor(Math.random() * COCKTAILS.length)]; }
+                if(state.isCriticActive) { 
+                    state.currentOrder = { name: '創作カクテル', ingredients: [] }; 
+                } else { 
+                    state.currentOrder = COCKTAILS[Math.floor(Math.random() * COCKTAILS.length)]; 
+                }
                 
                 dom.customerEl.classList.toggle('scale-125', state.isDeathCustomerActive || state.isMillionaireActive || state.isCriticActive);
                 dom.timerDisplayEl.classList.toggle('timer-danger', state.isDeathCustomerActive);
-                dom.customerEl.textContent = state.currentCustomer.emoji; dom.customerNameEl.textContent = state.currentCustomer.name;
-                dom.customerEl.classList.remove('slide-out'); dom.customerEl.classList.add('slide-in');
+                dom.customerEl.textContent = state.currentCustomer.emoji; 
+                dom.customerNameEl.textContent = state.currentCustomer.name;
+                dom.customerEl.classList.remove('slide-out'); 
+                dom.customerEl.classList.add('slide-in');
                 
                 setTimeout(() => { 
-                    if (!state.isCriticActive) displayOrderUI(); 
+                    dom.orderTextEl.textContent = state.currentOrder.name;
+                    dom.orderIngredientsEl.innerHTML = '';
+                    if (!state.isCriticActive) {
+                        [...state.currentOrder.ingredients].sort(() => 0.5 - Math.random()).forEach(key => { 
+                            const div = document.createElement('div'); 
+                            div.style.cssText = `width:24px; height:24px; background-color:${INGREDIENTS[key].color}; border-radius:9999px; border:3px solid #4b5563; box-shadow: 0 1px 3px rgba(0,0,0,0.2);`; 
+                            div.title = INGREDIENTS[key].name; 
+                            dom.orderIngredientsEl.appendChild(div); 
+                        });
+                    }
                     dom.orderBubbleEl.style.opacity = '1'; 
                     showDialogue(state.currentCustomer.quotes.order); 
                     state.canInteract = true;
-                    if (!state.isCriticActive && !state.isDeathCustomerActive && Math.random() < 0.15) { setTimeout(changeOrder, 2000); }
+                    if (!state.isCriticActive && !state.isDeathCustomerActive && Math.random() < 0.15) { 
+                        setTimeout(changeOrder, 2000); 
+                    }
                 }, 500);
             }, state.currentCustomer ? 700 : 0);
         }
@@ -256,7 +268,9 @@
             do { newOrder = COCKTAILS[Math.floor(Math.random() * COCKTAILS.length)]; } while (newOrder.name === state.currentOrder.name);
             state.currentOrder = newOrder;
             dom.orderBubbleEl.classList.add('scale-110', 'bg-red-200');
-            displayOrderUI();
+            dom.orderTextEl.textContent = state.currentOrder.name;
+            dom.orderIngredientsEl.innerHTML = ''; 
+            [...state.currentOrder.ingredients].sort(() => 0.5 - Math.random()).forEach(key => { const div = document.createElement('div'); div.style.cssText = `width:24px; height:24px; background-color:${INGREDIENTS[key].color}; border-radius:9999px; border:3px solid #4b5563; box-shadow: 0 1px 3px rgba(0,0,0,0.2);`; div.title = INGREDIENTS[key].name; dom.orderIngredientsEl.appendChild(div); });
             setTimeout(() => dom.orderBubbleEl.classList.remove('scale-110', 'bg-red-200'), 500);
         }
 
@@ -375,6 +389,8 @@
     </script>
 </body>
 </html>
+
+
 
 
 
