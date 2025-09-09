@@ -250,7 +250,7 @@
 
         function changeOrder() {
             if (!state.isGameRunning) return;
-            showEventText("やっぱり！");
+            showEventText("注文変更で！");
             playSound('fail');
             let newOrder;
             do { newOrder = COCKTAILS[Math.floor(Math.random() * COCKTAILS.length)]; } while (newOrder.name === state.currentOrder.name);
@@ -375,7 +375,6 @@
     </script>
 </body>
 </html>
-
 
 
 
