@@ -67,10 +67,11 @@
         
         #game-overlay { background-color: rgba(0, 0, 0, 0.8); backdrop-filter: blur(10px); }
         
+        #timer-display { position: relative; }
         .timer-danger { animation: pulse-danger 1s infinite; }
         @keyframes pulse-danger { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); } 50% { transform: scale(1.1); box-shadow: 0 0 10px 10px rgba(220, 38, 38, 0); } }
 
-        .floating-score { position: absolute; font-size: 1.5rem; font-weight: bold; animation: float-up 1.5s ease-out forwards; pointer-events: none; z-index: 20; }
+        .floating-text { position: absolute; font-size: 1.5rem; font-weight: bold; animation: float-up 1.5s ease-out forwards; pointer-events: none; z-index: 20; }
         @keyframes float-up { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-50px); opacity: 0; } }
 
         @keyframes fill-glass { from { height: 0%; } to { height: var(--fill-height, 80%); } }
@@ -89,7 +90,7 @@
     <div id="game-container" class="mx-auto rounded-2xl shadow-2xl p-4 md:p-6 flex flex-col relative overflow-hidden border-4 border-gray-700">
         
         <header class="flex justify-between items-center mb-4 px-2 relative">
-            <div id="score-display">
+            <div id="score-display" class="relative">
                 <h2 class="text-xl md:text-2xl font-bold">スコア: <span id="score">0</span></h2>
             </div>
             <div class="flex items-center gap-2 md:gap-4">
@@ -173,6 +174,7 @@
                 ice: new Tone.MetalSynth({ frequency: 200, envelope: { attack: 0.001, decay: 0.1, release: 0.01 }, harmonicity: 5.1, modulationIndex: 32, resonance: 4000, octaves: 1.5 }).toDestination(),
                 success: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sine" }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.2 } }).toDestination(),
                 fail: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "square" }, envelope: { attack: 0.01, decay: 0.4, sustain: 0, release: 0.2 } }).toDestination(),
+                timeBonus: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "triangle" }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.2 } }).toDestination(),
                 bgm: new Tone.Loop(time => {
                     const synth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'fatsawtooth' }, envelope: { attack: 0.1, decay: 0.5, sustain: 0.2, release: 1 }, volume: -20 }).toDestination();
                     synth.triggerAttackRelease(['C3', 'G3', 'Bb3', 'F4'], '1n', time);
@@ -186,6 +188,7 @@
             if (sound === 'success') sounds.success.triggerAttackRelease(['C4', 'E4', 'G4'], '8n');
             else if (sound === 'fail') sounds.fail.triggerAttackRelease(['C3', 'C#3'], '4n');
             else if (sound === 'ice') sounds.ice.triggerAttackRelease('C3', '8n', Tone.now() + 0.05);
+            else if (sound === 'timeBonus') sounds.timeBonus.triggerAttackRelease(['G4', 'C5', 'E5'], '8n');
             else sounds[sound].triggerAttackRelease(...args);
         }
         
@@ -322,11 +325,12 @@
             }
         }
 
-        function showFloatingScore(amount) {
+        function showFloatingText(text, color, element) {
             const el = document.createElement('div');
-            el.className = 'floating-score'; el.textContent = (amount > 0 ? '+' : '') + amount;
-            el.style.color = amount > 0 ? '#84cc16' : '#ef4444';
-            dom.scoreDisplayEl.appendChild(el);
+            el.className = 'floating-text';
+            el.textContent = text;
+            el.style.color = color;
+            element.appendChild(el);
             setTimeout(() => el.remove(), 1500);
         }
 
@@ -346,16 +350,25 @@
             dom.finalCocktailEl.classList.add('animate-fill');
 
             if (isCorrect) {
-                const points = state.isDeathCustomerActive ? 300 : 100; state.score += points;
-                showFloatingScore(points); showDialogue(state.currentCustomer.quotes.success);
-                dom.resultTextEl.textContent = '成功！ 😋'; dom.resultTextEl.style.color = '#65a30d';
-                if (state.isDeathCustomerActive) { state.timeLeft += 5; dom.timerEl.textContent = state.timeLeft; }
+                const points = state.isDeathCustomerActive ? 300 : 100;
+                state.score += points;
+                state.timeLeft += 10;
+                showFloatingText(`+${points}`, '#84cc16', dom.scoreDisplayEl);
+                showFloatingText('+10s', '#34d399', dom.timerDisplayEl);
+                showDialogue(state.currentCustomer.quotes.success);
+                dom.resultTextEl.textContent = '成功！ 😋';
+                dom.resultTextEl.style.color = '#65a30d';
+                dom.timerEl.textContent = state.timeLeft;
                 playSound('success');
+                playSound('timeBonus');
                 setTimeout(() => { resetShaker(); generateOrder(); }, 2000);
             } else {
-                const points = state.isDeathCustomerActive ? -50 : -20; state.score += points;
-                showFloatingScore(points); showDialogue(state.currentCustomer.quotes.fail);
-                dom.resultTextEl.textContent = '失敗... 😖'; dom.resultTextEl.style.color = '#dc2626';
+                const points = state.isDeathCustomerActive ? -50 : -20;
+                state.score += points;
+                showFloatingText(`${points}`, '#ef4444', dom.scoreDisplayEl);
+                showDialogue(state.currentCustomer.quotes.fail);
+                dom.resultTextEl.textContent = '失敗... 😖';
+                dom.resultTextEl.style.color = '#dc2626';
                 if (state.currentCustomer.emoji !== '💀') dom.customerEl.textContent = '😠';
                 playSound('fail');
                 setTimeout(() => { resetShaker(); generateOrder(); }, 2000);
@@ -397,9 +410,6 @@
     </script>
 </body>
 </html>
-
-
-
 
 
 
