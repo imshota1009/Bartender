@@ -14,12 +14,16 @@
             font-family: 'Inter', sans-serif;
             background-color: #111;
             background-image: radial-gradient(circle at center, #333 0%, #111 70%);
+            overflow: hidden;
         }
         .font-title { font-family: 'Playfair Display', serif; }
         .font-jp { font-family: 'M PLUS Rounded 1c', sans-serif; }
         
         #game-container {
-            max-width: 800px; height: 95vh; max-height: 900px;
+            width: 100%;
+            max-width: 800px;
+            height: 95vh;
+            max-height: 900px;
             background: #262626;
             box-shadow: 0 0 40px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,0,0,0.5);
         }
@@ -56,7 +60,7 @@
             position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
             background-color: white; color: #333; padding: 8px 16px; border-radius: 12px;
             max-width: 250px; text-align: center; opacity: 0;
-            transition: opacity 0.3s, transform 0.3s; pointer-events: none;
+            transition: opacity 0.3s, transform 0.3s; pointer-events: none; z-index: 10;
         }
         #customer-dialogue.show { opacity: 1; transform: translateX(-50%) translateY(-10px); }
         #customer-dialogue::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border-width: 10px; border-style: solid; border-color: white transparent transparent transparent; }
@@ -66,7 +70,7 @@
         .timer-danger { animation: pulse-danger 1s infinite; }
         @keyframes pulse-danger { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); } 50% { transform: scale(1.1); box-shadow: 0 0 10px 10px rgba(220, 38, 38, 0); } }
 
-        .floating-score { position: absolute; font-size: 1.5rem; font-weight: bold; animation: float-up 1.5s ease-out forwards; pointer-events: none; }
+        .floating-score { position: absolute; font-size: 1.5rem; font-weight: bold; animation: float-up 1.5s ease-out forwards; pointer-events: none; z-index: 20; }
         @keyframes float-up { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-50px); opacity: 0; } }
 
         @keyframes fill-glass { from { height: 0%; } to { height: var(--fill-height, 80%); } }
@@ -82,7 +86,7 @@
 </head>
 <body class="text-white flex items-center justify-center min-h-screen">
 
-    <div id="game-container" class="w-full mx-auto rounded-2xl shadow-2xl p-4 md:p-6 flex flex-col relative overflow-hidden border-4 border-gray-700">
+    <div id="game-container" class="mx-auto rounded-2xl shadow-2xl p-4 md:p-6 flex flex-col relative overflow-hidden border-4 border-gray-700">
         
         <header class="flex justify-between items-center mb-4 px-2 relative">
             <div id="score-display">
@@ -132,7 +136,7 @@
         
         <footer id="ingredient-shelf" class="grid grid-cols-5 md:grid-cols-9 gap-2 mt-4 p-4 bg-black/30 rounded-lg"></footer>
 
-        <div id="game-overlay" class="absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-500">
+        <div id="game-overlay" class="absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-500 z-30">
             <h1 class="font-title text-6xl md:text-8xl mb-4">Bartender</h1>
             <h2 id="final-score" class="text-4xl mb-8 hidden font-jp"></h2>
             <button id="start-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg text-2xl shadow-lg transition-transform transform font-jp button-pulse">スタート</button>
@@ -142,56 +146,50 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // --- DOM Elements ---
-        const dom = { scoreEl: document.getElementById('score'), timerEl: document.getElementById('timer'), timerDisplayEl: document.getElementById('timer-display'), orderTextEl: document.getElementById('order-text'), orderIngredientsEl: document.getElementById('order-ingredients'), ingredientShelfEl: document.getElementById('ingredient-shelf'), shakerAreaEl: document.getElementById('shaker-area'), shakerContentsEl: document.getElementById('shaker-contents'), shakerIceCubesEl: document.getElementById('shaker-ice-cubes'), finalCocktailEl: document.getElementById('final-cocktail'), resultTextEl: document.getElementById('result-text'), customerEl: document.getElementById('customer'), customerNameEl: document.getElementById('customer-name'), shakeButton: document.getElementById('shake-button'), resetButton: document.getElementById('reset-button'), startButton: document.getElementById('start-button'), retryButton: document.getElementById('retry-button'), gameOverlay: document.getElementById('game-overlay'), finalScoreEl: document.getElementById('final-score'), scoreDisplayEl: document.getElementById('score-display'), customerDialogueEl: document.getElementById('customer-dialogue'), orderBubbleEl: document.getElementById('order-bubble'), soundToggleBtn: document.getElementById('sound-toggle'), addIceBtn: document.getElementById('add-ice-button')};
-
         // --- Game Data ---
         const INGREDIENTS = { vodka: { name: 'ウォッカ', color: '#e0f7fa', glow: '#80deea' }, gin: { name: 'ジン', color: '#e8f5e9', glow: '#a5d6a7' }, rum: { name: 'ラム', color: '#ffecb3', glow: '#ffe082' }, cassis: { name: 'カシス', color: '#4a148c', glow: '#ce93d8' }, lime: { name: 'ライム', color: '#d4e157', glow: '#e6ee9c' }, orangeJuice: { name: 'オレンジJ', color: '#ff9800', glow: '#ffb74d' }, tonic: { name: 'トニック', color: '#cfd8dc', glow: '#eceff1' }, cola: { name: 'コーラ', color: '#3e2723', glow: '#a1887f' }, gingerAle: { name: 'ジンジャーエール', color: '#fbc02d', glow: '#fff176' }};
         const COCKTAILS = [ { name: 'スクリュードライバー', ingredients: ['vodka', 'orangeJuice'], needsIce: true }, { name: 'ジントニック', ingredients: ['gin', 'tonic', 'lime'], needsIce: true }, { name: 'キューバリブレ', ingredients: ['rum', 'cola', 'lime'], needsIce: true }, { name: 'モスコミュール', ingredients: ['vodka', 'gingerAle', 'lime'], needsIce: true }, { name: 'カシスオレンジ', ingredients: ['cassis', 'orangeJuice'], needsIce: true }, { name: 'ラムコーク', ingredients: ['rum', 'cola'], needsIce: true }, { name: 'ジンバック', ingredients: ['gin', 'gingerAle', 'lime'], needsIce: true }];
         const CUSTOMERS = [ { name: "バーの常連", emoji: '🧑‍💼', quotes: { order: ["いつもの頼むよ", "今日はスクリュードライバー気分だ"], success: ["これだよ、これ！", "うまい！また来るよ"], fail: ["うーん、味が違うな…", "これは頼んでないぞ"] }}, { name: "科学者", emoji: '👩‍🔬', quotes: { order: ["完璧な比率で頼む", "実験成功の祝いだ"], success: ["計算通り、完璧な味だ", "素晴らしい！"], fail: ["配合を間違えたな？", "これは失敗作だ"] }}, { name: "芸術家", emoji: '👨‍🎨', quotes: { order: ["インスピレーションが欲しい", "芸術的な一杯を"], success: ["色彩豊かな味だ！", "傑作だね！"], fail: ["君には才能がないな", "色が濁っている…"] }}, { name: "宇宙飛行士", emoji: '👩‍🚀', quotes: { order: ["宇宙の味を頼む", "無重力な感じで"], success: ["まるで星屑のようだ…", "交信成功！"], fail: ["地球の味はこんなものか", "軌道がずれている"] }}];
         const DEATH_CUSTOMER = { name: "？？？", emoji: '💀', quotes: { order: ["…喉が渇いてな", "例のものを…頼めるか？", "魂を揺さぶる一杯を…"], success: ["…悪くない。また会おう", "フフ…魂が潤ったぞ", "…お前、気に入った"], fail: ["…次はないと思え", "愚かな人間め…", "お前の魂は濁っているな"] }};
         
+        // --- DOM Elements ---
+        const dom = {};
+        const elementIds = ['score', 'timer', 'timer-display', 'order-text', 'order-ingredients', 'ingredient-shelf', 'shaker-area', 'shaker-contents', 'shaker-ice-cubes', 'final-cocktail', 'result-text', 'customer', 'customer-name', 'shake-button', 'reset-button', 'start-button', 'retry-button', 'game-overlay', 'final-score', 'score-display', 'customer-dialogue', 'order-bubble', 'sound-toggle', 'add-ice-button'];
+        elementIds.forEach(id => {
+            const camelCaseId = id.replace(/-(\w)/g, (_, c) => c.toUpperCase());
+            dom[`${camelCaseId}El`] = document.getElementById(id);
+        });
+
         // --- Game State ---
         let state = { score: 0, timeLeft: 60, timerInterval: null, currentOrder: null, currentCustomer: null, shakerContents: [], shakerHasIce: false, isGameRunning: false, canInteract: true, isDeathCustomerActive: false, isMuted: true };
 
         // --- Sound Engine (Tone.js) ---
-        const sounds = {
-            pour: new Tone.Synth({ oscillator: { type: 'fmsine' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.05, release: 0.2 } }).toDestination(),
-            shake: new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.01, decay: 0.15, sustain: 0, release: 0.1 } }).toDestination(),
-            ice: new Tone.MetalSynth({ frequency: 200, envelope: { attack: 0.001, decay: 0.1, release: 0.01 }, harmonicity: 5.1, modulationIndex: 32, resonance: 4000, octaves: 1.5 }).toDestination(),
-            success: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sine" }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.2 } }).toDestination(),
-            fail: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "square" }, envelope: { attack: 0.01, decay: 0.4, sustain: 0, release: 0.2 } }).toDestination(),
-            bgm: new Tone.Loop(time => {
-                const synth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'fatsawtooth' }, envelope: { attack: 0.1, decay: 0.5, sustain: 0.2, release: 1 }, volume: -20 }).toDestination();
-                synth.triggerAttackRelease(['C3', 'G3', 'Bb3', 'F4'], '1n', time);
-            }, '1m')
-        };
-        Tone.Transport.bpm.value = 80;
+        let sounds = {};
+        function setupSounds() {
+            sounds = {
+                pour: new Tone.Synth({ oscillator: { type: 'fmsine' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.05, release: 0.2 } }).toDestination(),
+                shake: new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.01, decay: 0.15, sustain: 0, release: 0.1 } }).toDestination(),
+                ice: new Tone.MetalSynth({ frequency: 200, envelope: { attack: 0.001, decay: 0.1, release: 0.01 }, harmonicity: 5.1, modulationIndex: 32, resonance: 4000, octaves: 1.5 }).toDestination(),
+                success: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sine" }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.2 } }).toDestination(),
+                fail: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "square" }, envelope: { attack: 0.01, decay: 0.4, sustain: 0, release: 0.2 } }).toDestination(),
+                bgm: new Tone.Loop(time => {
+                    const synth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'fatsawtooth' }, envelope: { attack: 0.1, decay: 0.5, sustain: 0.2, release: 1 }, volume: -20 }).toDestination();
+                    synth.triggerAttackRelease(['C3', 'G3', 'Bb3', 'F4'], '1n', time);
+                }, '1m')
+            };
+            Tone.Transport.bpm.value = 80;
+        }
 
         function playSound(sound, ...args) {
-            if (state.isMuted) return;
-            if (sounds[sound]) {
-                if (sound === 'success') sounds.success.triggerAttackRelease(['C4', 'E4', 'G4'], '8n');
-                else if (sound === 'fail') sounds.fail.triggerAttackRelease(['C3', 'C#3'], '4n');
-                else if (sound === 'ice') sounds.ice.triggerAttackRelease('C3', '8n', Tone.now() + 0.05);
-                else sounds[sound].triggerAttackRelease(...args);
-            }
+            if (state.isMuted || !sounds[sound]) return;
+            if (sound === 'success') sounds.success.triggerAttackRelease(['C4', 'E4', 'G4'], '8n');
+            else if (sound === 'fail') sounds.fail.triggerAttackRelease(['C3', 'C#3'], '4n');
+            else if (sound === 'ice') sounds.ice.triggerAttackRelease('C3', '8n', Tone.now() + 0.05);
+            else sounds[sound].triggerAttackRelease(...args);
         }
         
-        dom.soundToggleBtn.addEventListener('click', () => {
-            state.isMuted = !state.isMuted;
-            dom.soundToggleBtn.textContent = state.isMuted ? '🔇' : '🔊';
-            if (!state.isMuted) {
-                if (Tone.context.state !== 'running') Tone.start();
-                if (Tone.Transport.state !== 'started') {
-                    Tone.Transport.start();
-                    sounds.bgm.start(0);
-                }
-            }
-        });
-
         // --- Game Logic ---
-        function init() {
+        function populateShelf() {
             dom.ingredientShelfEl.innerHTML = '';
             for (const key in INGREDIENTS) {
                 const bottle = document.createElement('div');
@@ -211,8 +209,8 @@
         function startGame() {
             Object.assign(state, { score: 0, timeLeft: 60, isGameRunning: true, canInteract: false, isDeathCustomerActive: false, currentCustomer: null });
             updateScore(); resetShaker();
-            dom.gameOverlay.style.opacity = '0'; dom.gameOverlay.style.pointerEvents = 'none';
-            dom.startButton.classList.add('hidden'); dom.retryButton.classList.add('hidden'); dom.finalScoreEl.classList.add('hidden');
+            dom.gameOverlayEl.style.opacity = '0'; dom.gameOverlayEl.style.pointerEvents = 'none';
+            dom.startButtonEl.classList.add('hidden'); dom.retryButtonEl.classList.add('hidden'); dom.finalScoreEl.classList.add('hidden');
             generateOrder();
             state.timerInterval = setInterval(updateTimer, 1000);
         }
@@ -220,9 +218,9 @@
         function endGame() {
             state.isGameRunning = false; clearInterval(state.timerInterval);
             dom.timerDisplayEl.classList.remove('timer-danger');
-            dom.gameOverlay.style.opacity = '1'; dom.gameOverlay.style.pointerEvents = 'auto';
+            dom.gameOverlayEl.style.opacity = '1'; dom.gameOverlayEl.style.pointerEvents = 'auto';
             dom.finalScoreEl.textContent = `最終スコア: ${state.score}`;
-            dom.finalScoreEl.classList.remove('hidden'); dom.retryButton.classList.remove('hidden');
+            dom.finalScoreEl.classList.remove('hidden'); dom.retryButtonEl.classList.remove('hidden');
         }
         
         function updateTimer() {
@@ -362,18 +360,33 @@
 
         function updateScore() { if (state.score < 0) state.score = 0; dom.scoreEl.textContent = state.score; }
 
-        // --- Event Listeners ---
-        dom.startButton.addEventListener('click', () => {
-            if (Tone.context.state !== 'running') Tone.start();
-            startGame();
-        });
-        dom.retryButton.addEventListener('click', startGame);
-        dom.shakeButton.addEventListener('click', shake);
-        dom.resetButton.addEventListener('click', () => { if (state.canInteract) resetShaker(); });
-        dom.addIceBtn.addEventListener('click', () => { if(state.canInteract) addIce(); });
+        function initializeGame() {
+            populateShelf();
+            setupSounds();
 
-        // Initialize the game layout
-        init();
+            dom.soundToggleEl.addEventListener('click', () => {
+                state.isMuted = !state.isMuted;
+                dom.soundToggleEl.textContent = state.isMuted ? '🔇' : '🔊';
+                if (!state.isMuted) {
+                    if (Tone.context.state !== 'running') Tone.start();
+                    if (Tone.Transport.state !== 'started') {
+                        Tone.Transport.start();
+                        sounds.bgm.start(0);
+                    }
+                }
+            });
+
+            dom.startButtonEl.addEventListener('click', () => {
+                if (Tone.context.state !== 'running') Tone.start();
+                startGame();
+            });
+            dom.retryButtonEl.addEventListener('click', startGame);
+            dom.shakeButtonEl.addEventListener('click', shake);
+            dom.resetButtonEl.addEventListener('click', () => { if (state.canInteract) resetShaker(); });
+            dom.addIceButtonEl.addEventListener('click', () => { if(state.canInteract) addIce(); });
+        }
+
+        initializeGame();
     });
     </script>
 </body>
