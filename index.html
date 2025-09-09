@@ -112,7 +112,7 @@
                 </div>
             </div>
 
-            <div id="bar-counter" class="p-4 flex-grow flex items-center justify-between gap-4 rounded-lg">
+            <div id="bar-counter" class="p-4 flex-grow flex items-center justify-between gap-4 rounded-lg relative">
                 <div class="w-1/3 flex flex-col items-center justify-around h-full">
                     <div id="shaker-area" class="w-24 h-40 bg-gray-400 rounded-t-lg border-4 border-gray-300 relative flex items-end overflow-hidden shadow-inner">
                         <div id="shaker-ice-cubes" class="absolute inset-0"></div>
@@ -124,13 +124,14 @@
                         <button id="reset-button" class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 font-jp">リセット</button>
                     </div>
                 </div>
-                <div class="w-1/3 flex flex-col items-center justify-center">
+                <div class="w-2/3 flex items-center justify-center relative">
                     <div id="cocktail-glass" class="w-32 h-40 relative">
                         <svg viewBox="0 0 100 120" class="w-full h-full filter drop-shadow-lg"><path d="M 10 120 L 40 50 L 60 50 L 90 120 Z" fill="rgba(255,255,255,0.1)"/><path d="M 0 40 L 100 40 L 95 50 L 5 50 Z" fill="rgba(255,255,255,0.1)"/><path d="M 45 40 L 55 0 L 55 40 Z" fill="rgba(255,255,255,0.1)"/></svg>
                         <div id="final-cocktail" class="absolute bottom-[2px] left-1/2 -translate-x-12 w-[78%] h-0 bg-transparent rounded-sm"></div>
                     </div>
-                     <div id="result-text" class="text-2xl font-bold mt-2 h-8 font-jp"></div>
+                     <div id="result-text" class="absolute top-0 text-2xl font-bold mt-2 h-8 font-jp"></div>
                 </div>
+                <button id="prepare-button" class="absolute bottom-4 right-4 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-3 rounded-lg shadow-md text-sm font-jp transition-transform transform hover:scale-105">材料補充</button>
             </div>
         </main>
         
@@ -154,7 +155,7 @@
         
         // --- DOM Elements ---
         const dom = {};
-        const elementIds = ['score', 'timer', 'timer-display', 'order-text', 'order-ingredients', 'ingredient-shelf', 'shaker-area', 'shaker-contents', 'shaker-ice-cubes', 'final-cocktail', 'result-text', 'customer', 'customer-name', 'shake-button', 'reset-button', 'start-button', 'retry-button', 'game-overlay', 'final-score', 'score-display', 'customer-dialogue', 'order-bubble', 'sound-toggle', 'add-ice-button'];
+        const elementIds = ['score', 'timer', 'timer-display', 'order-text', 'order-ingredients', 'ingredient-shelf', 'shaker-area', 'shaker-contents', 'shaker-ice-cubes', 'final-cocktail', 'result-text', 'customer', 'customer-name', 'shake-button', 'reset-button', 'start-button', 'retry-button', 'game-overlay', 'final-score', 'score-display', 'customer-dialogue', 'order-bubble', 'sound-toggle', 'add-ice-button', 'prepare-button'];
         elementIds.forEach(id => {
             const camelCaseId = id.replace(/-(\w)/g, (_, c) => c.toUpperCase());
             dom[`${camelCaseId}El`] = document.getElementById(id);
@@ -384,6 +385,7 @@
             dom.shakeButtonEl.addEventListener('click', shake);
             dom.resetButtonEl.addEventListener('click', () => { if (state.canInteract) resetShaker(); });
             dom.addIceButtonEl.addEventListener('click', () => { if(state.canInteract) addIce(); });
+            dom.prepareButtonEl.addEventListener('click', populateShelf);
         }
 
         initializeGame();
@@ -391,7 +393,5 @@
     </script>
 </body>
 </html>
-
-
 
 
