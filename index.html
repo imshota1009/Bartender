@@ -19,13 +19,14 @@
         .font-title { font-family: 'Playfair Display', serif; }
         .font-jp { font-family: 'M PLUS Rounded 1c', sans-serif; }
         
-        #game-container {
+        .game-view {
             width: 100%;
             max-width: 800px;
             height: 95vh;
             max-height: 900px;
             background: #262626;
             box-shadow: 0 0 40px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,0,0,0.5);
+            border: 4px solid #4a5568;
         }
 
         #bar-counter {
@@ -67,7 +68,6 @@
         
         #game-overlay { background-color: rgba(0, 0, 0, 0.8); backdrop-filter: blur(10px); }
         
-        #timer-display { position: relative; }
         .timer-danger { animation: pulse-danger 1s infinite; }
         @keyframes pulse-danger { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); } 50% { transform: scale(1.1); box-shadow: 0 0 10px 10px rgba(220, 38, 38, 0); } }
 
@@ -77,57 +77,54 @@
         @keyframes fill-glass { from { height: 0%; } to { height: var(--fill-height, 80%); } }
         .animate-fill { animation: fill-glass 0.5s ease-out forwards; }
         
-        .ice-cube {
-            position: absolute; background: rgba(255, 255, 255, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.9); border-radius: 4px;
-        }
         .button-pulse { animation: pulse 2s infinite; }
         @keyframes pulse { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); } 70% { transform: scale(1.05); box-shadow: 0 0 10px 15px rgba(59, 130, 246, 0); } }
-
+        
+        .ice-cube { position: absolute; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.9); border-radius: 4px; }
         #happy-hour-banner { text-shadow: 0 0 10px #fde047, 0 0 20px #fde047; animation: happy-hour-glow 1.5s infinite alternate; }
         @keyframes happy-hour-glow { from { opacity: 0.8; } to { opacity: 1; transform: scale(1.05); } }
-
         #combo-display { transition: transform 0.2s, opacity 0.2s; text-shadow: 0 0 5px #f97316, 0 0 10px #f97316; }
-
-        #recipe-hint, #garnish-container, #event-text { transition: opacity 0.3s, transform 0.3s; }
-        #recipe-hint.show, #garnish-container.show, #event-text.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-        #recipe-hint:not(.show), #garnish-container:not(.show), #event-text:not(.show) { opacity: 0; transform: translate(-50%, -50%) scale(0.8); pointer-events: none; }
-
         .garnish-button { transition: transform 0.2s; }
         .garnish-button:hover { transform: scale(1.2); }
+        
+        .upgrade-button:disabled { background-color: #4b5563; cursor: not-allowed; opacity: 0.6; }
 
     </style>
 </head>
 <body class="text-white flex items-center justify-center min-h-screen">
-    <audio id="bgm-audio" src="background.mp3" loop></audio>
-    <div id="game-container" class="mx-auto rounded-2xl shadow-2xl p-4 md:p-6 flex flex-col relative overflow-hidden border-4 border-gray-700">
-        
-        <header class="flex justify-between items-center mb-4 px-2 relative">
-            <div id="score-display" class="relative">
-                <h2 class="text-xl md:text-2xl font-bold">スコア: <span id="score">0</span></h2>
+    <audio id="bgm-audio" loop></audio>
+
+    <!-- Game View (initially hidden) -->
+    <div id="game-container" class="game-view mx-auto rounded-2xl p-4 md:p-6 flex-col relative overflow-hidden hidden">
+        <header class="grid grid-cols-3 items-center mb-4 px-2 relative">
+            <div class="flex flex-col text-left">
+                <h2 class="text-lg font-bold">Day: <span id="day-display">1</span></h2>
+                <h2 class="text-lg font-bold">所持金: ¥<span id="money-display">0</span></h2>
             </div>
             <div id="combo-display" class="absolute left-1/2 -translate-x-1/2 top-0 text-3xl font-bold text-orange-400 opacity-0 transform scale-50"></div>
-            <div class="flex items-center gap-2 md:gap-4">
-                 <button id="hint-button" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-3 rounded-lg shadow-md text-sm font-jp transition-transform transform hover:scale-105">レシピを見る</button>
+            <div class="flex items-center gap-2 md:gap-4 justify-end">
                 <div id="timer-display" class="bg-red-600 rounded-full px-4 py-2 transition-all duration-300">
                     <h2 class="text-xl md:text-2xl font-bold">時間: <span id="timer">60</span></h2>
                 </div>
             </div>
+            <div id="score-display" class="col-span-3 text-center">
+                <h2 class="text-xl md:text-2xl font-bold">本日の売上: ¥<span id="score">0</span></h2>
+            </div>
         </header>
-
         <main class="flex-grow flex flex-col relative">
-             <div id="happy-hour-banner" class="absolute -top-4 w-full text-center text-4xl font-bold text-yellow-300 font-jp hidden z-10">HAPPY HOUR!</div>
+            <div id="happy-hour-banner" class="absolute -top-4 w-full text-center text-4xl font-bold text-yellow-300 font-jp hidden z-10">HAPPY HOUR!</div>
             <div id="customer-area" class="h-1/4 flex flex-col items-center justify-end mb-4 relative">
                 <div id="customer-dialogue" class="font-jp"></div>
                 <div id="customer" class="text-6xl mb-2 opacity-0 transform -translate-x-12">🧑‍💼</div>
                 <div id="order-bubble" class="bg-gray-200 p-3 rounded-lg shadow-lg text-gray-800 flex flex-col items-center gap-2 opacity-0 transition-opacity duration-300">
                     <div id="customer-name" class="font-bold font-jp text-sm text-gray-600"></div>
                     <div class="flex items-center gap-2">
-                         <p class="font-bold font-jp">注文:</p> <div id="order-text" class="font-bold text-lg font-jp"></div> <div id="order-ingredients" class="flex gap-2"></div>
+                        <p class="font-bold font-jp">注文:</p>
+                        <div id="order-text" class="font-bold text-lg font-jp"></div>
+                        <div id="order-ingredients" class="flex gap-2"></div>
                     </div>
                 </div>
             </div>
-
             <div id="bar-counter" class="p-4 flex-grow flex items-center justify-between gap-4 rounded-lg">
                 <div class="w-1/3 flex flex-col items-center justify-around h-full">
                     <div id="shaker-area" class="w-24 h-40 bg-gray-400 rounded-t-lg border-4 border-gray-300 relative flex items-end overflow-hidden shadow-inner">
@@ -145,23 +142,46 @@
                         <svg viewBox="0 0 100 120" class="w-full h-full filter drop-shadow-lg"><path d="M 10 120 L 40 50 L 60 50 L 90 120 Z" fill="rgba(255,255,255,0.1)"/><path d="M 0 40 L 100 40 L 95 50 L 5 50 Z" fill="rgba(255,255,255,0.1)"/><path d="M 45 40 L 55 0 L 55 40 Z" fill="rgba(255,255,255,0.1)"/></svg>
                         <div id="final-cocktail" class="absolute bottom-[2px] left-1/2 -translate-x-12 w-[78%] h-0 bg-transparent rounded-sm"></div>
                     </div>
-                     <div id="result-text" class="text-2xl font-bold mt-2 h-8 font-jp"></div>
+                    <div id="result-text" class="text-2xl font-bold mt-2 h-8 font-jp"></div>
                 </div>
             </div>
         </main>
-        
         <footer id="ingredient-shelf" class="grid grid-cols-5 md:grid-cols-9 gap-2 mt-4 p-4 bg-black/30 rounded-lg"></footer>
+        <div id="garnish-container" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/80 p-6 rounded-lg text-white font-jp shadow-lg z-40 hidden flex-col items-center gap-4"></div>
+    </div>
+    
+    <!-- Room View (initially hidden) -->
+    <div id="room-container" class="game-view mx-auto rounded-2xl p-6 md:p-8 flex-col relative overflow-hidden hidden bg-gray-800">
+        <header class="text-center pb-4 border-b-2 border-white/10 mb-6">
+            <h1 class="font-title text-5xl">Day End</h1>
+            <p class="font-jp text-lg text-gray-300">Day <span id="room-day-display">1</span> - 営業終了</p>
+        </header>
 
-        <div id="game-overlay" class="absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-500 z-30">
-            <h1 class="font-title text-6xl md:text-8xl mb-4">Bartender</h1>
-            <h2 id="final-score" class="text-4xl mb-8 hidden font-jp"></h2>
-            <button id="start-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg text-2xl shadow-lg transition-transform transform font-jp button-pulse">スタート</button>
-            <button id="retry-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg text-2xl shadow-lg transition-transform transform hidden font-jp button-pulse">もう一度プレイ</button>
-        </div>
-        
-        <div id="recipe-hint" class="absolute top-1/2 left-1/2 bg-black/80 p-6 rounded-lg text-white text-2xl font-jp shadow-lg z-40 flex-col items-center gap-2"></div>
-        <div id="garnish-container" class="absolute top-1/2 left-1/2 bg-black/80 p-6 rounded-lg text-white font-jp shadow-lg z-40 flex flex-col items-center gap-4"></div>
-        <div id="event-text" class="absolute top-1/2 left-1/2 bg-black/80 p-6 rounded-lg text-4xl text-cyan-400 font-bold font-jp shadow-lg z-40"></div>
+        <main class="flex-grow flex flex-col justify-between">
+            <div class="bg-gray-900/50 rounded-lg p-6 text-center mb-6">
+                <p class="font-jp text-xl text-gray-400">本日の売上</p>
+                <p class="font-bold text-4xl text-yellow-300 my-2">¥<span id="daily-earnings-display">0</span></p>
+                <hr class="border-gray-600 my-4">
+                <p class="font-jp text-xl text-gray-400">総資産</p>
+                <p class="font-bold text-4xl">¥<span id="room-money-display">0</span></p>
+            </div>
+            
+            <div id="upgrades-section" class="bg-gray-900/50 rounded-lg p-6">
+                 <h2 class="font-jp text-2xl font-bold text-center mb-4">アップグレード</h2>
+                 <div class="space-y-3">
+                    <!-- Upgrade items will be populated by JS -->
+                 </div>
+            </div>
+        </main>
+        <footer class="text-center pt-6">
+            <button id="next-day-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-xl shadow-lg transition-transform transform font-jp button-pulse">次の日へ</button>
+        </footer>
+    </div>
+
+    <!-- Initial Start Screen (initially visible) -->
+    <div id="game-overlay" class="absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-500 z-30">
+        <h1 class="font-title text-6xl md:text-8xl mb-4">Bartender</h1>
+        <button id="start-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg text-2xl shadow-lg transition-transform transform font-jp button-pulse">ゲーム開始</button>
     </div>
 
     <script>
@@ -170,218 +190,290 @@
         const INGREDIENTS = { vodka: { name: 'ウォッカ', color: '#e0f7fa', glow: '#80deea' }, gin: { name: 'ジン', color: '#e8f5e9', glow: '#a5d6a7' }, rum: { name: 'ラム', color: '#ffecb3', glow: '#ffe082' }, cassis: { name: 'カシス', color: '#4a148c', glow: '#ce93d8' }, lime: { name: 'ライム', color: '#d4e157', glow: '#e6ee9c' }, orangeJuice: { name: 'オレンジJ', color: '#ff9800', glow: '#ffb74d' }, tonic: { name: 'トニック', color: '#cfd8dc', glow: '#eceff1' }, cola: { name: 'コーラ', color: '#3e2723', glow: '#a1887f' }, gingerAle: { name: 'ジンジャーエール', color: '#fbc02d', glow: '#fff176' }};
         const COCKTAILS = [ { name: 'スクリュードライバー', ingredients: ['vodka', 'orangeJuice'], needsIce: true, garnish: 'orange' }, { name: 'ジントニック', ingredients: ['gin', 'tonic', 'lime'], needsIce: true, garnish: 'lime' }, { name: 'キューバリブレ', ingredients: ['rum', 'cola', 'lime'], needsIce: true, garnish: 'lime' }, { name: 'モスコミュール', ingredients: ['vodka', 'gingerAle', 'lime'], needsIce: true, garnish: 'lime' }, { name: 'カシスオレンジ', ingredients: ['cassis', 'orangeJuice'], needsIce: true, garnish: 'orange' }, { name: 'ラムコーク', ingredients: ['rum', 'cola'], needsIce: true, garnish: 'lime' }, { name: 'ジンバック', ingredients: ['gin', 'gingerAle', 'lime'], needsIce: true, garnish: 'lime' }];
         const SECRET_COCKTAILS = [{ name: 'ギムレット', ingredients: ['gin', 'lime'], needsIce: true, bonus: 500 }];
-        const CUSTOMERS = [ { name: "バーの常連", emoji: '🧑‍💼', quotes: { order: ["いつもの頼むよ", "今日はスクリュードライバー気分だ"], success: ["これだよ、これ！", "うまい！また来るよ"], fail: ["うーん、味が違うな…", "これは頼んでないぞ"] }}, { name: "科学者", emoji: '👩‍🔬', quotes: { order: ["完璧な比率で頼む", "実験成功の祝いだ"], success: ["計算通り、完璧な味だ", "素晴らしい！"], fail: ["配合を間違えたな？", "これは失敗作だ"] }}, { name: "芸術家", emoji: '👨‍🎨', quotes: { order: ["インスピレーションが欲しい", "芸術的な一杯を"], success: ["色彩豊かな味だ！", "傑作だね！"], fail: ["君には才能がないな", "色が濁っている…"] }}, { name: "宇宙飛行士", emoji: '👩‍🚀', quotes: { order: ["宇宙の味を頼む", "無重力な感じで"], success: ["まるで星屑のようだ…", "交信成功！"], fail: ["地球の味はこんなものか", "軌道がずれている"] }}, { name: "探偵", emoji: '🕵️', quotes: { order: ["事件の匂いがする一杯を", "ハードボイルドに頼む"], success: ["なるほど、そういうことか…", "謎は全て解けた"], fail: ["犯人はお前だな…", "まだ甘いな、坊や"] }}, { name: "ロックスター", emoji: '👩‍🎤', quotes: { order: ["最高にクレイジーなやつを！", "喉を潤したいんだ"], success: ["ロックンロール！", "オーディエンスも満足だぜ！"], fail: ["ノイズが多いな", "チューニングがずれてるぜ"] }}, { name: "マジシャン", emoji: '🎩', quotes: { order: ["タネも仕掛けもないやつを", "サプライズを頼む"], success: ["ブラボー！見事な手品だ", "それでは、種明かしと行こうか"], fail: ["タネがみえみえだ", "イリュージョンには程遠い"] }}, { name: "観光客", emoji: '🤳', quotes: { order: ["オススメはどれデスカ？", "映えるやつをお願いします！"], success: ["オー！ビューティフル！", "これはマストバイね！"], fail: ["ちょっとガッカリ…", "ガイドブックと違う…"] }}];
-        const MILLIONAIRE_CUSTOMER = { name: "大富豪", emoji: '🤑', quotes: { order: ["最高級のものを頼む", "君の腕を見せてみろ"], success: ["素晴らしい！チップだ、とっておきたまえ", "気に入った、また来よう"], fail: ["がっかりだ、時間は金なりだぞ", "私の舌はごまかせんよ"] }};
-        const DEATH_CUSTOMER = { name: "？？？", emoji: '💀', quotes: { order: ["…喉が渇いてな", "例のものを…頼めるか？", "魂を揺さぶる一杯を…"], success: ["…悪くない。また会おう", "フフ…魂が潤ったぞ", "…お前、気に入った"], fail: ["…次はないと思え", "愚かな人間め…", "お前の魂は濁っているな"] }};
-        const CRITIC_CUSTOMER = { name: "評論家", emoji: '🧐', quotes: { order: ["君の腕前を見せてくれたまえ", "私を驚かせる一杯を", "何か創作を頼む"], success: ["ふむ…悪くない組み合わせだ", "独創的でよろしい"], fail: ["凡庸な味だ", "これでは評価に値しない"] }};
+        const CUSTOMERS = [ { name: "バーの常連", emoji: '🧑‍💼', quotes: { order: ["いつもの頼むよ"], success: ["これだよ、これ！"], fail: ["うーん、味が違うな…"] }}, { name: "科学者", emoji: '👩‍🔬', quotes: { order: ["完璧な比率で頼む"], success: ["計算通り、完璧な味だ"], fail: ["配合を間違えたな？"] }}, { name: "芸術家", emoji: '👨‍🎨', quotes: { order: ["インスピレーションが欲しい"], success: ["色彩豊かな味だ！"], fail: ["君には才能がないな"] }}];
+        const MILLIONAIRE_CUSTOMER = { name: "大富豪", emoji: '🤑', quotes: { order: ["最高級のものを頼む"], success: ["素晴らしい！チップだ"], fail: ["がっかりだ"] }};
+        const DEATH_CUSTOMER = { name: "？？？", emoji: '💀', quotes: { order: ["…喉が渇いてな"], success: ["…悪くない"], fail: ["…次はないと思え"] }};
         const GARNISHES = { lime: '🍋', orange: '🍊', cherry: '🍒' };
-        const GOOD_COMBOS = [ ['gin', 'lime'], ['rum', 'cola'], ['vodka', 'orangeJuice'], ['cassis', 'orangeJuice'] ];
+        
+        const UPGRADES = {
+            shaker: { name: '高品質シェイカー', description: 'コンボボーナスが1.2倍になる', cost: 2000, purchased: false },
+            iceMachine: { name: '高性能製氷機', description: '氷を使うカクテルの評価が少し上がる', cost: 1500, purchased: false },
+            barManual: { name: 'バーテンダー教本', description: '失敗時のペナルティが半減する', cost: 3000, purchased: false }
+        };
 
-        // --- DOM Elements ---
+        // --- DOM Elements (Queried once at the start) ---
         const dom = {};
-        const elementIds = ['score', 'timer', 'timer-display', 'order-text', 'order-ingredients', 'ingredient-shelf', 'shaker-area', 'shaker-contents', 'shaker-ice-cubes', 'final-cocktail', 'result-text', 'customer', 'customer-name', 'shake-button', 'reset-button', 'start-button', 'retry-button', 'game-overlay', 'final-score', 'score-display', 'customer-dialogue', 'order-bubble', 'add-ice-button', 'hint-button', 'bgm-audio', 'combo-display', 'happy-hour-banner', 'recipe-hint', 'garnish-container', 'event-text'];
+        const elementIds = [
+            'start-button', 'game-overlay', 'game-container', 'room-container', 
+            'room-day-display', 'room-money-display', 'daily-earnings-display', 'next-day-button', 'upgrades-section', 'bgm-audio',
+            'day-display', 'money-display', 'combo-display', 'timer-display', 'timer', 'score-display', 'score',
+            'happy-hour-banner', 'customer-area', 'customer-dialogue', 'customer', 'order-bubble', 'customer-name', 'order-text', 'order-ingredients',
+            'bar-counter', 'shaker-area', 'shaker-ice-cubes', 'shaker-contents', 'add-ice-button', 'shake-button', 'reset-button',
+            'cocktail-glass', 'final-cocktail', 'result-text', 'ingredient-shelf', 'garnish-container'
+        ];
         elementIds.forEach(id => {
             const camelCaseId = id.replace(/-(\w)/g, (_, c) => c.toUpperCase());
             dom[`${camelCaseId}El`] = document.getElementById(id);
         });
-
+        
         // --- Game State ---
-        let state = { score: 0, timeLeft: 60, timerInterval: null, currentOrder: null, currentCustomer: null, shakerContents: [], shakerHasIce: false, isGameRunning: false, canInteract: true, isDeathCustomerActive: false, isMillionaireActive: false, isCriticActive: false, combo: 0, isHappyHour: false, happyHourTimeout: null, garnishTimeout: null };
-
-        // --- Sound Engine (Tone.js) ---
+        let state = {
+            score: 0, timeLeft: 60, timerInterval: null, 
+            shakerContents: [], shakerHasIce: false, isGameRunning: false, 
+            canInteract: true, combo: 0, isHappyHour: false, 
+            happyHourTimeout: null, garnishTimeout: null, 
+            day: 1, totalMoney: 0, 
+            upgrades: JSON.parse(JSON.stringify(UPGRADES)), 
+            currentCustomer: null, currentOrder: null
+        };
+        
+        // --- Sound Engine ---
         let sounds = {};
         let isAudioReady = false;
-        function setupSounds() { sounds = { pour: new Tone.Synth({ oscillator: { type: 'fmsine' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.05, release: 0.2 } }).toDestination(), shake: new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.01, decay: 0.15, sustain: 0, release: 0.1 } }).toDestination(), ice: new Tone.MetalSynth({ frequency: 200, envelope: { attack: 0.001, decay: 0.1, release: 0.01 }, harmonicity: 5.1, modulationIndex: 32, resonance: 4000, octaves: 1.5 }).toDestination(), success: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sine" }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.2 } }).toDestination(), fail: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "square" }, envelope: { attack: 0.01, decay: 0.4, sustain: 0, release: 0.2 } }).toDestination(), timeBonus: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "triangle" }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.2 } }).toDestination(), tip: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sine" }, envelope: { attack: 0.01, decay: 0.4, sustain: 0.2, release: 0.3 } }).toDestination(), combo: new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'fmsquare' }, envelope: { attack: 0.01, decay: 0.1, release: 0.1 }}).toDestination(), happyHour: new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'pulse' }, envelope: { attack: 0.01, decay: 0.5, release: 0.2 }}).toDestination(), }; isAudioReady = true; }
-        async function startAudio() { if (isAudioReady && Tone.context.state !== 'running') await Tone.start(); if (dom.bgmAudioEl) dom.bgmAudioEl.play().catch(e => console.error("BGMの再生に失敗しました:", e)); }
+        function setupSounds() { try { sounds = { pour: new Tone.Synth({ oscillator: { type: 'fmsine' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.05, release: 0.2 } }).toDestination(), shake: new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.01, decay: 0.15, sustain: 0, release: 0.1 } }).toDestination(), ice: new Tone.MetalSynth({ frequency: 200, envelope: { attack: 0.001, decay: 0.1, release: 0.01 }, harmonicity: 5.1, modulationIndex: 32, resonance: 4000, octaves: 1.5 }).toDestination(), success: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sine" }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.2 } }).toDestination(), fail: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "square" }, envelope: { attack: 0.01, decay: 0.4, sustain: 0, release: 0.2 } }).toDestination(), timeBonus: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "triangle" }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.2 } }).toDestination(), tip: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sine" }, envelope: { attack: 0.01, decay: 0.4, sustain: 0.2, release: 0.3 } }).toDestination(), combo: new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'fmsquare' }, envelope: { attack: 0.01, decay: 0.1, release: 0.1 }}).toDestination(), happyHour: new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'pulse' }, envelope: { attack: 0.01, decay: 0.5, release: 0.2 }}).toDestination(), cash: new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.2, release: 0.1 }}).toDestination() }; isAudioReady = true; } catch(e) { console.error("サウンドエンジンの初期化に失敗:", e); } }
+        async function startAudio() { if (isAudioReady && Tone.context.state !== 'running') { await Tone.start(); } if (dom.bgmAudioEl) { dom.bgmAudioEl.volume = 0.3; dom.bgmAudioEl.play().catch(e => {}); } }
         function stopAudio() { if (dom.bgmAudioEl) { dom.bgmAudioEl.pause(); dom.bgmAudioEl.currentTime = 0; } }
-        function playSound(sound, ...args) { if (!isAudioReady) return; if (sound === 'success') sounds.success.triggerAttackRelease(['C4', 'E4', 'G4'], '8n'); else if (sound === 'fail') sounds.fail.triggerAttackRelease(['C3', 'C#3'], '4n'); else if (sound === 'ice') sounds.ice.triggerAttackRelease('C3', '8n', Tone.now() + 0.05); else if (sound === 'timeBonus') sounds.timeBonus.triggerAttackRelease(['G4', 'C5', 'E5'], '8n'); else if (sound === 'tip') sounds.tip.triggerAttackRelease(['C5', 'E5', 'G5', 'C6'], '4n'); else if (sound === 'happyHour') sounds.happyHour.triggerAttackRelease(['C4', 'E4', 'G4', 'C5'], '2n'); else if (sound === 'combo' && sounds.combo) { const notes = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5']; sounds.combo.triggerAttackRelease(notes[Math.min(state.combo -1, notes.length-1)], '8n');} else if (sounds[sound]) sounds[sound].triggerAttackRelease(...args); }
+        function playSound(sound, ...args) { if (!isAudioReady) return; try { if (sound === 'success') sounds.success.triggerAttackRelease(['C4', 'E4', 'G4'], '8n'); else if (sound === 'fail') sounds.fail.triggerAttackRelease(['C3', 'C#3'], '4n'); else if (sound === 'ice') sounds.ice.triggerAttackRelease('C3', '8n', Tone.now() + 0.05); else if (sound === 'timeBonus') sounds.timeBonus.triggerAttackRelease(['G4', 'C5', 'E5'], '8n'); else if (sound === 'tip') sounds.tip.triggerAttackRelease(['C5', 'E5', 'G5', 'C6'], '4n'); else if (sound === 'happyHour') sounds.happyHour.triggerAttackRelease(['C4', 'E4', 'G4', 'C5'], '2n'); else if (sound === 'cash') sounds.cash.triggerAttackRelease(['E5', 'G5', 'C6'], '8n'); else if (sound === 'combo' && sounds.combo) { const notes = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5']; sounds.combo.triggerAttackRelease(notes[Math.min(state.combo -1, notes.length-1)], '8n');} else if (sounds[sound]) sounds[sound].triggerAttackRelease(...args); } catch(e){} }
         
-        // --- Game Logic ---
-        function populateShelf() { dom.ingredientShelfEl.innerHTML = ''; for (const key in INGREDIENTS) { const bottle = document.createElement('div'); bottle.className = 'ingredient-bottle font-bold p-2 font-jp'; bottle.textContent = INGREDIENTS[key].name; bottle.style.backgroundColor = INGREDIENTS[key].color; bottle.style.color = getContrastingTextColor(INGREDIENTS[key].color); bottle.style.setProperty('--glow-color', INGREDIENTS[key].glow); bottle.dataset.ingredient = key; bottle.addEventListener('click', () => addIngredient(key, bottle)); dom.ingredientShelfEl.appendChild(bottle); } }
-        function getContrastingTextColor(hex){ const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); return((r*299)+(g*587)+(b*114))/1000>=128?'#111':'#fff'; }
-
-        function startGame() {
-             if (dom.ingredientShelfEl.childElementCount === 0) populateShelf();
-            Object.assign(state, { score: 0, timeLeft: 60, isGameRunning: true, canInteract: false, currentCustomer: null, combo: 0, isHappyHour: false });
-            updateScore(); resetShaker(); updateComboDisplay();
-            dom.gameOverlayEl.style.opacity = '0'; dom.gameOverlayEl.style.pointerEvents = 'none';
-            dom.startButtonEl.classList.add('hidden'); dom.retryButtonEl.classList.add('hidden'); dom.finalScoreEl.classList.add('hidden');
+        // --- View & State Management ---
+        function showView(view) {
+            dom.gameContainerEl.classList.add('hidden');
+            dom.roomContainerEl.classList.add('hidden');
+            if (view === 'game') {
+                dom.gameContainerEl.classList.remove('hidden');
+            } else if (view === 'room') {
+                dom.roomContainerEl.classList.remove('hidden');
+            }
+        }
+        
+        function startDay() {
+            Object.assign(state, { score: 0, timeLeft: 60, isGameRunning: true, canInteract: false, combo: 0, isHappyHour: false, currentCustomer: null, currentOrder: null });
+            updateScore(); 
+            resetShaker(); 
+            updateComboDisplay();
+            dom.gameOverlayEl.style.opacity = '0'; 
+            dom.gameOverlayEl.style.pointerEvents = 'none';
+            showView('game');
+            updateUIDisplays();
             generateOrder();
             state.timerInterval = setInterval(updateTimer, 1000);
             scheduleHappyHour();
+            startAudio();
         }
         
-        function endGame() { state.isGameRunning = false; clearInterval(state.timerInterval); clearTimeout(state.happyHourTimeout); clearTimeout(state.garnishTimeout); stopAudio(); dom.timerDisplayEl.classList.remove('timer-danger'); dom.gameOverlayEl.style.opacity = '1'; dom.gameOverlayEl.style.pointerEvents = 'auto'; dom.finalScoreEl.textContent = `最終スコア: ${state.score}`; dom.finalScoreEl.classList.remove('hidden'); dom.retryButtonEl.classList.remove('hidden'); dom.happyHourBannerEl.classList.add('hidden'); }
-        function updateTimer() { if (!state.isHappyHour) { state.timeLeft -= state.isDeathCustomerActive ? 2 : 1; } if (state.timeLeft < 0) state.timeLeft = 0; dom.timerEl.textContent = state.timeLeft; if (state.timeLeft <= 0) endGame(); }
-        function showDialogue(lines) { dom.customerDialogueEl.textContent = lines[Math.floor(Math.random() * lines.length)]; dom.customerDialogueEl.classList.add('show'); }
-
-        function generateOrder() {
-            state.canInteract = false; state.isDeathCustomerActive = false; state.isMillionaireActive = false; state.isCriticActive = false;
-            if (state.currentCustomer) { dom.customerEl.classList.remove('slide-in'); dom.customerEl.classList.add('slide-out'); dom.orderBubbleEl.style.opacity = '0'; dom.customerDialogueEl.classList.remove('show'); }
+        function endDay() { 
+            state.isGameRunning = false; 
+            clearInterval(state.timerInterval); 
+            clearTimeout(state.happyHourTimeout); 
+            clearTimeout(state.garnishTimeout); 
+            stopAudio(); 
             
-            setTimeout(() => {
-                const rand = Math.random();
-                if (rand < 0.10) { state.currentCustomer = MILLIONAIRE_CUSTOMER; state.isMillionaireActive = true; } 
-                else if (rand < 0.25) { state.currentCustomer = DEATH_CUSTOMER; state.isDeathCustomerActive = true; } 
-                else if (rand < 0.40) { state.currentCustomer = CRITIC_CUSTOMER; state.isCriticActive = true; }
-                else { state.currentCustomer = CUSTOMERS[Math.floor(Math.random() * CUSTOMERS.length)]; }
+            state.totalMoney += state.score;
 
-                if(state.isCriticActive) { 
-                    state.currentOrder = { name: '創作カクテル', ingredients: [] }; 
-                } else { 
-                    state.currentOrder = COCKTAILS[Math.floor(Math.random() * COCKTAILS.length)]; 
-                }
-                
-                dom.customerEl.classList.toggle('scale-125', state.isDeathCustomerActive || state.isMillionaireActive || state.isCriticActive);
-                dom.timerDisplayEl.classList.toggle('timer-danger', state.isDeathCustomerActive);
+            if(dom.timerDisplayEl) dom.timerDisplayEl.classList.remove('timer-danger'); 
+            showView('room');
+            updateRoomUI();
+        }
+
+        function updateRoomUI() {
+            dom.roomDayDisplayEl.textContent = state.day;
+            dom.dailyEarningsDisplayEl.textContent = state.score.toLocaleString();
+            dom.roomMoneyDisplayEl.textContent = state.totalMoney.toLocaleString();
+            renderUpgrades();
+        }
+        
+        function startNextDay() {
+            state.day++;
+            startDay();
+        }
+
+        function renderUpgrades() {
+            let contentHTML = '';
+            for(const key in state.upgrades) {
+                const upgrade = state.upgrades[key];
+                const disabled = upgrade.purchased || state.totalMoney < upgrade.cost;
+                const buttonText = upgrade.purchased ? '購入済' : `¥${upgrade.cost.toLocaleString()}`;
+                contentHTML += `<div class="flex items-center justify-between bg-gray-700/50 p-3 rounded-lg"><div class="pr-4"><h4 class="font-bold font-jp text-md">${upgrade.name}</h4><p class="text-sm text-gray-300 font-jp">${upgrade.description}</p></div><button onclick="buyUpgrade('${key}')" class="upgrade-button bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg font-jp transition-colors flex-shrink-0" ${disabled ? 'disabled' : ''}>${buttonText}</button></div>`;
+            }
+            dom.upgradesSectionEl.querySelector('.space-y-3').innerHTML = contentHTML;
+        }
+
+        window.buyUpgrade = function(key) {
+            const upgrade = state.upgrades[key];
+            if (!upgrade.purchased && state.totalMoney >= upgrade.cost) {
+                state.totalMoney -= upgrade.cost;
+                upgrade.purchased = true;
+                playSound('cash');
+                updateRoomUI();
+            }
+        }
+
+        // --- Game Logic ---
+        function updateTimer() { if (!state.isGameRunning) return; if (!state.isHappyHour) { state.timeLeft -= 1; } if (state.timeLeft < 0) state.timeLeft = 0; dom.timerEl.textContent = state.timeLeft; if (state.timeLeft <= 0) endDay(); }
+        function populateShelf() { dom.ingredientShelfEl.innerHTML = ''; for (const key in INGREDIENTS) { const bottle = document.createElement('div'); bottle.className = 'ingredient-bottle font-bold p-2 font-jp'; bottle.textContent = INGREDIENTS[key].name; bottle.style.backgroundColor = INGREDIENTS[key].color; bottle.style.color = getContrastingTextColor(INGREDIENTS[key].color); bottle.style.setProperty('--glow-color', INGREDIENTS[key].glow); bottle.dataset.ingredient = key; bottle.addEventListener('click', () => addIngredient(key, bottle)); dom.ingredientShelfEl.appendChild(bottle); } }
+        function getContrastingTextColor(hex){ if(!hex) return '#000'; const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); return((r*299)+(g*587)+(b*114))/1000>=128?'#111':'#fff'; }
+        function addIngredient(key, element) { if (!state.isGameRunning || !state.canInteract || state.shakerContents.length >= 5) return; state.shakerContents.push(key); updateShakerVisual(); element.classList.add('selected'); setTimeout(() => element.classList.remove('selected'), 500); playSound('pour', 'C3', '8n'); }
+        function addIce() { if (!state.isGameRunning || !state.canInteract || state.shakerHasIce) return; state.shakerHasIce = true; updateShakerVisual(); playSound('ice'); }
+        function shake() { if (!state.isGameRunning || !state.canInteract || (state.shakerContents.length === 0 && !state.shakerHasIce)) return; state.canInteract = false; dom.customerDialogueEl.classList.remove('show'); dom.shakerAreaEl.classList.add('shake-animation'); for(let i=0; i<5; i++) setTimeout(()=>playSound('shake', '8n'), i*80); setTimeout(() => { dom.shakerAreaEl.classList.remove('shake-animation'); checkRecipe(); }, 500); }
+        function resetShaker() { state.shakerContents = []; state.shakerHasIce = false; updateShakerVisual(); dom.finalCocktailEl.classList.remove('animate-fill'); dom.finalCocktailEl.style.height = '0%'; dom.resultTextEl.textContent = '';}
+        function updateShakerVisual() { const liquidHeight = (state.shakerContents.length / 5) * 100; const mixedColor = state.shakerContents.length > 0 ? '#' + state.shakerContents.reduce((avg, key) => { let c = INGREDIENTS[key].color.substring(1); avg[0] += parseInt(c.substring(0,2), 16); avg[1] += parseInt(c.substring(2,4), 16); avg[2] += parseInt(c.substring(4,6), 16); return avg; }, [0, 0, 0]).map(c => Math.round(c / state.shakerContents.length).toString(16).padStart(2, '0')).join('') : 'transparent'; dom.shakerContentsEl.style.background = `linear-gradient(to top, ${mixedColor} 0%, ${mixedColor} ${liquidHeight}%, transparent ${liquidHeight}%)`; dom.shakerIceCubesEl.innerHTML = ''; if (state.shakerHasIce) { for (let i = 0; i < 5; i++) { const ice = document.createElement('div'); ice.className = 'ice-cube'; ice.style.cssText = `width:${Math.random()*10+15}px; height:${Math.random()*10+15}px; left:${Math.random()*70}%; bottom:${Math.random()*(liquidHeight>20?liquidHeight-20:0)}%; transform:rotate(${Math.random()*90}deg);`; dom.shakerIceCubesEl.appendChild(ice); } } }
+        function showFloatingText(text, color, element) { const el = document.createElement('div'); el.className = 'floating-text'; el.textContent = text; el.style.color = color; element.appendChild(el); setTimeout(() => el.remove(), 1500); }
+        function showDialogue(lines) { dom.customerDialogueEl.textContent = lines[Math.floor(Math.random() * lines.length)]; dom.customerDialogueEl.classList.add('show');}
+        function updateScore() { if (state.score < 0) state.score = 0; dom.scoreEl.textContent = state.score.toLocaleString(); }
+        function updateUIDisplays() { dom.dayDisplayEl.textContent = state.day; dom.moneyDisplayEl.textContent = state.totalMoney.toLocaleString();}
+        function updateComboDisplay() { if(state.combo > 1) { dom.comboDisplayEl.textContent = `${state.combo} COMBO!`; dom.comboDisplayEl.style.opacity = '1'; dom.comboDisplayEl.style.transform = 'translateX(-50%) scale(1)'; } else { dom.comboDisplayEl.style.opacity = '0'; dom.comboDisplayEl.style.transform = 'translateX(-50%) scale(0.5)'; } }
+        function scheduleHappyHour() { const delay = Math.random() * 20000 + 15000; state.happyHourTimeout = setTimeout(startHappyHour, delay); }
+        function startHappyHour() { if(!state.isGameRunning) return; state.isHappyHour = true; dom.happyHourBannerEl.classList.remove('hidden'); playSound('happyHour'); }
+        function endHappyHour() { if(!state.isGameRunning) return; state.isHappyHour = false; dom.happyHourBannerEl.classList.add('hidden'); }
+        
+        function generateOrder() {
+            state.canInteract = false; 
+            if (state.currentCustomer) { 
+                dom.customerEl.classList.remove('slide-in'); 
+                dom.customerEl.classList.add('slide-out'); 
+                dom.orderBubbleEl.style.opacity = '0'; 
+                dom.customerDialogueEl.classList.remove('show'); 
+            } 
+            setTimeout(() => {
+                const rand = Math.random(); 
+                if (rand < 0.10) { state.currentCustomer = MILLIONAIRE_CUSTOMER; } 
+                else if (rand < 0.25) { state.currentCustomer = DEATH_CUSTOMER; } 
+                else { state.currentCustomer = CUSTOMERS[Math.floor(Math.random() * CUSTOMERS.length)]; } 
+                state.currentOrder = COCKTAILS[Math.floor(Math.random() * COCKTAILS.length)]; 
+                dom.customerEl.classList.toggle('scale-125', state.currentCustomer === DEATH_CUSTOMER || state.currentCustomer === MILLIONAIRE_CUSTOMER); 
+                dom.timerDisplayEl.classList.toggle('timer-danger', state.currentCustomer === DEATH_CUSTOMER); 
                 dom.customerEl.textContent = state.currentCustomer.emoji; 
-                dom.customerNameEl.textContent = state.currentCustomer.name;
+                dom.customerNameEl.textContent = state.currentCustomer.name; 
                 dom.customerEl.classList.remove('slide-out'); 
-                dom.customerEl.classList.add('slide-in');
-                
+                dom.customerEl.classList.add('slide-in'); 
                 setTimeout(() => { 
-                    dom.orderTextEl.textContent = state.currentOrder.name;
-                    dom.orderIngredientsEl.innerHTML = '';
-                    if (!state.isCriticActive) {
-                        [...state.currentOrder.ingredients].sort(() => 0.5 - Math.random()).forEach(key => { 
-                            const div = document.createElement('div'); 
-                            div.style.cssText = `width:24px; height:24px; background-color:${INGREDIENTS[key].color}; border-radius:9999px; border:3px solid #4b5563; box-shadow: 0 1px 3px rgba(0,0,0,0.2);`; 
-                            div.title = INGREDIENTS[key].name; 
-                            dom.orderIngredientsEl.appendChild(div); 
-                        });
-                    }
+                    dom.orderTextEl.textContent = state.currentOrder.name; 
+                    dom.orderIngredientsEl.innerHTML = ''; 
+                    [...state.currentOrder.ingredients].sort(() => 0.5 - Math.random()).forEach(key => { 
+                        const div = document.createElement('div'); 
+                        div.style.cssText = `width:24px; height:24px; background-color:${INGREDIENTS[key].color}; border-radius:9999px; border:3px solid #4b5563; box-shadow: 0 1px 3px rgba(0,0,0,0.2);`; 
+                        div.title = INGREDIENTS[key].name; 
+                        dom.orderIngredientsEl.appendChild(div); 
+                    }); 
                     dom.orderBubbleEl.style.opacity = '1'; 
                     showDialogue(state.currentCustomer.quotes.order); 
-                    state.canInteract = true;
-                    if (!state.isCriticActive && !state.isDeathCustomerActive && Math.random() < 0.15) { 
-                        setTimeout(changeOrder, 2000); 
-                    }
+                    state.canInteract = true; 
                 }, 500);
             }, state.currentCustomer ? 700 : 0);
         }
 
-        function changeOrder() {
-            if (!state.isGameRunning) return;
-            showEventText("注文変更で！");
-            playSound('fail');
-            let newOrder;
-            do { newOrder = COCKTAILS[Math.floor(Math.random() * COCKTAILS.length)]; } while (newOrder.name === state.currentOrder.name);
-            state.currentOrder = newOrder;
-            dom.orderBubbleEl.classList.add('scale-110', 'bg-red-200');
-            dom.orderTextEl.textContent = state.currentOrder.name;
-            dom.orderIngredientsEl.innerHTML = ''; 
-            [...state.currentOrder.ingredients].sort(() => 0.5 - Math.random()).forEach(key => { const div = document.createElement('div'); div.style.cssText = `width:24px; height:24px; background-color:${INGREDIENTS[key].color}; border-radius:9999px; border:3px solid #4b5563; box-shadow: 0 1px 3px rgba(0,0,0,0.2);`; div.title = INGREDIENTS[key].name; dom.orderIngredientsEl.appendChild(div); });
-            setTimeout(() => dom.orderBubbleEl.classList.remove('scale-110', 'bg-red-200'), 500);
-        }
-
-        function addIngredient(key, element) { if (!state.isGameRunning || !state.canInteract || state.shakerContents.length >= 5) return; state.shakerContents.push(key); updateShakerVisual(); element.classList.add('selected'); setTimeout(() => element.classList.remove('selected'), 500); playSound('pour', 'C3', '8n'); }
-        function addIce() { if (!state.isGameRunning || !state.canInteract || state.shakerHasIce) return; state.shakerHasIce = true; updateShakerVisual(); playSound('ice'); }
-        function resetShaker() { state.shakerContents = []; state.shakerHasIce = false; updateShakerVisual(); dom.finalCocktailEl.classList.remove('animate-fill'); dom.finalCocktailEl.style.height = '0%'; dom.resultTextEl.textContent = ''; }
-        function updateShakerVisual() { const liquidHeight = (state.shakerContents.length / 5) * 100; const mixedColor = state.shakerContents.length > 0 ? '#' + state.shakerContents.reduce((avg, key) => { let c = INGREDIENTS[key].color.substring(1); avg[0] += parseInt(c.substring(0,2), 16); avg[1] += parseInt(c.substring(2,4), 16); avg[2] += parseInt(c.substring(4,6), 16); return avg; }, [0, 0, 0]).map(c => Math.round(c / state.shakerContents.length).toString(16).padStart(2, '0')).join('') : 'transparent'; dom.shakerContentsEl.style.background = `linear-gradient(to top, ${mixedColor} 0%, ${mixedColor} ${liquidHeight}%, transparent ${liquidHeight}%)`; dom.shakerIceCubesEl.innerHTML = ''; if (state.shakerHasIce) { for (let i = 0; i < 5; i++) { const ice = document.createElement('div'); ice.className = 'ice-cube'; ice.style.cssText = `width:${Math.random()*10+15}px; height:${Math.random()*10+15}px; left:${Math.random()*70}%; bottom:${Math.random()*(liquidHeight>20?liquidHeight-20:0)}%; transform:rotate(${Math.random()*90}deg);`; dom.shakerIceCubesEl.appendChild(ice); } } }
-        function showFloatingText(text, color, element) { const el = document.createElement('div'); el.className = 'floating-text'; el.textContent = text; el.style.color = color; element.appendChild(el); setTimeout(() => el.remove(), 1500); }
-        function shake() { if (!state.isGameRunning || !state.canInteract || (state.shakerContents.length === 0 && !state.shakerHasIce)) return; state.canInteract = false; dom.customerDialogueEl.classList.remove('show'); dom.shakerAreaEl.classList.add('shake-animation'); for(let i=0; i<5; i++) setTimeout(()=>playSound('shake', '8n'), i*80); setTimeout(() => { dom.shakerAreaEl.classList.remove('shake-animation'); checkRecipe(); }, 500); }
-
         function checkRecipe() {
-            dom.finalCocktailEl.style.background = dom.shakerContentsEl.style.background; dom.finalCocktailEl.style.setProperty('--fill-height', '80%'); dom.finalCocktailEl.classList.add('animate-fill');
-            const madeRecipeSorted = JSON.stringify([...state.shakerContents].sort());
-
-            if (state.isCriticActive) {
-                const isGood = GOOD_COMBOS.some(combo => JSON.stringify([...combo].sort()) === madeRecipeSorted);
-                if(isGood && state.shakerContents.length > 1) {
-                    let points = 300 * (state.isHappyHour ? 2 : 1); state.score += points;
-                    showFloatingText(`高評価! +${points}`, '#a78bfa', dom.scoreDisplayEl); showDialogue(state.currentCustomer.quotes.success); dom.resultTextEl.textContent = '独創的！ 🧐'; dom.resultTextEl.style.color = '#8b5cf6'; playSound('tip');
-                } else {
-                    state.score -= 50; showFloatingText(`-50`, '#ef4444', dom.scoreDisplayEl); showDialogue(state.currentCustomer.quotes.fail); dom.resultTextEl.textContent = '凡庸...'; dom.resultTextEl.style.color = '#dc2626'; playSound('fail');
-                }
-                setTimeout(() => { resetShaker(); generateOrder(); }, 2000);
-                updateScore();
-                return;
-            }
-
-            const isCorrect = JSON.stringify([...state.currentOrder.ingredients].sort()) === madeRecipeSorted && state.currentOrder.needsIce === state.shakerHasIce;
-            let foundSecret = !isCorrect ? SECRET_COCKTAILS.find(c => JSON.stringify([...c.ingredients].sort()) === madeRecipeSorted && c.needsIce === state.shakerHasIce) : null;
-            
-            if (isCorrect) {
-                state.combo++;
-                let points = 100 + (state.combo * 10);
-                if(state.isDeathCustomerActive) points = 300;
-                if(state.isHappyHour) points *= 2;
-                state.score += points;
-                showFloatingText(`+${points}`, '#84cc16', dom.scoreDisplayEl);
-                if (state.isMillionaireActive) { const tip = 200 * (state.isHappyHour ? 2 : 1); state.score += tip; setTimeout(() => { showFloatingText(`チップ +${tip}!`, '#ffd700', dom.scoreDisplayEl); playSound('tip'); }, 300); }
-                state.timeLeft += 10;
-                showFloatingText('+10s', '#34d399', dom.timerDisplayEl);
-                showDialogue(state.currentCustomer.quotes.success);
-                dom.resultTextEl.textContent = '成功！ 😋'; dom.resultTextEl.style.color = '#65a30d';
-                dom.timerEl.textContent = state.timeLeft;
-                playSound('success'); playSound('timeBonus'); playSound('combo');
-                startGarnishMiniGame();
-            } else if (foundSecret) {
-                let bonus = foundSecret.bonus * (state.isHappyHour ? 2 : 1);
-                state.score += bonus;
-                showFloatingText(`SECRET! +${bonus}`, '#f0abfc', dom.scoreDisplayEl);
-                dom.resultTextEl.textContent = `シークレット！ 🍸`; dom.resultTextEl.style.color = '#c026d3';
-                playSound('tip');
-                setTimeout(proceedToNextCustomer, 2000);
-            } else {
-                state.combo = 0;
-                const points = (state.isDeathCustomerActive ? -50 : -20);
-                state.score += points;
-                showFloatingText(`${points}`, '#ef4444', dom.scoreDisplayEl);
-                showDialogue(state.currentCustomer.quotes.fail);
-                dom.resultTextEl.textContent = '失敗... 😖'; dom.resultTextEl.style.color = '#dc2626';
-                if (state.currentCustomer.emoji !== '💀') dom.customerEl.textContent = '😠';
-                playSound('fail');
-                setTimeout(proceedToNextCustomer, 2000);
-            }
-            updateScore();
+            dom.finalCocktailEl.style.background = dom.shakerContentsEl.style.background; 
+            dom.finalCocktailEl.style.setProperty('--fill-height', '80%'); 
+            dom.finalCocktailEl.classList.add('animate-fill'); 
+            const madeRecipeSorted = JSON.stringify([...state.shakerContents].sort()); 
+            const isCorrect = JSON.stringify([...state.currentOrder.ingredients].sort()) === madeRecipeSorted && state.currentOrder.needsIce === state.shakerHasIce; 
+            let foundSecret = !isCorrect ? SECRET_COCKTAILS.find(c => JSON.stringify([...c.ingredients].sort()) === madeRecipeSorted && c.needsIce === state.shakerHasIce) : null; 
+            if (isCorrect) { 
+                state.combo++; 
+                let comboBonus = state.combo * 10 * (state.upgrades.shaker.purchased ? 1.2 : 1); 
+                let points = 100 + comboBonus; 
+                if(state.currentCustomer === DEATH_CUSTOMER) points = 300; 
+                if(state.isHappyHour) points *= 2; 
+                if(state.currentOrder.needsIce && state.upgrades.iceMachine.purchased) points += 20; 
+                points = Math.round(points); 
+                state.score += points; 
+                showFloatingText(`+¥${points}`, '#84cc16', dom.scoreDisplayEl); 
+                if (state.currentCustomer === MILLIONAIRE_CUSTOMER) { 
+                    const tip = 200 * (state.isHappyHour ? 2 : 1); 
+                    state.score += tip; 
+                    setTimeout(() => { 
+                        showFloatingText(`チップ +¥${tip}!`, '#ffd700', dom.scoreDisplayEl); 
+                        playSound('tip'); 
+                    }, 300); 
+                } 
+                state.timeLeft += 10; 
+                showFloatingText('+10s', '#34d399', dom.timerDisplayEl); 
+                showDialogue(state.currentCustomer.quotes.success); 
+                dom.resultTextEl.textContent = '成功！ 😋'; 
+                dom.resultTextEl.style.color = '#65a30d'; 
+                dom.timerEl.textContent = state.timeLeft; 
+                playSound('success'); 
+                playSound('timeBonus'); 
+                playSound('combo'); 
+                startGarnishMiniGame(); 
+            } else if (foundSecret) { 
+                let bonus = foundSecret.bonus * (state.isHappyHour ? 2 : 1); 
+                state.score += bonus; 
+                showFloatingText(`SECRET! +¥${bonus}`, '#f0abfc', dom.scoreDisplayEl); 
+                dom.resultTextEl.textContent = `シークレット！ 🍸`; 
+                dom.resultTextEl.style.color = '#c026d3'; 
+                playSound('tip'); 
+                setTimeout(proceedToNextCustomer, 2000); 
+            } else { 
+                state.combo = 0; 
+                let points = (state.currentCustomer === DEATH_CUSTOMER ? -50 : -20); 
+                if(state.upgrades.barManual.purchased) points /= 2; 
+                points = Math.round(points); 
+                state.score += points; 
+                showFloatingText(`¥${points}`, '#ef4444', dom.scoreDisplayEl); 
+                showDialogue(state.currentCustomer.quotes.fail); 
+                dom.resultTextEl.textContent = '失敗... 😖'; 
+                dom.resultTextEl.style.color = '#dc2626'; 
+                if (state.currentCustomer.emoji !== '💀') dom.customerEl.textContent = '😠'; 
+                playSound('fail'); 
+                setTimeout(proceedToNextCustomer, 2000); 
+            } 
+            updateScore(); 
             updateComboDisplay();
         }
-
-        function startGarnishMiniGame() {
-            const correctGarnish = state.currentOrder.garnish;
-            if (!correctGarnish) { proceedToNextCustomer(); return; }
-            
-            dom.garnishContainerEl.innerHTML = `<h3 class="text-xl font-bold mb-2">仕上げは？</h3><div id="garnish-options" class="flex gap-4"></div>`;
-            const optionsEl = dom.garnishContainerEl.querySelector('#garnish-options');
-            
-            const options = new Set([correctGarnish]);
-            while(options.size < 3) { const randomGarnish = Object.keys(GARNISHES)[Math.floor(Math.random() * Object.keys(GARNISHES).length)]; options.add(randomGarnish); }
-
-            [...options].sort(() => 0.5 - Math.random()).forEach(key => {
-                const btn = document.createElement('button');
-                btn.className = 'garnish-button text-5xl'; btn.textContent = GARNISHES[key];
-                btn.onclick = () => {
-                    clearTimeout(state.garnishTimeout);
-                    if(key === correctGarnish) { let bonus = 50 * (state.isHappyHour ? 2 : 1); state.score += bonus; showFloatingText(`PERFECT! +${bonus}`, '#34d399', dom.scoreDisplayEl); playSound('tip'); updateScore(); } 
-                    else { playSound('fail'); }
-                    proceedToNextCustomer();
-                };
-                optionsEl.appendChild(btn);
-            });
-
-            dom.garnishContainerEl.classList.add('show');
+        function startGarnishMiniGame() { 
+            const correctGarnish = state.currentOrder.garnish; 
+            if (!correctGarnish) { proceedToNextCustomer(); return; } 
+            dom.garnishContainerEl.classList.remove('hidden'); 
+            dom.garnishContainerEl.classList.add('flex'); 
+            dom.garnishContainerEl.innerHTML = `<h3 class="text-xl font-bold mb-2">仕上げは？</h3><div id="garnish-options" class="flex gap-4"></div>`; 
+            const optionsEl = dom.garnishContainerEl.querySelector('#garnish-options'); 
+            const options = new Set([correctGarnish]); 
+            while(options.size < 3) { 
+                const randomGarnish = Object.keys(GARNISHES)[Math.floor(Math.random() * Object.keys(GARNISHES).length)]; 
+                options.add(randomGarnish); 
+            } 
+            [...options].sort(() => 0.5 - Math.random()).forEach(key => { 
+                const btn = document.createElement('button'); 
+                btn.className = 'garnish-button text-5xl'; 
+                btn.textContent = GARNISHES[key]; 
+                btn.onclick = () => { 
+                    clearTimeout(state.garnishTimeout); 
+                    if(key === correctGarnish) { 
+                        let bonus = 50 * (state.isHappyHour ? 2 : 1); 
+                        state.score += bonus; 
+                        showFloatingText(`PERFECT! +¥${bonus}`, '#34d399', dom.scoreDisplayEl); 
+                        playSound('tip'); 
+                        updateScore(); 
+                    } else { 
+                        playSound('fail'); 
+                    } 
+                    proceedToNextCustomer(); 
+                }; 
+                optionsEl.appendChild(btn); 
+            }); 
             state.garnishTimeout = setTimeout(() => proceedToNextCustomer(), 3000);
         }
-
-        function proceedToNextCustomer() { dom.garnishContainerEl.classList.remove('show'); resetShaker(); generateOrder(); }
-        function updateScore() { if (state.score < 0) state.score = 0; dom.scoreEl.textContent = state.score; }
-        function updateComboDisplay() { if(state.combo > 1) { dom.comboDisplayEl.textContent = `${state.combo} COMBO!`; dom.comboDisplayEl.style.opacity = '1'; dom.comboDisplayEl.style.transform = 'translateX(-50%) scale(1)'; } else { dom.comboDisplayEl.style.opacity = '0'; dom.comboDisplayEl.style.transform = 'translateX(-50%) scale(0.5)'; } }
-        function scheduleHappyHour() { const delay = Math.random() * 20000 + 15000; state.happyHourTimeout = setTimeout(startHappyHour, delay); }
-        function startHappyHour() { if(!state.isGameRunning) return; state.isHappyHour = true; dom.happyHourBannerEl.classList.remove('hidden'); playSound('happyHour'); state.happyHourTimeout = setTimeout(endHappyHour, 10000); }
-        function endHappyHour() { if(!state.isGameRunning) return; state.isHappyHour = false; dom.happyHourBannerEl.classList.add('hidden'); scheduleHappyHour(); }
-        function showRecipeHint() { if (!state.isGameRunning || state.isCriticActive || !state.currentOrder) return; const recipeItems = state.currentOrder.ingredients.map(key => INGREDIENTS[key].name); if (state.currentOrder.needsIce) recipeItems.push("氷"); dom.recipeHintEl.innerHTML = `<h3 class="text-lg font-bold mb-2 border-b border-purple-400">レシピ</h3><p>${recipeItems.join('、')}</p>`; dom.recipeHintEl.classList.add('show'); setTimeout(() => { dom.recipeHintEl.classList.remove('show'); }, 2500); }
-        function showEventText(text) { dom.eventTextEl.textContent = text; dom.eventTextEl.classList.add('show'); setTimeout(() => dom.eventTextEl.classList.remove('show'), 1500); }
-
+        function proceedToNextCustomer() { 
+            if(dom.garnishContainerEl) {
+                dom.garnishContainerEl.classList.remove('flex'); 
+                dom.garnishContainerEl.classList.add('hidden'); 
+                dom.garnishContainerEl.innerHTML='';
+            } 
+            resetShaker(); 
+            generateOrder(); 
+        }
+        
+        // --- Initialization ---
         function initializeGame() {
             setupSounds();
             populateShelf();
-            dom.startButtonEl.addEventListener('click', () => { startAudio(); startGame(); });
-            dom.retryButtonEl.addEventListener('click', startGame);
+            dom.startButtonEl.addEventListener('click', () => { startAudio(); startDay(); });
+            dom.nextDayButtonEl.addEventListener('click', startNextDay);
+            dom.addIceButtonEl.addEventListener('click', () => { if(state.canInteract) addIce(); });
             dom.shakeButtonEl.addEventListener('click', shake);
             dom.resetButtonEl.addEventListener('click', () => { if (state.canInteract) resetShaker(); });
-            dom.addIceButtonEl.addEventListener('click', () => { if(state.canInteract) addIce(); });
-            dom.hintButtonEl.addEventListener('click', showRecipeHint);
         }
 
         initializeGame();
@@ -389,4 +481,5 @@
     </script>
 </body>
 </html>
+
 
