@@ -97,22 +97,27 @@
 
     <!-- Game View (initially hidden) -->
     <div id="game-container" class="game-view mx-auto rounded-2xl p-4 md:p-6 flex-col relative overflow-hidden hidden">
-        <header class="grid grid-cols-3 items-start mb-4 px-2 relative">
+        <header class="grid grid-cols-2 items-start mb-4 px-2 relative">
+            <!-- Left side -->
             <div class="flex flex-col text-left">
                 <h2 class="text-lg font-bold">Day: <span id="day-display">1</span></h2>
                 <h2 class="text-lg font-bold">所持金: ¥<span id="money-display">0</span></h2>
+                <div id="score-display" class="mt-2 relative">
+                    <h2 class="text-xl md:text-2xl font-bold">本日の売上: ¥<span id="score">0</span></h2>
+                </div>
             </div>
+
+            <!-- Combo Display in the middle -->
             <div id="combo-display" class="absolute left-1/2 -translate-x-1/2 top-0 text-3xl font-bold text-orange-400 opacity-0 transform scale-50"></div>
-            <div class="flex items-start justify-end gap-4 col-span-2">
+
+            <!-- Right side -->
+            <div class="flex items-start justify-end gap-4">
                 <div id="recipe-display" class="bg-gray-900/70 p-2 rounded-lg border border-gray-500 text-right opacity-0">
                     <!-- Recipe content will be populated by JS -->
                 </div>
                 <div id="timer-display" class="bg-red-600 rounded-full px-4 py-2 transition-all duration-300 flex-shrink-0">
                     <h2 class="text-xl md:text-2xl font-bold">時間: <span id="timer">60</span></h2>
                 </div>
-            </div>
-            <div id="score-display" class="col-span-3 text-center mt-2">
-                <h2 class="text-xl md:text-2xl font-bold">本日の売上: ¥<span id="score">0</span></h2>
             </div>
         </header>
         <main class="flex-grow flex flex-col relative">
@@ -207,15 +212,17 @@
 
         // --- DOM Elements ---
         const dom = {};
-        const elementIds = [
-            'start-button', 'game-overlay', 'game-container', 'room-container', 
-            'room-day-display', 'room-money-display', 'daily-earnings-display', 'next-day-button', 'upgrades-section', 'bgm-audio',
-            'day-display', 'money-display', 'combo-display', 'timer-display', 'timer', 'score-display', 'score',
-            'happy-hour-banner', 'customer-area', 'customer-dialogue', 'customer', 'order-bubble', 'customer-name', 'order-text', 'order-ingredients',
-            'bar-counter', 'shaker-area', 'shaker-ice-cubes', 'shaker-contents', 'add-ice-button', 'shake-button', 'reset-button',
-            'cocktail-glass', 'final-cocktail', 'result-text', 'ingredient-shelf', 'garnish-container', 'recipe-display'
+        const allElementIds = [
+            'start-button', 'game-overlay', 'game-container', 'room-container', 'room-day-display', 
+            'room-money-display', 'daily-earnings-display', 'next-day-button', 'upgrades-section', 
+            'bgm-audio', 'day-display', 'money-display', 'combo-display', 'timer-display', 'timer', 
+            'score-display', 'score', 'happy-hour-banner', 'customer-area', 'customer-dialogue', 'customer', 
+            'order-bubble', 'customer-name', 'order-text', 'order-ingredients', 'bar-counter', 
+            'shaker-area', 'shaker-ice-cubes', 'shaker-contents', 'add-ice-button', 'shake-button', 
+            'reset-button', 'cocktail-glass', 'final-cocktail', 'result-text', 'ingredient-shelf', 
+            'garnish-container', 'recipe-display'
         ];
-        elementIds.forEach(id => {
+        allElementIds.forEach(id => {
             const camelCaseId = id.replace(/-(\w)/g, (_, c) => c.toUpperCase());
             dom[`${camelCaseId}El`] = document.getElementById(id);
         });
@@ -483,9 +490,75 @@
         }
         
         // --- Initialization ---
-        function initializeGame() {
+        function initialSetup() {
+            // Populate the game view's static HTML content once.
+            if (dom.gameContainerEl.innerHTML === '') {
+                 dom.gameContainerEl.innerHTML = `
+                    <header class="grid grid-cols-2 items-start mb-4 px-2 relative">
+                        <div class="flex flex-col text-left">
+                            <h2 class="text-lg font-bold">Day: <span id="day-display">1</span></h2>
+                            <h2 class="text-lg font-bold">所持金: ¥<span id="money-display">0</span></h2>
+                            <div id="score-display" class="mt-2 relative">
+                                <h2 class="text-xl md:text-2xl font-bold">本日の売上: ¥<span id="score">0</span></h2>
+                            </div>
+                        </div>
+                        <div id="combo-display" class="absolute left-1/2 -translate-x-1/2 top-0 text-3xl font-bold text-orange-400 opacity-0 transform scale-50"></div>
+                        <div class="flex items-start justify-end gap-4">
+                            <div id="recipe-display" class="bg-gray-900/70 p-2 rounded-lg border border-gray-500 text-right opacity-0"></div>
+                            <div id="timer-display" class="bg-red-600 rounded-full px-4 py-2 transition-all duration-300 flex-shrink-0">
+                                <h2 class="text-xl md:text-2xl font-bold">時間: <span id="timer">60</span></h2>
+                            </div>
+                        </div>
+                    </header>
+                    <main class="flex-grow flex flex-col relative">
+                        <div id="happy-hour-banner" class="absolute -top-4 w-full text-center text-4xl font-bold text-yellow-300 font-jp hidden z-10"></div>
+                        <div id="customer-area" class="h-1/4 flex flex-col items-center justify-end mb-4 relative">
+                            <div id="customer-dialogue" class="font-jp"></div>
+                            <div id="customer" class="text-6xl mb-2 opacity-0 transform -translate-x-12"></div>
+                            <div id="order-bubble" class="bg-gray-200 p-3 rounded-lg shadow-lg text-gray-800 flex flex-col items-center gap-2 opacity-0 transition-opacity duration-300">
+                                <div id="customer-name" class="font-bold font-jp text-sm text-gray-600"></div>
+                                <div class="flex items-center gap-2">
+                                    <p class="font-bold font-jp">注文:</p>
+                                    <div id="order-text" class="font-bold text-lg font-jp"></div>
+                                    <div id="order-ingredients" class="flex gap-2"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="bar-counter" class="p-4 flex-grow flex items-center justify-between gap-4 rounded-lg">
+                            <div class="w-1/3 flex flex-col items-center justify-around h-full">
+                                <div id="shaker-area" class="w-24 h-40 bg-gray-400 rounded-t-lg border-4 border-gray-300 relative flex items-end overflow-hidden shadow-inner">
+                                    <div id="shaker-ice-cubes" class="absolute inset-0"></div>
+                                    <div id="shaker-contents" class="w-full h-full transition-all duration-300"></div>
+                                </div>
+                                <div class="flex flex-col gap-2 w-full mt-4">
+                                    <button id="add-ice-button" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 font-jp">氷を入れる</button>
+                                    <button id="shake-button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 font-jp">シェイク！</button>
+                                    <button id="reset-button" class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 font-jp">リセット</button>
+                                </div>
+                            </div>
+                            <div class="w-2/3 flex flex-col items-center justify-center">
+                                <div id="cocktail-glass" class="w-32 h-40 relative">
+                                    <svg viewBox="0 0 100 120" class="w-full h-full filter drop-shadow-lg"><path d="M 10 120 L 40 50 L 60 50 L 90 120 Z" fill="rgba(255,255,255,0.1)"/><path d="M 0 40 L 100 40 L 95 50 L 5 50 Z" fill="rgba(255,255,255,0.1)"/><path d="M 45 40 L 55 0 L 55 40 Z" fill="rgba(255,255,255,0.1)"/></svg>
+                                    <div id="final-cocktail" class="absolute bottom-[2px] left-1/2 -translate-x-12 w-[78%] h-0 bg-transparent rounded-sm"></div>
+                                </div>
+                                <div id="result-text" class="text-2xl font-bold mt-2 h-8 font-jp"></div>
+                            </div>
+                        </div>
+                    </main>
+                    <footer id="ingredient-shelf" class="grid grid-cols-5 md:grid-cols-9 gap-2 mt-4 p-4 bg-black/30 rounded-lg"></footer>
+                    <div id="garnish-container" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/80 p-6 rounded-lg text-white font-jp shadow-lg z-40 hidden flex-col items-center gap-4"></div>
+                `;
+                 // Re-query ALL elements now that they exist in the DOM
+                allElementIds.forEach(id => {
+                    const camelCaseId = id.replace(/-(\w)/g, (_, c) => c.toUpperCase());
+                    dom[`${camelCaseId}El`] = document.getElementById(id);
+                });
+            }
+            
             setupSounds();
             populateShelf();
+            
+            // Bind buttons
             dom.startButtonEl.addEventListener('click', () => { startAudio(); startDay(); });
             dom.nextDayButtonEl.addEventListener('click', startNextDay);
             dom.addIceButtonEl.addEventListener('click', () => { if(state.canInteract) addIce(); });
@@ -493,7 +566,7 @@
             dom.resetButtonEl.addEventListener('click', () => { if (state.canInteract) resetShaker(); });
         }
 
-        initializeGame();
+        initialSetup();
     });
     </script>
 </body>
