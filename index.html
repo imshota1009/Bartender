@@ -88,26 +88,30 @@
         .garnish-button:hover { transform: scale(1.2); }
         
         .upgrade-button:disabled { background-color: #4b5563; cursor: not-allowed; opacity: 0.6; }
+        #recipe-display { transition: opacity 0.3s ease-in-out; }
 
     </style>
 </head>
 <body class="text-white flex items-center justify-center min-h-screen">
-    <audio id="bgm-audio" loop src="background.mp3"></audio>
+    <audio id="bgm-audio" loop src="https://cdn.pixabay.com/download/audio/2022/11/17/audio_85d1373531.mp3?filename=lofi-chill-medium-version-128976.mp3"></audio>
 
     <!-- Game View (initially hidden) -->
     <div id="game-container" class="game-view mx-auto rounded-2xl p-4 md:p-6 flex-col relative overflow-hidden hidden">
-        <header class="grid grid-cols-3 items-center mb-4 px-2 relative">
+        <header class="grid grid-cols-3 items-start mb-4 px-2 relative">
             <div class="flex flex-col text-left">
                 <h2 class="text-lg font-bold">Day: <span id="day-display">1</span></h2>
                 <h2 class="text-lg font-bold">所持金: ¥<span id="money-display">0</span></h2>
             </div>
             <div id="combo-display" class="absolute left-1/2 -translate-x-1/2 top-0 text-3xl font-bold text-orange-400 opacity-0 transform scale-50"></div>
-            <div class="flex items-center gap-2 md:gap-4 justify-end">
-                <div id="timer-display" class="bg-red-600 rounded-full px-4 py-2 transition-all duration-300">
+            <div class="flex items-start justify-end gap-4 col-span-2">
+                <div id="recipe-display" class="bg-gray-900/70 p-2 rounded-lg border border-gray-500 text-right opacity-0">
+                    <!-- Recipe content will be populated by JS -->
+                </div>
+                <div id="timer-display" class="bg-red-600 rounded-full px-4 py-2 transition-all duration-300 flex-shrink-0">
                     <h2 class="text-xl md:text-2xl font-bold">時間: <span id="timer">60</span></h2>
                 </div>
             </div>
-            <div id="score-display" class="col-span-3 text-center">
+            <div id="score-display" class="col-span-3 text-center mt-2">
                 <h2 class="text-xl md:text-2xl font-bold">本日の売上: ¥<span id="score">0</span></h2>
             </div>
         </header>
@@ -201,7 +205,7 @@
             barManual: { name: 'バーテンダー教本', description: '失敗時のペナルティが半減する', cost: 3000, purchased: false }
         };
 
-        // --- DOM Elements (Queried once at the start) ---
+        // --- DOM Elements ---
         const dom = {};
         const elementIds = [
             'start-button', 'game-overlay', 'game-container', 'room-container', 
@@ -209,7 +213,7 @@
             'day-display', 'money-display', 'combo-display', 'timer-display', 'timer', 'score-display', 'score',
             'happy-hour-banner', 'customer-area', 'customer-dialogue', 'customer', 'order-bubble', 'customer-name', 'order-text', 'order-ingredients',
             'bar-counter', 'shaker-area', 'shaker-ice-cubes', 'shaker-contents', 'add-ice-button', 'shake-button', 'reset-button',
-            'cocktail-glass', 'final-cocktail', 'result-text', 'ingredient-shelf', 'garnish-container'
+            'cocktail-glass', 'final-cocktail', 'result-text', 'ingredient-shelf', 'garnish-container', 'recipe-display'
         ];
         elementIds.forEach(id => {
             const camelCaseId = id.replace(/-(\w)/g, (_, c) => c.toUpperCase());
@@ -332,7 +336,8 @@
                 dom.customerEl.classList.remove('slide-in'); 
                 dom.customerEl.classList.add('slide-out'); 
                 dom.orderBubbleEl.style.opacity = '0'; 
-                dom.customerDialogueEl.classList.remove('show'); 
+                dom.customerDialogueEl.classList.remove('show');
+                dom.recipeDisplayEl.style.opacity = '0'; 
             } 
             setTimeout(() => {
                 const rand = Math.random(); 
@@ -357,9 +362,21 @@
                     }); 
                     dom.orderBubbleEl.style.opacity = '1'; 
                     showDialogue(state.currentCustomer.quotes.order); 
+                    updateRecipeDisplay();
                     state.canInteract = true; 
                 }, 500);
             }, state.currentCustomer ? 700 : 0);
+        }
+
+        function updateRecipeDisplay() {
+            if (state.currentOrder) {
+                const recipeItems = state.currentOrder.ingredients.map(key => INGREDIENTS[key].name);
+                if (state.currentOrder.needsIce) recipeItems.push("氷");
+                dom.recipeDisplayEl.innerHTML = `<p class="font-bold font-jp text-amber-300 border-b border-amber-300/50 mb-1">レシピ</p><p class="text-sm font-jp">${recipeItems.join('、')}</p>`;
+                dom.recipeDisplayEl.style.opacity = '1';
+            } else {
+                dom.recipeDisplayEl.style.opacity = '0';
+            }
         }
 
         function checkRecipe() {
