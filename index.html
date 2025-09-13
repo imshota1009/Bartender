@@ -200,7 +200,6 @@
         const COCKTAILS = [ { name: 'スクリュードライバー', ingredients: ['vodka', 'orangeJuice'], needsIce: true, garnish: 'orange' }, { name: 'ジントニック', ingredients: ['gin', 'tonic', 'lime'], needsIce: true, garnish: 'lime' }, { name: 'キューバリブレ', ingredients: ['rum', 'cola', 'lime'], needsIce: true, garnish: 'lime' }, { name: 'モスコミュール', ingredients: ['vodka', 'gingerAle', 'lime'], needsIce: true, garnish: 'lime' }, { name: 'カシスオレンジ', ingredients: ['cassis', 'orangeJuice'], needsIce: true, garnish: 'orange' }, { name: 'ラムコーク', ingredients: ['rum', 'cola'], needsIce: true, garnish: 'lime' }, { name: 'ジンバック', ingredients: ['gin', 'gingerAle', 'lime'], needsIce: true, garnish: 'lime' }];
         const SECRET_COCKTAILS = [{ name: 'ギムレット', ingredients: ['gin', 'lime'], needsIce: true, bonus: 500 }];
         
-        // --- Customer Data with Image Names ---
         const CUSTOMERS = [ 
             { name: "バーの常連", image: 'images/bar_regular.png', quotes: { order: ["いつもの頼むよ"], success: ["これだよ、これ！"], fail: ["うーん、味が違うな…"] }}, 
             { name: "科学者", image: 'images/scientist.png', quotes: { order: ["完璧な比率で頼む"], success: ["計算通り、完璧な味だ"], fail: ["配合を間違えたな？"] }}, 
@@ -219,20 +218,6 @@
 
         // --- DOM Elements ---
         const dom = {};
-        const allElementIds = [
-            'start-button', 'game-overlay', 'game-container', 'room-container', 'room-day-display', 
-            'room-money-display', 'daily-earnings-display', 'next-day-button', 'upgrades-section', 
-            'bgm-audio', 'day-display', 'money-display', 'combo-display', 'timer-display', 'timer', 
-            'score-display', 'score', 'happy-hour-banner', 'customer-area', 'customer-dialogue', 'customer', 
-            'order-bubble', 'customer-name', 'order-text', 'order-ingredients', 'bar-counter', 
-            'shaker-area', 'shaker-ice-cubes', 'shaker-contents', 'add-ice-button', 'shake-button', 
-            'reset-button', 'cocktail-glass', 'final-cocktail', 'result-text', 'ingredient-shelf', 
-            'garnish-container', 'recipe-display'
-        ];
-        allElementIds.forEach(id => {
-            const camelCaseId = id.replace(/-(\w)/g, (_, c) => c.toUpperCase());
-            dom[`${camelCaseId}El`] = document.getElementById(id);
-        });
         
         // --- Game State ---
         let state = {
@@ -361,7 +346,7 @@
                 state.currentOrder = COCKTAILS[Math.floor(Math.random() * COCKTAILS.length)]; 
                 
                 dom.customerEl.src = state.currentCustomer.image;
-                dom.customerEl.onerror = () => { dom.customerEl.src = 'https://placehold.co/120x120/4A5568/FFFFFF?text=NotFound'; }; // Fallback
+                dom.customerEl.onerror = () => { dom.customerEl.src = `https://placehold.co/120x120/4A5568/FFFFFF?text=images/${state.currentCustomer.image.split('/')[1]}`; };
 
                 dom.customerEl.classList.toggle('scale-125', state.currentCustomer === DEATH_CUSTOMER || state.currentCustomer === MILLIONAIRE_CUSTOMER); 
                 dom.timerDisplayEl.classList.toggle('timer-danger', state.currentCustomer === DEATH_CUSTOMER); 
@@ -422,12 +407,10 @@
                         playSound('tip'); 
                     }, 300); 
                 } 
-                state.timeLeft += 10; 
-                showFloatingText('+10s', '#34d399', dom.timerDisplayEl); 
+                
                 showDialogue(state.currentCustomer.quotes.success); 
                 dom.resultTextEl.textContent = '成功！ 😋'; 
                 dom.resultTextEl.style.color = '#65a30d'; 
-                dom.timerEl.textContent = state.timeLeft; 
                 playSound('success'); 
                 playSound('timeBonus'); 
                 playSound('combo'); 
@@ -502,9 +485,26 @@
         
         // --- Initialization ---
         function initialSetup() {
+             // Query all DOM elements once.
+            const allElementIds = [
+                'start-button', 'game-overlay', 'game-container', 'room-container', 'room-day-display', 
+                'room-money-display', 'daily-earnings-display', 'next-day-button', 'upgrades-section', 
+                'bgm-audio', 'day-display', 'money-display', 'combo-display', 'timer-display', 'timer', 
+                'score-display', 'score', 'happy-hour-banner', 'customer-area', 'customer-dialogue', 'customer', 
+                'order-bubble', 'customer-name', 'order-text', 'order-ingredients', 'bar-counter', 
+                'shaker-area', 'shaker-ice-cubes', 'shaker-contents', 'add-ice-button', 'shake-button', 
+                'reset-button', 'cocktail-glass', 'final-cocktail', 'result-text', 'ingredient-shelf', 
+                'garnish-container', 'recipe-display'
+            ];
+            allElementIds.forEach(id => {
+                const camelCaseId = id.replace(/-(\w)/g, (_, c) => c.toUpperCase());
+                dom[camelCaseId + 'El'] = document.getElementById(id);
+            });
+
             setupSounds();
             populateShelf();
             
+            // Bind all buttons
             dom.startButtonEl.addEventListener('click', () => { startAudio(); startDay(); });
             dom.nextDayButtonEl.addEventListener('click', startNextDay);
             dom.addIceButtonEl.addEventListener('click', () => { if(state.canInteract) addIce(); });
@@ -517,4 +517,7 @@
     </script>
 </body>
 </html>
+
+
+
 
