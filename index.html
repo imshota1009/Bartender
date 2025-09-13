@@ -56,7 +56,7 @@
         
         #customer { 
             transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out, filter 0.3s; 
-            height: 120px; /* Increased size for images */
+            height: 120px;
             width: 120px;
             object-fit: contain;
         }
@@ -105,7 +105,6 @@
     <!-- Game View (initially hidden) -->
     <div id="game-container" class="game-view mx-auto rounded-2xl p-4 md:p-6 flex-col relative overflow-hidden hidden">
         <header class="grid grid-cols-2 items-start mb-4 px-2 relative">
-            <!-- Left side -->
             <div class="flex flex-col text-left">
                 <h2 class="text-lg font-bold">Day: <span id="day-display">1</span></h2>
                 <h2 class="text-lg font-bold">所持金: ¥<span id="money-display">0</span></h2>
@@ -113,22 +112,16 @@
                     <h2 class="text-xl md:text-2xl font-bold">本日の売上: ¥<span id="score">0</span></h2>
                 </div>
             </div>
-
-            <!-- Combo Display in the middle -->
             <div id="combo-display" class="absolute left-1/2 -translate-x-1/2 top-0 text-3xl font-bold text-orange-400 opacity-0 transform scale-50"></div>
-
-            <!-- Right side -->
             <div class="flex items-start justify-end gap-4">
-                <div id="recipe-display" class="bg-gray-900/70 p-2 rounded-lg border border-gray-500 text-right opacity-0">
-                    <!-- Recipe content will be populated by JS -->
-                </div>
+                <div id="recipe-display" class="bg-gray-900/70 p-2 rounded-lg border border-gray-500 text-right opacity-0"></div>
                 <div id="timer-display" class="bg-red-600 rounded-full px-4 py-2 transition-all duration-300 flex-shrink-0">
                     <h2 class="text-xl md:text-2xl font-bold">時間: <span id="timer">60</span></h2>
                 </div>
             </div>
         </header>
         <main class="flex-grow flex flex-col relative">
-            <div id="happy-hour-banner" class="absolute -top-4 w-full text-center text-4xl font-bold text-yellow-300 font-jp hidden z-10">HAPPY HOUR!</div>
+            <div id="happy-hour-banner" class="absolute -top-4 w-full text-center text-4xl font-bold text-yellow-300 font-jp hidden z-10"></div>
             <div id="customer-area" class="h-1/3 flex flex-col items-center justify-end mb-4 relative">
                 <div id="customer-dialogue" class="font-jp"></div>
                 <img id="customer" class="mb-2 opacity-0 transform -translate-x-12" src="" alt="お客様">
@@ -209,12 +202,12 @@
         
         // --- Customer Data with Image Names ---
         const CUSTOMERS = [ 
-            { name: "バーの常連", image: 'bar_regular.png', quotes: { order: ["いつもの頼むよ"], success: ["これだよ、これ！"], fail: ["うーん、味が違うな…"] }}, 
-            { name: "科学者", image: 'scientist.png', quotes: { order: ["完璧な比率で頼む"], success: ["計算通り、完璧な味だ"], fail: ["配合を間違えたな？"] }}, 
-            { name: "芸術家", image: 'artist.png', quotes: { order: ["インスピレーションが欲しい"], success: ["色彩豊かな味だ！"], fail: ["君には才能がないな"] }}
+            { name: "バーの常連", image: 'images/bar_regular.png', quotes: { order: ["いつもの頼むよ"], success: ["これだよ、これ！"], fail: ["うーん、味が違うな…"] }}, 
+            { name: "科学者", image: 'images/scientist.png', quotes: { order: ["完璧な比率で頼む"], success: ["計算通り、完璧な味だ"], fail: ["配合を間違えたな？"] }}, 
+            { name: "芸術家", image: 'images/artist.png', quotes: { order: ["インスピレーションが欲しい"], success: ["色彩豊かな味だ！"], fail: ["君には才能がないな"] }}
         ];
-        const MILLIONAIRE_CUSTOMER = { name: "大富豪", image: 'millionaire.png', quotes: { order: ["最高級のものを頼む"], success: ["素晴らしい！チップだ"], fail: ["がっかりだ"] }};
-        const DEATH_CUSTOMER = { name: "？？？", image: 'mysterious_figure.png', quotes: { order: ["…喉が渇いてな"], success: ["…悪くない"], fail: ["…次はないと思え"] }};
+        const MILLIONAIRE_CUSTOMER = { name: "大富豪", image: 'images/millionaire.png', quotes: { order: ["最高級のものを頼む"], success: ["素晴らしい！チップだ"], fail: ["がっかりだ"] }};
+        const DEATH_CUSTOMER = { name: "？？？", image: 'images/mysterious_figure.png', quotes: { order: ["…喉が渇いてな"], success: ["…悪くない"], fail: ["…次はないと思え"] }};
 
         const GARNISHES = { lime: '🍋', orange: '🍊', cherry: '🍒' };
         
@@ -367,10 +360,8 @@
                 else { state.currentCustomer = CUSTOMERS[Math.floor(Math.random() * CUSTOMERS.length)]; } 
                 state.currentOrder = COCKTAILS[Math.floor(Math.random() * COCKTAILS.length)]; 
                 
-                // Use placeholder images. Replace the text with your image concepts.
-                const imageName = state.currentCustomer.image.split('.')[0].replace(/_/g, ' ');
-                dom.customerEl.src = `https://placehold.co/120x120/4A5568/FFFFFF?text=${imageName}`;
-                dom.customerEl.onerror = () => { dom.customerEl.src = 'https://placehold.co/120x120/4A5568/FFFFFF?text=Image+Not+Found'; }; // Fallback
+                dom.customerEl.src = state.currentCustomer.image;
+                dom.customerEl.onerror = () => { dom.customerEl.src = 'https://placehold.co/120x120/4A5568/FFFFFF?text=NotFound'; }; // Fallback
 
                 dom.customerEl.classList.toggle('scale-125', state.currentCustomer === DEATH_CUSTOMER || state.currentCustomer === MILLIONAIRE_CUSTOMER); 
                 dom.timerDisplayEl.classList.toggle('timer-danger', state.currentCustomer === DEATH_CUSTOMER); 
@@ -514,7 +505,6 @@
             setupSounds();
             populateShelf();
             
-            // Bind all buttons
             dom.startButtonEl.addEventListener('click', () => { startAudio(); startDay(); });
             dom.nextDayButtonEl.addEventListener('click', startNextDay);
             dom.addIceButtonEl.addEventListener('click', () => { if(state.canInteract) addIce(); });
@@ -527,6 +517,4 @@
     </script>
 </body>
 </html>
-
-
 
