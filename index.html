@@ -102,7 +102,7 @@
 <body class="text-white flex items-center justify-center min-h-screen">
     <audio id="bgm-audio" loop src="background.mp3"></audio>
 
-    <!-- Game View (initially hidden) -->
+    <!-- Game View -->
     <div id="game-container" class="game-view mx-auto rounded-2xl p-4 md:p-6 flex-col relative overflow-hidden hidden">
         <header class="grid grid-cols-2 items-start mb-4 px-2 relative">
             <div class="flex flex-col text-left">
@@ -159,7 +159,7 @@
         <div id="garnish-container" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/80 p-6 rounded-lg text-white font-jp shadow-lg z-40 hidden flex-col items-center gap-4"></div>
     </div>
     
-    <!-- Room View (initially hidden) -->
+    <!-- Room View -->
     <div id="room-container" class="game-view mx-auto rounded-2xl p-6 md:p-8 flex-col relative overflow-hidden hidden bg-gray-800">
         <header class="text-center pb-4 border-b-2 border-white/10 mb-6">
             <h1 class="font-title text-5xl">Day End</h1>
@@ -186,7 +186,7 @@
         </footer>
     </div>
 
-    <!-- Initial Start Screen (initially visible) -->
+    <!-- Initial Start Screen -->
     <div id="game-overlay" class="absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-500 z-30">
         <h1 class="font-title text-6xl md:text-8xl mb-4">Bartender</h1>
         <button id="start-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg text-2xl shadow-lg transition-transform transform font-jp button-pulse">ゲーム開始</button>
@@ -232,19 +232,19 @@
         // --- Sound Engine ---
         let sounds = {};
         let isAudioReady = false;
-        function setupSounds() { try { sounds = { pour: new Tone.Synth({ oscillator: { type: 'fmsine' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.05, release: 0.2 } }).toDestination(), shake: new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.01, decay: 0.15, sustain: 0, release: 0.1 } }).toDestination(), ice: new Tone.MetalSynth({ frequency: 200, envelope: { attack: 0.001, decay: 0.1, release: 0.01 }, harmonicity: 5.1, modulationIndex: 32, resonance: 4000, octaves: 1.5 }).toDestination(), success: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sine" }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.2 } }).toDestination(), fail: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "square" }, envelope: { attack: 0.01, decay: 0.4, sustain: 0, release: 0.2 } }).toDestination(), timeBonus: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "triangle" }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.2 } }).toDestination(), tip: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sine" }, envelope: { attack: 0.01, decay: 0.4, sustain: 0.2, release: 0.3 } }).toDestination(), combo: new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'fmsquare' }, envelope: { attack: 0.01, decay: 0.1, release: 0.1 }}).toDestination(), happyHour: new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'pulse' }, envelope: { attack: 0.01, decay: 0.5, release: 0.2 }}).toDestination(), cash: new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.2, release: 0.1 }}).toDestination() }; isAudioReady = true; } catch(e) { console.error("サウンドエンジンの初期化に失敗:", e); } }
+        function setupSounds() { try { sounds = { pour: new Tone.Synth({ oscillator: { type: 'fmsine' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.05, release: 0.2 } }).toDestination(), shake: new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.01, decay: 0.15, sustain: 0, release: 0.1 } }).toDestination(), ice: new Tone.MetalSynth({ frequency: 200, envelope: { attack: 0.001, decay: 0.1, release: 0.01 }, harmonicity: 5.1, modulationIndex: 32, resonance: 4000, octaves: 1.5 }).toDestination(), success: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sine" }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.2 } }).toDestination(), fail: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "square" }, envelope: { attack: 0.01, decay: 0.4, sustain: 0, release: 0.2 } }).toDestination(), tip: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sine" }, envelope: { attack: 0.01, decay: 0.4, sustain: 0.2, release: 0.3 } }).toDestination(), combo: new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'fmsquare' }, envelope: { attack: 0.01, decay: 0.1, release: 0.1 }}).toDestination(), happyHour: new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'pulse' }, envelope: { attack: 0.01, decay: 0.5, release: 0.2 }}).toDestination(), cash: new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.2, release: 0.1 }}).toDestination() }; isAudioReady = true; } catch(e) { console.error("サウンドエンジンの初期化に失敗:", e); } }
         async function startAudio() { if (isAudioReady && Tone.context.state !== 'running') { await Tone.start(); } if (dom.bgmAudioEl) { dom.bgmAudioEl.volume = 0.3; dom.bgmAudioEl.play().catch(e => {}); } }
         function stopAudio() { if (dom.bgmAudioEl) { dom.bgmAudioEl.pause(); dom.bgmAudioEl.currentTime = 0; } }
-        function playSound(sound, ...args) { if (!isAudioReady) return; try { if (sound === 'success') sounds.success.triggerAttackRelease(['C4', 'E4', 'G4'], '8n'); else if (sound === 'fail') sounds.fail.triggerAttackRelease(['C3', 'C#3'], '4n'); else if (sound === 'ice') sounds.ice.triggerAttackRelease('C3', '8n', Tone.now() + 0.05); else if (sound === 'timeBonus') sounds.timeBonus.triggerAttackRelease(['G4', 'C5', 'E5'], '8n'); else if (sound === 'tip') sounds.tip.triggerAttackRelease(['C5', 'E5', 'G5', 'C6'], '4n'); else if (sound === 'happyHour') sounds.happyHour.triggerAttackRelease(['C4', 'E4', 'G4', 'C5'], '2n'); else if (sound === 'cash') sounds.cash.triggerAttackRelease(['E5', 'G5', 'C6'], '8n'); else if (sound === 'combo' && sounds.combo) { const notes = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5']; sounds.combo.triggerAttackRelease(notes[Math.min(state.combo -1, notes.length-1)], '8n');} else if (sounds[sound]) sounds[sound].triggerAttackRelease(...args); } catch(e){} }
+        function playSound(sound, ...args) { if (!isAudioReady) return; try { if (sound === 'success') sounds.success.triggerAttackRelease(['C4', 'E4', 'G4'], '8n'); else if (sound === 'fail') sounds.fail.triggerAttackRelease(['C3', 'C#3'], '4n'); else if (sound === 'ice') sounds.ice.triggerAttackRelease('C3', '8n', Tone.now() + 0.05); else if (sound === 'tip') sounds.tip.triggerAttackRelease(['C5', 'E5', 'G5', 'C6'], '4n'); else if (sound === 'happyHour') sounds.happyHour.triggerAttackRelease(['C4', 'E4', 'G4', 'C5'], '2n'); else if (sound === 'cash') sounds.cash.triggerAttackRelease(['E5', 'G5', 'C6'], '8n'); else if (sound === 'combo' && sounds.combo) { const notes = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5']; sounds.combo.triggerAttackRelease(notes[Math.min(state.combo -1, notes.length-1)], '8n');} else if (sounds[sound]) sounds[sound].triggerAttackRelease(...args); } catch(e){} }
         
         // --- View & State Management ---
         function showView(view) {
-            dom.gameContainerEl.classList.add('hidden');
-            dom.roomContainerEl.classList.add('hidden');
+            dom.gameContainerEl.style.display = 'none';
+            dom.roomContainerEl.style.display = 'none';
             if (view === 'game') {
-                dom.gameContainerEl.classList.remove('hidden');
+                dom.gameContainerEl.style.display = 'flex';
             } else if (view === 'room') {
-                dom.roomContainerEl.classList.remove('hidden');
+                dom.roomContainerEl.style.display = 'flex';
             }
         }
         
@@ -483,7 +483,6 @@
         
         // --- Initialization ---
         function initialSetup() {
-            // Query all DOM elements once.
             const allElementIds = [
                 'start-button', 'game-overlay', 'game-container', 'room-container', 'room-day-display', 
                 'room-money-display', 'daily-earnings-display', 'next-day-button', 'upgrades-section', 
@@ -498,7 +497,7 @@
                 const camelCaseId = id.replace(/-(\w)/g, (_, c) => c.toUpperCase());
                 dom[camelCaseId + 'El'] = document.getElementById(id);
             });
-            
+
             setupSounds();
             populateShelf();
             
@@ -515,8 +514,6 @@
     </script>
 </body>
 </html>
-
-
 
 
 
