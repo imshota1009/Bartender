@@ -54,8 +54,15 @@
             30%, 50%, 70% { transform: translate3d(-4px, 0, 0) rotate(-4deg); } 40%, 60% { transform: translate3d(4px, 0, 0) rotate(4deg); }
         }
         
-        #customer { transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out; }
-        #customer.slide-in { transform: translateX(0) scale(1); opacity: 1; } #customer.slide-out { transform: translateX(100px) scale(0.8); opacity: 0; }
+        #customer { 
+            transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out, filter 0.3s; 
+            height: 120px; /* Increased size for images */
+            width: 120px;
+            object-fit: contain;
+        }
+        #customer.slide-in { transform: translateX(0) scale(1); opacity: 1; } 
+        #customer.slide-out { transform: translateX(100px) scale(0.8); opacity: 0; }
+        #customer.angry { filter: sepia(0.8) saturate(3) hue-rotate(-50deg) brightness(0.8); }
         
         #customer-dialogue {
             position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
@@ -122,9 +129,9 @@
         </header>
         <main class="flex-grow flex flex-col relative">
             <div id="happy-hour-banner" class="absolute -top-4 w-full text-center text-4xl font-bold text-yellow-300 font-jp hidden z-10">HAPPY HOUR!</div>
-            <div id="customer-area" class="h-1/4 flex flex-col items-center justify-end mb-4 relative">
+            <div id="customer-area" class="h-1/3 flex flex-col items-center justify-end mb-4 relative">
                 <div id="customer-dialogue" class="font-jp"></div>
-                <div id="customer" class="text-6xl mb-2 opacity-0 transform -translate-x-12">🧑‍💼</div>
+                <img id="customer" class="mb-2 opacity-0 transform -translate-x-12" src="" alt="お客様">
                 <div id="order-bubble" class="bg-gray-200 p-3 rounded-lg shadow-lg text-gray-800 flex flex-col items-center gap-2 opacity-0 transition-opacity duration-300">
                     <div id="customer-name" class="font-bold font-jp text-sm text-gray-600"></div>
                     <div class="flex items-center gap-2">
@@ -199,9 +206,16 @@
         const INGREDIENTS = { vodka: { name: 'ウォッカ', color: '#e0f7fa', glow: '#80deea' }, gin: { name: 'ジン', color: '#e8f5e9', glow: '#a5d6a7' }, rum: { name: 'ラム', color: '#ffecb3', glow: '#ffe082' }, cassis: { name: 'カシス', color: '#4a148c', glow: '#ce93d8' }, lime: { name: 'ライム', color: '#d4e157', glow: '#e6ee9c' }, orangeJuice: { name: 'オレンジJ', color: '#ff9800', glow: '#ffb74d' }, tonic: { name: 'トニック', color: '#cfd8dc', glow: '#eceff1' }, cola: { name: 'コーラ', color: '#3e2723', glow: '#a1887f' }, gingerAle: { name: 'ジンジャーエール', color: '#fbc02d', glow: '#fff176' }};
         const COCKTAILS = [ { name: 'スクリュードライバー', ingredients: ['vodka', 'orangeJuice'], needsIce: true, garnish: 'orange' }, { name: 'ジントニック', ingredients: ['gin', 'tonic', 'lime'], needsIce: true, garnish: 'lime' }, { name: 'キューバリブレ', ingredients: ['rum', 'cola', 'lime'], needsIce: true, garnish: 'lime' }, { name: 'モスコミュール', ingredients: ['vodka', 'gingerAle', 'lime'], needsIce: true, garnish: 'lime' }, { name: 'カシスオレンジ', ingredients: ['cassis', 'orangeJuice'], needsIce: true, garnish: 'orange' }, { name: 'ラムコーク', ingredients: ['rum', 'cola'], needsIce: true, garnish: 'lime' }, { name: 'ジンバック', ingredients: ['gin', 'gingerAle', 'lime'], needsIce: true, garnish: 'lime' }];
         const SECRET_COCKTAILS = [{ name: 'ギムレット', ingredients: ['gin', 'lime'], needsIce: true, bonus: 500 }];
-        const CUSTOMERS = [ { name: "バーの常連", emoji: '🧑‍💼', quotes: { order: ["いつもの頼むよ"], success: ["これだよ、これ！"], fail: ["うーん、味が違うな…"] }}, { name: "科学者", emoji: '👩‍🔬', quotes: { order: ["完璧な比率で頼む"], success: ["計算通り、完璧な味だ"], fail: ["配合を間違えたな？"] }}, { name: "芸術家", emoji: '👨‍🎨', quotes: { order: ["インスピレーションが欲しい"], success: ["色彩豊かな味だ！"], fail: ["君には才能がないな"] }}];
-        const MILLIONAIRE_CUSTOMER = { name: "大富豪", emoji: '🤑', quotes: { order: ["最高級のものを頼む"], success: ["素晴らしい！チップだ"], fail: ["がっかりだ"] }};
-        const DEATH_CUSTOMER = { name: "？？？", emoji: '💀', quotes: { order: ["…喉が渇いてな"], success: ["…悪くない"], fail: ["…次はないと思え"] }};
+        
+        // --- Customer Data with Image Names ---
+        const CUSTOMERS = [ 
+            { name: "バーの常連", image: 'bar_regular.png', quotes: { order: ["いつもの頼むよ"], success: ["これだよ、これ！"], fail: ["うーん、味が違うな…"] }}, 
+            { name: "科学者", image: 'scientist.png', quotes: { order: ["完璧な比率で頼む"], success: ["計算通り、完璧な味だ"], fail: ["配合を間違えたな？"] }}, 
+            { name: "芸術家", image: 'artist.png', quotes: { order: ["インスピレーションが欲しい"], success: ["色彩豊かな味だ！"], fail: ["君には才能がないな"] }}
+        ];
+        const MILLIONAIRE_CUSTOMER = { name: "大富豪", image: 'millionaire.png', quotes: { order: ["最高級のものを頼む"], success: ["素晴らしい！チップだ"], fail: ["がっかりだ"] }};
+        const DEATH_CUSTOMER = { name: "？？？", image: 'mysterious_figure.png', quotes: { order: ["…喉が渇いてな"], success: ["…悪くない"], fail: ["…次はないと思え"] }};
+
         const GARNISHES = { lime: '🍋', orange: '🍊', cherry: '🍒' };
         
         const UPGRADES = {
@@ -340,7 +354,7 @@
         function generateOrder() {
             state.canInteract = false; 
             if (state.currentCustomer) { 
-                dom.customerEl.classList.remove('slide-in'); 
+                dom.customerEl.classList.remove('slide-in', 'angry'); 
                 dom.customerEl.classList.add('slide-out'); 
                 dom.orderBubbleEl.style.opacity = '0'; 
                 dom.customerDialogueEl.classList.remove('show');
@@ -352,9 +366,15 @@
                 else if (rand < 0.25) { state.currentCustomer = DEATH_CUSTOMER; } 
                 else { state.currentCustomer = CUSTOMERS[Math.floor(Math.random() * CUSTOMERS.length)]; } 
                 state.currentOrder = COCKTAILS[Math.floor(Math.random() * COCKTAILS.length)]; 
+                
+                // Use placeholder images. Replace the text with your image concepts.
+                const imageName = state.currentCustomer.image.split('.')[0].replace(/_/g, ' ');
+                dom.customerEl.src = `https://placehold.co/120x120/4A5568/FFFFFF?text=${imageName}`;
+                dom.customerEl.onerror = () => { dom.customerEl.src = 'https://placehold.co/120x120/4A5568/FFFFFF?text=Image+Not+Found'; }; // Fallback
+
                 dom.customerEl.classList.toggle('scale-125', state.currentCustomer === DEATH_CUSTOMER || state.currentCustomer === MILLIONAIRE_CUSTOMER); 
                 dom.timerDisplayEl.classList.toggle('timer-danger', state.currentCustomer === DEATH_CUSTOMER); 
-                dom.customerEl.textContent = state.currentCustomer.emoji; 
+                
                 dom.customerNameEl.textContent = state.currentCustomer.name; 
                 dom.customerEl.classList.remove('slide-out'); 
                 dom.customerEl.classList.add('slide-in'); 
@@ -439,7 +459,7 @@
                 showDialogue(state.currentCustomer.quotes.fail); 
                 dom.resultTextEl.textContent = '失敗... 😖'; 
                 dom.resultTextEl.style.color = '#dc2626'; 
-                if (state.currentCustomer.emoji !== '💀') dom.customerEl.textContent = '😠'; 
+                if (state.currentCustomer !== DEATH_CUSTOMER) dom.customerEl.classList.add('angry');
                 playSound('fail'); 
                 setTimeout(proceedToNextCustomer, 2000); 
             } 
@@ -491,74 +511,10 @@
         
         // --- Initialization ---
         function initialSetup() {
-            // Populate the game view's static HTML content once.
-            if (dom.gameContainerEl.innerHTML === '') {
-                 dom.gameContainerEl.innerHTML = `
-                    <header class="grid grid-cols-2 items-start mb-4 px-2 relative">
-                        <div class="flex flex-col text-left">
-                            <h2 class="text-lg font-bold">Day: <span id="day-display">1</span></h2>
-                            <h2 class="text-lg font-bold">所持金: ¥<span id="money-display">0</span></h2>
-                            <div id="score-display" class="mt-2 relative">
-                                <h2 class="text-xl md:text-2xl font-bold">本日の売上: ¥<span id="score">0</span></h2>
-                            </div>
-                        </div>
-                        <div id="combo-display" class="absolute left-1/2 -translate-x-1/2 top-0 text-3xl font-bold text-orange-400 opacity-0 transform scale-50"></div>
-                        <div class="flex items-start justify-end gap-4">
-                            <div id="recipe-display" class="bg-gray-900/70 p-2 rounded-lg border border-gray-500 text-right opacity-0"></div>
-                            <div id="timer-display" class="bg-red-600 rounded-full px-4 py-2 transition-all duration-300 flex-shrink-0">
-                                <h2 class="text-xl md:text-2xl font-bold">時間: <span id="timer">60</span></h2>
-                            </div>
-                        </div>
-                    </header>
-                    <main class="flex-grow flex flex-col relative">
-                        <div id="happy-hour-banner" class="absolute -top-4 w-full text-center text-4xl font-bold text-yellow-300 font-jp hidden z-10"></div>
-                        <div id="customer-area" class="h-1/4 flex flex-col items-center justify-end mb-4 relative">
-                            <div id="customer-dialogue" class="font-jp"></div>
-                            <div id="customer" class="text-6xl mb-2 opacity-0 transform -translate-x-12"></div>
-                            <div id="order-bubble" class="bg-gray-200 p-3 rounded-lg shadow-lg text-gray-800 flex flex-col items-center gap-2 opacity-0 transition-opacity duration-300">
-                                <div id="customer-name" class="font-bold font-jp text-sm text-gray-600"></div>
-                                <div class="flex items-center gap-2">
-                                    <p class="font-bold font-jp">注文:</p>
-                                    <div id="order-text" class="font-bold text-lg font-jp"></div>
-                                    <div id="order-ingredients" class="flex gap-2"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="bar-counter" class="p-4 flex-grow flex items-center justify-between gap-4 rounded-lg">
-                            <div class="w-1/3 flex flex-col items-center justify-around h-full">
-                                <div id="shaker-area" class="w-24 h-40 bg-gray-400 rounded-t-lg border-4 border-gray-300 relative flex items-end overflow-hidden shadow-inner">
-                                    <div id="shaker-ice-cubes" class="absolute inset-0"></div>
-                                    <div id="shaker-contents" class="w-full h-full transition-all duration-300"></div>
-                                </div>
-                                <div class="flex flex-col gap-2 w-full mt-4">
-                                    <button id="add-ice-button" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 font-jp">氷を入れる</button>
-                                    <button id="shake-button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 font-jp">シェイク！</button>
-                                    <button id="reset-button" class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 font-jp">リセット</button>
-                                </div>
-                            </div>
-                            <div class="w-2/3 flex flex-col items-center justify-center">
-                                <div id="cocktail-glass" class="w-32 h-40 relative">
-                                    <svg viewBox="0 0 100 120" class="w-full h-full filter drop-shadow-lg"><path d="M 10 120 L 40 50 L 60 50 L 90 120 Z" fill="rgba(255,255,255,0.1)"/><path d="M 0 40 L 100 40 L 95 50 L 5 50 Z" fill="rgba(255,255,255,0.1)"/><path d="M 45 40 L 55 0 L 55 40 Z" fill="rgba(255,255,255,0.1)"/></svg>
-                                    <div id="final-cocktail" class="absolute bottom-[2px] left-1/2 -translate-x-12 w-[78%] h-0 bg-transparent rounded-sm"></div>
-                                </div>
-                                <div id="result-text" class="text-2xl font-bold mt-2 h-8 font-jp"></div>
-                            </div>
-                        </div>
-                    </main>
-                    <footer id="ingredient-shelf" class="grid grid-cols-5 md:grid-cols-9 gap-2 mt-4 p-4 bg-black/30 rounded-lg"></footer>
-                    <div id="garnish-container" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/80 p-6 rounded-lg text-white font-jp shadow-lg z-40 hidden flex-col items-center gap-4"></div>
-                `;
-                 // Re-query ALL elements now that they exist in the DOM
-                allElementIds.forEach(id => {
-                    const camelCaseId = id.replace(/-(\w)/g, (_, c) => c.toUpperCase());
-                    dom[`${camelCaseId}El`] = document.getElementById(id);
-                });
-            }
-            
             setupSounds();
             populateShelf();
             
-            // Bind buttons
+            // Bind all buttons
             dom.startButtonEl.addEventListener('click', () => { startAudio(); startDay(); });
             dom.nextDayButtonEl.addEventListener('click', startNextDay);
             dom.addIceButtonEl.addEventListener('click', () => { if(state.canInteract) addIce(); });
