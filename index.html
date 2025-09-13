@@ -178,7 +178,6 @@
             <div id="upgrades-section" class="bg-gray-900/50 rounded-lg p-6">
                  <h2 class="font-jp text-2xl font-bold text-center mb-4">アップグレード</h2>
                  <div class="space-y-3">
-                    <!-- Upgrade items will be populated by JS -->
                  </div>
             </div>
         </main>
@@ -233,10 +232,10 @@
         // --- Sound Engine ---
         let sounds = {};
         let isAudioReady = false;
-        function setupSounds() { try { sounds = { pour: new Tone.Synth({ oscillator: { type: 'fmsine' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.05, release: 0.2 } }).toDestination(), shake: new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.01, decay: 0.15, sustain: 0, release: 0.1 } }).toDestination(), ice: new Tone.MetalSynth({ frequency: 200, envelope: { attack: 0.001, decay: 0.1, release: 0.01 }, harmonicity: 5.1, modulationIndex: 32, resonance: 4000, octaves: 1.5 }).toDestination(), success: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sine" }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.2 } }).toDestination(), fail: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "square" }, envelope: { attack: 0.01, decay: 0.4, sustain: 0, release: 0.2 } }).toDestination(), timeBonus: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "triangle" }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.2 } }).toDestination(), tip: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sine" }, envelope: { attack: 0.01, decay: 0.4, sustain: 0.2, release: 0.3 } }).toDestination(), combo: new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'fmsquare' }, envelope: { attack: 0.01, decay: 0.1, release: 0.1 }}).toDestination(), happyHour: new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'pulse' }, envelope: { attack: 0.01, decay: 0.5, release: 0.2 }}).toDestination(), cash: new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.2, release: 0.1 }}).toDestination() }; isAudioReady = true; } catch(e) { console.error("サウンドエンジンの初期化に失敗:", e); } }
+        function setupSounds() { try { sounds = { pour: new Tone.Synth({ oscillator: { type: 'fmsine' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.05, release: 0.2 } }).toDestination(), shake: new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.01, decay: 0.15, sustain: 0, release: 0.1 } }).toDestination(), ice: new Tone.MetalSynth({ frequency: 200, envelope: { attack: 0.001, decay: 0.1, release: 0.01 }, harmonicity: 5.1, modulationIndex: 32, resonance: 4000, octaves: 1.5 }).toDestination(), success: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sine" }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.2 } }).toDestination(), fail: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "square" }, envelope: { attack: 0.01, decay: 0.4, sustain: 0, release: 0.2 } }).toDestination(), tip: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sine" }, envelope: { attack: 0.01, decay: 0.4, sustain: 0.2, release: 0.3 } }).toDestination(), combo: new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'fmsquare' }, envelope: { attack: 0.01, decay: 0.1, release: 0.1 }}).toDestination(), happyHour: new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'pulse' }, envelope: { attack: 0.01, decay: 0.5, release: 0.2 }}).toDestination(), cash: new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.2, release: 0.1 }}).toDestination() }; isAudioReady = true; } catch(e) { console.error("サウンドエンジンの初期化に失敗:", e); } }
         async function startAudio() { if (isAudioReady && Tone.context.state !== 'running') { await Tone.start(); } if (dom.bgmAudioEl) { dom.bgmAudioEl.volume = 0.3; dom.bgmAudioEl.play().catch(e => {}); } }
         function stopAudio() { if (dom.bgmAudioEl) { dom.bgmAudioEl.pause(); dom.bgmAudioEl.currentTime = 0; } }
-        function playSound(sound, ...args) { if (!isAudioReady) return; try { if (sound === 'success') sounds.success.triggerAttackRelease(['C4', 'E4', 'G4'], '8n'); else if (sound === 'fail') sounds.fail.triggerAttackRelease(['C3', 'C#3'], '4n'); else if (sound === 'ice') sounds.ice.triggerAttackRelease('C3', '8n', Tone.now() + 0.05); else if (sound === 'timeBonus') sounds.timeBonus.triggerAttackRelease(['G4', 'C5', 'E5'], '8n'); else if (sound === 'tip') sounds.tip.triggerAttackRelease(['C5', 'E5', 'G5', 'C6'], '4n'); else if (sound === 'happyHour') sounds.happyHour.triggerAttackRelease(['C4', 'E4', 'G4', 'C5'], '2n'); else if (sound === 'cash') sounds.cash.triggerAttackRelease(['E5', 'G5', 'C6'], '8n'); else if (sound === 'combo' && sounds.combo) { const notes = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5']; sounds.combo.triggerAttackRelease(notes[Math.min(state.combo -1, notes.length-1)], '8n');} else if (sounds[sound]) sounds[sound].triggerAttackRelease(...args); } catch(e){} }
+        function playSound(sound, ...args) { if (!isAudioReady) return; try { if (sound === 'success') sounds.success.triggerAttackRelease(['C4', 'E4', 'G4'], '8n'); else if (sound === 'fail') sounds.fail.triggerAttackRelease(['C3', 'C#3'], '4n'); else if (sound === 'ice') sounds.ice.triggerAttackRelease('C3', '8n', Tone.now() + 0.05); else if (sound === 'tip') sounds.tip.triggerAttackRelease(['C5', 'E5', 'G5', 'C6'], '4n'); else if (sound === 'happyHour') sounds.happyHour.triggerAttackRelease(['C4', 'E4', 'G4', 'C5'], '2n'); else if (sound === 'cash') sounds.cash.triggerAttackRelease(['E5', 'G5', 'C6'], '8n'); else if (sound === 'combo' && sounds.combo) { const notes = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5']; sounds.combo.triggerAttackRelease(notes[Math.min(state.combo -1, notes.length-1)], '8n');} else if (sounds[sound]) sounds[sound].triggerAttackRelease(...args); } catch(e){} }
         
         // --- View & State Management ---
         function showView(view) {
@@ -412,7 +411,6 @@
                 dom.resultTextEl.textContent = '成功！ 😋'; 
                 dom.resultTextEl.style.color = '#65a30d'; 
                 playSound('success'); 
-                playSound('timeBonus'); 
                 playSound('combo'); 
                 startGarnishMiniGame(); 
             } else if (foundSecret) { 
@@ -485,7 +483,7 @@
         
         // --- Initialization ---
         function initialSetup() {
-             // Query all DOM elements once.
+            // This queries all elements once the document is ready.
             const allElementIds = [
                 'start-button', 'game-overlay', 'game-container', 'room-container', 'room-day-display', 
                 'room-money-display', 'daily-earnings-display', 'next-day-button', 'upgrades-section', 
@@ -501,6 +499,9 @@
                 dom[camelCaseId + 'El'] = document.getElementById(id);
             });
 
+            // The game-container is populated only once here.
+            dom.gameContainerEl.classList.add('flex'); // Make it flex so content is visible
+             
             setupSounds();
             populateShelf();
             
@@ -517,6 +518,9 @@
     </script>
 </body>
 </html>
+
+
+
 
 
 
