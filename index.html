@@ -43,7 +43,7 @@
             color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
             box-shadow: inset 0 -20px 30px -10px rgba(0,0,0,0.5);
             border: 2px solid rgba(255,255,255,0.2);
-            font-size: 0.8rem; text-align: center;
+            font-size: 0.8rem; text-align: center; line-height: 1.2;
         }
         .ingredient-bottle:hover { transform: scale(1.05) translateY(-5px); filter: brightness(1.2); }
         .ingredient-bottle.selected { transform: scale(1.1) translateY(-10px); filter: brightness(1.5); box-shadow: 0 0 15px 5px var(--glow-color, #fff); }
@@ -67,7 +67,7 @@
         #customer-dialogue {
             position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
             background-color: white; color: #333; padding: 8px 16px; border-radius: 12px;
-            max-width: 250px; text-align: center; opacity: 0;
+            min-width: 180px; max-width: 250px; text-align: center; opacity: 0;
             transition: opacity 0.3s, transform 0.3s; pointer-events: none; z-index: 10;
         }
         #customer-dialogue.show { opacity: 1; transform: translateX(-50%) translateY(-10px); }
@@ -96,7 +96,11 @@
         
         .upgrade-button:disabled { background-color: #4b5563; cursor: not-allowed; opacity: 0.6; }
         #recipe-display { transition: opacity 0.3s ease-in-out; }
-
+        
+        /* Language Switch */
+        .lang-switch { cursor: pointer; width: 80px; height: 34px; background-color: #4a5568; border-radius: 17px; position: relative; display: flex; align-items: center; justify-content: space-around; font-weight: bold; font-size: 12px; color: white; padding: 0 5px; }
+        .lang-switch-toggle { position: absolute; width: 30px; height: 30px; background-color: white; border-radius: 50%; top: 2px; left: 2px; transition: transform 0.3s ease; }
+        .lang-switch.en .lang-switch-toggle { transform: translateX(44px); }
     </style>
 </head>
 <body class="text-white flex items-center justify-center min-h-screen">
@@ -106,17 +110,23 @@
     <div id="game-container" class="game-view mx-auto rounded-2xl p-4 md:p-6 flex-col relative overflow-hidden hidden">
         <header class="grid grid-cols-2 items-start mb-4 px-2 relative">
             <div class="flex flex-col text-left">
-                <h2 class="text-lg font-bold">Day: <span id="day-display">1</span></h2>
-                <h2 class="text-lg font-bold">所持金: ¥<span id="money-display">0</span></h2>
+                <h2 class="text-lg font-bold"><span data-lang-key="dayLabel">Day</span>: <span id="day-display">1</span></h2>
+                <h2 class="text-lg font-bold"><span data-lang-key="moneyLabel">所持金</span>: ¥<span id="money-display">0</span></h2>
                 <div id="score-display" class="mt-2 relative">
-                    <h2 class="text-xl md:text-2xl font-bold">本日の売上: ¥<span id="score">0</span></h2>
+                    <h2 class="text-xl md:text-2xl font-bold"><span data-lang-key="salesLabel">本日の売上</span>: ¥<span id="score">0</span></h2>
                 </div>
             </div>
             <div id="combo-display" class="absolute left-1/2 -translate-x-1/2 top-0 text-3xl font-bold text-orange-400 opacity-0 transform scale-50"></div>
             <div class="flex items-start justify-end gap-4">
                 <div id="recipe-display" class="bg-gray-900/70 p-2 rounded-lg border border-gray-500 text-right opacity-0"></div>
                 <div id="timer-display" class="bg-red-600 rounded-full px-4 py-2 transition-all duration-300 flex-shrink-0">
-                    <h2 class="text-xl md:text-2xl font-bold">時間: <span id="timer">60</span></h2>
+                    <h2 class="text-xl md:text-2xl font-bold"><span data-lang-key="timeLabel">時間</span>: <span id="timer">60</span></h2>
+                </div>
+                <!-- Language Switch -->
+                <div id="language-switch" class="lang-switch">
+                    <span>JA</span>
+                    <span>EN</span>
+                    <div class="lang-switch-toggle"></div>
                 </div>
             </div>
         </header>
@@ -124,11 +134,11 @@
             <div id="happy-hour-banner" class="absolute -top-4 w-full text-center text-4xl font-bold text-yellow-300 font-jp hidden z-10"></div>
             <div id="customer-area" class="h-1/3 flex flex-col items-center justify-end mb-4 relative">
                 <div id="customer-dialogue" class="font-jp"></div>
-                <img id="customer" class="mb-2 opacity-0 transform -translate-x-12" src="" alt="お客様">
+                <img id="customer" class="mb-2 opacity-0 transform -translate-x-12" src="" alt="Customer">
                 <div id="order-bubble" class="bg-gray-200 p-3 rounded-lg shadow-lg text-gray-800 flex flex-col items-center gap-2 opacity-0 transition-opacity duration-300">
                     <div id="customer-name" class="font-bold font-jp text-sm text-gray-600"></div>
                     <div class="flex items-center gap-2">
-                        <p class="font-bold font-jp">注文:</p>
+                        <p class="font-bold font-jp" data-lang-key="orderLabel">注文:</p>
                         <div id="order-text" class="font-bold text-lg font-jp"></div>
                         <div id="order-ingredients" class="flex gap-2"></div>
                     </div>
@@ -141,9 +151,9 @@
                         <div id="shaker-contents" class="w-full h-full transition-all duration-300"></div>
                     </div>
                     <div class="flex flex-col gap-2 w-full mt-4">
-                        <button id="add-ice-button" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 font-jp">氷を入れる</button>
-                        <button id="shake-button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 font-jp">シェイク！</button>
-                        <button id="reset-button" class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 font-jp">リセット</button>
+                        <button id="add-ice-button" data-lang-key="addIce" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 font-jp">氷を入れる</button>
+                        <button id="shake-button" data-lang-key="shake" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 font-jp">シェイク！</button>
+                        <button id="reset-button" data-lang-key="reset" class="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 font-jp">リセット</button>
                     </div>
                 </div>
                 <div class="w-2/3 flex flex-col items-center justify-center">
@@ -162,59 +172,80 @@
     <!-- Room View -->
     <div id="room-container" class="game-view mx-auto rounded-2xl p-6 md:p-8 flex-col relative overflow-hidden hidden bg-gray-800">
         <header class="text-center pb-4 border-b-2 border-white/10 mb-6">
-            <h1 class="font-title text-5xl">Day End</h1>
-            <p class="font-jp text-lg text-gray-300">Day <span id="room-day-display">1</span> - 営業終了</p>
+            <h1 class="font-title text-5xl" data-lang-key="dayEndTitle">Day End</h1>
+            <p class="font-jp text-lg text-gray-300"><span data-lang-key="dayLabel">Day</span> <span id="room-day-display">1</span> - <span data-lang-key="dayEndSubtitle">営業終了</span></p>
         </header>
 
         <main class="flex-grow flex flex-col justify-between">
             <div class="bg-gray-900/50 rounded-lg p-6 text-center mb-6">
-                <p class="font-jp text-xl text-gray-400">本日の売上</p>
+                <p class="font-jp text-xl text-gray-400" data-lang-key="dailyEarningsLabel">本日の売上</p>
                 <p class="font-bold text-4xl text-yellow-300 my-2">¥<span id="daily-earnings-display">0</span></p>
                 <hr class="border-gray-600 my-4">
-                <p class="font-jp text-xl text-gray-400">総資産</p>
+                <p class="font-jp text-xl text-gray-400" data-lang-key="totalAssetsLabel">総資産</p>
                 <p class="font-bold text-4xl">¥<span id="room-money-display">0</span></p>
             </div>
             
             <div id="upgrades-section" class="bg-gray-900/50 rounded-lg p-6">
-                 <h2 class="font-jp text-2xl font-bold text-center mb-4">アップグレード</h2>
+                 <h2 class="font-jp text-2xl font-bold text-center mb-4" data-lang-key="upgradesTitle">アップグレード</h2>
                  <div class="space-y-3">
                  </div>
             </div>
         </main>
         <footer class="text-center pt-6">
-            <button id="next-day-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-xl shadow-lg transition-transform transform font-jp button-pulse">次の日へ</button>
+            <button id="next-day-button" data-lang-key="nextDayButton" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-xl shadow-lg transition-transform transform font-jp button-pulse">次の日へ</button>
         </footer>
     </div>
 
     <!-- Initial Start Screen -->
     <div id="game-overlay" class="absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-500 z-30">
         <h1 class="font-title text-6xl md:text-8xl mb-4">Bartender</h1>
-        <button id="start-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg text-2xl shadow-lg transition-transform transform font-jp button-pulse">ゲーム開始</button>
+        <button id="start-button" data-lang-key="startButton" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg text-2xl shadow-lg transition-transform transform font-jp button-pulse">ゲーム開始</button>
     </div>
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // --- Game Data ---
-        const INGREDIENTS = { vodka: { name: 'ウォッカ', color: '#e0f7fa', glow: '#80deea' }, gin: { name: 'ジン', color: '#e8f5e9', glow: '#a5d6a7' }, rum: { name: 'ラム', color: '#ffecb3', glow: '#ffe082' }, cassis: { name: 'カシス', color: '#4a148c', glow: '#ce93d8' }, lime: { name: 'ライム', color: '#d4e157', glow: '#e6ee9c' }, orangeJuice: { name: 'オレンジJ', color: '#ff9800', glow: '#ffb74d' }, tonic: { name: 'トニック', color: '#cfd8dc', glow: '#eceff1' }, cola: { name: 'コーラ', color: '#3e2723', glow: '#a1887f' }, gingerAle: { name: 'ジンジャーエール', color: '#fbc02d', glow: '#fff176' }};
-        const COCKTAILS = [ { name: 'スクリュードライバー', ingredients: ['vodka', 'orangeJuice'], needsIce: true, garnish: 'orange' }, { name: 'ジントニック', ingredients: ['gin', 'tonic', 'lime'], needsIce: true, garnish: 'lime' }, { name: 'キューバリブレ', ingredients: ['rum', 'cola', 'lime'], needsIce: true, garnish: 'lime' }, { name: 'モスコミュール', ingredients: ['vodka', 'gingerAle', 'lime'], needsIce: true, garnish: 'lime' }, { name: 'カシスオレンジ', ingredients: ['cassis', 'orangeJuice'], needsIce: true, garnish: 'orange' }, { name: 'ラムコーク', ingredients: ['rum', 'cola'], needsIce: true, garnish: 'lime' }, { name: 'ジンバック', ingredients: ['gin', 'gingerAle', 'lime'], needsIce: true, garnish: 'lime' }];
-        const SECRET_COCKTAILS = [{ name: 'ギムレット', ingredients: ['gin', 'lime'], needsIce: true, bonus: 500 }];
-        
-        const CUSTOMERS = [ 
-            { name: "バーの常連", image: 'images/bar_regular.png', quotes: { order: ["いつもの頼むよ"], success: ["これだよ、これ！"], fail: ["うーん、味が違うな…"] }}, 
-            { name: "科学者", image: 'images/scientist.png', quotes: { order: ["完璧な比率で頼む"], success: ["計算通り、完璧な味だ"], fail: ["配合を間違えたな？"] }}, 
-            { name: "芸術家", image: 'images/artist.png', quotes: { order: ["インスピレーションが欲しい"], success: ["色彩豊かな味だ！"], fail: ["君には才能がないな"] }}
-        ];
-        const MILLIONAIRE_CUSTOMER = { name: "大富豪", image: 'images/millionaire.png', quotes: { order: ["最高級のものを頼む"], success: ["素晴らしい！チップだ"], fail: ["がっかりだ"] }};
-        const DEATH_CUSTOMER = { name: "？？？", image: 'images/mysterious_figure.png', quotes: { order: ["…喉が渇いてな"], success: ["…悪くない"], fail: ["…次はないと思え"] }};
+        // --- Language Data ---
+        const translations = {
+            ja: {
+                dayLabel: "Day", moneyLabel: "所持金", salesLabel: "本日の売上", timeLabel: "時間", orderLabel: "注文:",
+                addIce: "氷を入れる", shake: "シェイク！", reset: "リセット",
+                dayEndTitle: "Day End", dayEndSubtitle: "営業終了", dailyEarningsLabel: "本日の売上", totalAssetsLabel: "総資産",
+                upgradesTitle: "アップグレード", nextDayButton: "次の日へ", startButton: "ゲーム開始",
+                purchased: "購入済", recipe: "レシピ", ice: "氷", garnishPrompt: "仕上げは？",
+                resultSuccess: "成功！ 😋", resultFail: "失敗... 😖", resultSecret: "シークレット！ 🍸",
+                INGREDIENTS: { vodka: { name: 'ウォッカ', color: '#e0f7fa', glow: '#80deea' }, gin: { name: 'ジン', color: '#e8f5e9', glow: '#a5d6a7' }, rum: { name: 'ラム', color: '#ffecb3', glow: '#ffe082' }, cassis: { name: 'カシス', color: '#4a148c', glow: '#ce93d8' }, lime: { name: 'ライム', color: '#d4e157', glow: '#e6ee9c' }, orangeJuice: { name: 'オレンジJ', color: '#ff9800', glow: '#ffb74d' }, tonic: { name: 'トニック', color: '#cfd8dc', glow: '#eceff1' }, cola: { name: 'コーラ', color: '#3e2723', glow: '#a1887f' }, gingerAle: { name: 'ジンジャー\nエール', color: '#fbc02d', glow: '#fff176' }},
+                COCKTAILS: [ { name: 'スクリュードライバー', ingredients: ['vodka', 'orangeJuice'], needsIce: true, garnish: 'orange' }, { name: 'ジントニック', ingredients: ['gin', 'tonic', 'lime'], needsIce: true, garnish: 'lime' }, { name: 'キューバリブレ', ingredients: ['rum', 'cola', 'lime'], needsIce: true, garnish: 'lime' }, { name: 'モスコミュール', ingredients: ['vodka', 'gingerAle', 'lime'], needsIce: true, garnish: 'lime' }, { name: 'カシスオレンジ', ingredients: ['cassis', 'orangeJuice'], needsIce: true, garnish: 'orange' }, { name: 'ラムコーク', ingredients: ['rum', 'cola'], needsIce: true, garnish: 'lime' }, { name: 'ジンバック', ingredients: ['gin', 'gingerAle', 'lime'], needsIce: true, garnish: 'lime' }],
+                SECRET_COCKTAILS: [{ name: 'ギムレット', ingredients: ['gin', 'lime'], needsIce: true, bonus: 500 }],
+                CUSTOMERS: [ { name: "バーの常連", image: 'images/bar_regular.png', quotes: { order: ["いつもの頼むよ"], success: ["これだよ、これ！"], fail: ["うーん、味が違うな…"] }}, { name: "科学者", image: 'images/scientist.png', quotes: { order: ["完璧な比率で頼む"], success: ["計算通り、完璧な味だ"], fail: ["配合を間違えたな？"] }}, { name: "芸術家", image: 'images/artist.png', quotes: { order: ["インスピレーションが欲しい"], success: ["色彩豊かな味だ！"], fail: ["君には才能がないな"] }}],
+                MILLIONAIRE_CUSTOMER: { name: "大富豪", image: 'images/millionaire.png', quotes: { order: ["最高級のものを頼む"], success: ["素晴らしい！チップだ"], fail: ["がっかりだ"] }},
+                DEATH_CUSTOMER: { name: "？？？", image: 'images/mysterious_figure.png', quotes: { order: ["…喉が渇いてな"], success: ["…悪くない"], fail: ["…次はないと思え"] }},
+                UPGRADES: { shaker: { name: '高品質シェイカー', description: 'コンボボーナスが1.2倍になる' }, iceMachine: { name: '高性能製氷機', description: '氷を使うカクテルの評価が少し上がる' }, barManual: { name: 'バーテンダー教本', description: '失敗時のペナルティが半減する' }}
+            },
+            en: {
+                dayLabel: "Day", moneyLabel: "Money", salesLabel: "Today's Sales", timeLabel: "Time", orderLabel: "Order:",
+                addIce: "Add Ice", shake: "Shake!", reset: "Reset",
+                dayEndTitle: "Day End", dayEndSubtitle: "Business Closed", dailyEarningsLabel: "Today's Earnings", totalAssetsLabel: "Total Assets",
+                upgradesTitle: "Upgrades", nextDayButton: "Next Day", startButton: "Start Game",
+                purchased: "Purchased", recipe: "Recipe", ice: "Ice", garnishPrompt: "Garnish?",
+                resultSuccess: "Success! 😋", resultFail: "Failure... 😖", resultSecret: "Secret! 🍸",
+                INGREDIENTS: { vodka: { name: 'Vodka', color: '#e0f7fa', glow: '#80deea' }, gin: { name: 'Gin', color: '#e8f5e9', glow: '#a5d6a7' }, rum: { name: 'Rum', color: '#ffecb3', glow: '#ffe082' }, cassis: { name: 'Cassis', color: '#4a148c', glow: '#ce93d8' }, lime: { name: 'Lime', color: '#d4e157', glow: '#e6ee9c' }, orangeJuice: { name: 'Orange J', color: '#ff9800', glow: '#ffb74d' }, tonic: { name: 'Tonic', color: '#cfd8dc', glow: '#eceff1' }, cola: { name: 'Cola', color: '#3e2723', glow: '#a1887f' }, gingerAle: { name: 'Ginger Ale', color: '#fbc02d', glow: '#fff176' }},
+                COCKTAILS: [ { name: 'Screwdriver', ingredients: ['vodka', 'orangeJuice'], needsIce: true, garnish: 'orange' }, { name: 'Gin and Tonic', ingredients: ['gin', 'tonic', 'lime'], needsIce: true, garnish: 'lime' }, { name: 'Cuba Libre', ingredients: ['rum', 'cola', 'lime'], needsIce: true, garnish: 'lime' }, { name: 'Moscow Mule', ingredients: ['vodka', 'gingerAle', 'lime'], needsIce: true, garnish: 'lime' }, { name: 'Cassis Orange', ingredients: ['cassis', 'orangeJuice'], needsIce: true, garnish: 'orange' }, { name: 'Rum and Coke', ingredients: ['rum', 'cola'], needsIce: true, garnish: 'lime' }, { name: 'Gin Buck', ingredients: ['gin', 'gingerAle', 'lime'], needsIce: true, garnish: 'lime' }],
+                SECRET_COCKTAILS: [{ name: 'Gimlet', ingredients: ['gin', 'lime'], needsIce: true, bonus: 500 }],
+                CUSTOMERS: [ { name: "Bar Regular", image: 'images/bar_regular.png', quotes: { order: ["The usual, please."], success: ["That's the stuff!"], fail: ["Hmm, tastes different..."] }}, { name: "Scientist", image: 'images/scientist.png', quotes: { order: ["I require perfect ratios."], success: ["As calculated, a perfect taste."], fail: ["You've mistaken the formula."] }}, { name: "Artist", image: 'images/artist.png', quotes: { order: ["I need some inspiration."], success: ["A taste full of color!"], fail: ["You have no talent."] }}],
+                MILLIONAIRE_CUSTOMER: { name: "Millionaire", image: 'images/millionaire.png', quotes: { order: ["Give me the best you've got."], success: ["Splendid! Here's a tip."], fail: ["What a disappointment."] }},
+                DEATH_CUSTOMER: { name: "???", image: 'images/mysterious_figure.png', quotes: { order: ["...I am thirsty."], success: ["...Not bad."], fail: ["...There won't be a next time."] }},
+                UPGRADES: { shaker: { name: 'High-Quality Shaker', description: 'Combo bonus increases to 1.2x' }, iceMachine: { name: 'High-Performance Ice Machine', description: 'Slightly improves score for cocktails with ice' }, barManual: { name: 'Bartender Manual', description: 'Halves the penalty for mistakes' }}
+            }
+        };
+
+        const UPGRADES_DATA = {
+            shaker: { cost: 2000, purchased: false },
+            iceMachine: { cost: 1500, purchased: false },
+            barManual: { cost: 3000, purchased: false }
+        };
 
         const GARNISHES = { lime: '🍋', orange: '🍊', cherry: '🍒' };
         
-        const UPGRADES = {
-            shaker: { name: '高品質シェイカー', description: 'コンボボーナスが1.2倍になる', cost: 2000, purchased: false },
-            iceMachine: { name: '高性能製氷機', description: '氷を使うカクテルの評価が少し上がる', cost: 1500, purchased: false },
-            barManual: { name: 'バーテンダー教本', description: '失敗時のペナルティが半減する', cost: 3000, purchased: false }
-        };
-
         // --- DOM Elements ---
         const dom = {};
         
@@ -225,19 +256,49 @@
             canInteract: true, combo: 0, isHappyHour: false, 
             happyHourTimeout: null, garnishTimeout: null, 
             day: 1, totalMoney: 0, 
-            upgrades: JSON.parse(JSON.stringify(UPGRADES)), 
-            currentCustomer: null, currentOrder: null
+            upgrades: JSON.parse(JSON.stringify(UPGRADES_DATA)), 
+            currentCustomer: null, currentOrder: null,
+            language: 'ja'
         };
         
         // --- Sound Engine ---
         let sounds = {};
         let isAudioReady = false;
-        function setupSounds() { try { sounds = { pour: new Tone.Synth({ oscillator: { type: 'fmsine' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.05, release: 0.2 } }).toDestination(), shake: new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.01, decay: 0.15, sustain: 0, release: 0.1 } }).toDestination(), ice: new Tone.MetalSynth({ frequency: 200, envelope: { attack: 0.001, decay: 0.1, release: 0.01 }, harmonicity: 5.1, modulationIndex: 32, resonance: 4000, octaves: 1.5 }).toDestination(), success: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sine" }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.2 } }).toDestination(), fail: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "square" }, envelope: { attack: 0.01, decay: 0.4, sustain: 0, release: 0.2 } }).toDestination(), tip: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sine" }, envelope: { attack: 0.01, decay: 0.4, sustain: 0.2, release: 0.3 } }).toDestination(), combo: new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'fmsquare' }, envelope: { attack: 0.01, decay: 0.1, release: 0.1 }}).toDestination(), happyHour: new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'pulse' }, envelope: { attack: 0.01, decay: 0.5, release: 0.2 }}).toDestination(), cash: new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.2, release: 0.1 }}).toDestination() }; isAudioReady = true; } catch(e) { console.error("サウンドエンジンの初期化に失敗:", e); } }
+        function setupSounds() { try { sounds = { pour: new Tone.Synth({ oscillator: { type: 'fmsine' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.05, release: 0.2 } }).toDestination(), shake: new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.01, decay: 0.15, sustain: 0, release: 0.1 } }).toDestination(), ice: new Tone.MetalSynth({ frequency: 200, envelope: { attack: 0.001, decay: 0.1, release: 0.01 }, harmonicity: 5.1, modulationIndex: 32, resonance: 4000, octaves: 1.5 }).toDestination(), success: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sine" }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.2 } }).toDestination(), fail: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "square" }, envelope: { attack: 0.01, decay: 0.4, sustain: 0, release: 0.2 } }).toDestination(), tip: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sine" }, envelope: { attack: 0.01, decay: 0.4, sustain: 0.2, release: 0.3 } }).toDestination(), combo: new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'fmsquare' }, envelope: { attack: 0.01, decay: 0.1, release: 0.1 }}).toDestination(), happyHour: new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'pulse' }, envelope: { attack: 0.01, decay: 0.5, release: 0.2 }}).toDestination(), cash: new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.2, release: 0.1 }}).toDestination() }; isAudioReady = true; } catch(e) { console.error("Sound engine failed to initialize:", e); } }
         async function startAudio() { if (isAudioReady && Tone.context.state !== 'running') { await Tone.start(); } if (dom.bgmAudioEl) { dom.bgmAudioEl.volume = 0.3; dom.bgmAudioEl.play().catch(e => {}); } }
         function stopAudio() { if (dom.bgmAudioEl) { dom.bgmAudioEl.pause(); dom.bgmAudioEl.currentTime = 0; } }
         function playSound(sound, ...args) { if (!isAudioReady) return; try { if (sound === 'success') sounds.success.triggerAttackRelease(['C4', 'E4', 'G4'], '8n'); else if (sound === 'fail') sounds.fail.triggerAttackRelease(['C3', 'C#3'], '4n'); else if (sound === 'ice') sounds.ice.triggerAttackRelease('C3', '8n', Tone.now() + 0.05); else if (sound === 'tip') sounds.tip.triggerAttackRelease(['C5', 'E5', 'G5', 'C6'], '4n'); else if (sound === 'happyHour') sounds.happyHour.triggerAttackRelease(['C4', 'E4', 'G4', 'C5'], '2n'); else if (sound === 'cash') sounds.cash.triggerAttackRelease(['E5', 'G5', 'C6'], '8n'); else if (sound === 'combo' && sounds.combo) { const notes = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5']; sounds.combo.triggerAttackRelease(notes[Math.min(state.combo -1, notes.length-1)], '8n');} else if (sounds[sound]) sounds[sound].triggerAttackRelease(...args); } catch(e){} }
         
-        // --- View & State Management ---
+        // --- Language & View Management ---
+        function setLanguage(lang) {
+            state.language = lang;
+            document.documentElement.lang = lang;
+            localStorage.setItem('bartenderLang', lang);
+            
+            // Update all static text
+            document.querySelectorAll('[data-lang-key]').forEach(el => {
+                const key = el.dataset.langKey;
+                if (translations[lang][key]) {
+                    el.textContent = translations[lang][key];
+                }
+            });
+
+            // Update dynamic content
+            populateShelf();
+            renderUpgrades();
+            document.title = lang === 'ja' ? 'バーテンダーゲーム' : 'Bartender Game';
+            dom.languageSwitchEl.classList.toggle('en', lang === 'en');
+            // If a game is in progress, update the current order text
+            if(state.isGameRunning && state.currentOrder) {
+                const currentLangData = translations[state.language];
+                const cocktailData = currentLangData.COCKTAILS.find(c => c.ingredients.join(',') === state.currentOrder.ingredients.join(','));
+                if (cocktailData) {
+                    dom.orderTextEl.textContent = cocktailData.name;
+                }
+                updateRecipeDisplay();
+            }
+        }
+
         function showView(view) {
             dom.gameContainerEl.style.display = 'none';
             dom.roomContainerEl.style.display = 'none';
@@ -291,11 +352,13 @@
 
         function renderUpgrades() {
             let contentHTML = '';
+            const currentLangData = translations[state.language];
             for(const key in state.upgrades) {
-                const upgrade = state.upgrades[key];
-                const disabled = upgrade.purchased || state.totalMoney < upgrade.cost;
-                const buttonText = upgrade.purchased ? '購入済' : `¥${upgrade.cost.toLocaleString()}`;
-                contentHTML += `<div class="flex items-center justify-between bg-gray-700/50 p-3 rounded-lg"><div class="pr-4"><h4 class="font-bold font-jp text-md">${upgrade.name}</h4><p class="text-sm text-gray-300 font-jp">${upgrade.description}</p></div><button onclick="buyUpgrade('${key}')" class="upgrade-button bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg font-jp transition-colors flex-shrink-0" ${disabled ? 'disabled' : ''}>${buttonText}</button></div>`;
+                const upgradeState = state.upgrades[key];
+                const upgradeInfo = currentLangData.UPGRADES[key];
+                const disabled = upgradeState.purchased || state.totalMoney < upgradeState.cost;
+                const buttonText = upgradeState.purchased ? currentLangData.purchased : `¥${upgradeState.cost.toLocaleString()}`;
+                contentHTML += `<div class="flex items-center justify-between bg-gray-700/50 p-3 rounded-lg"><div class="pr-4"><h4 class="font-bold font-jp text-md">${upgradeInfo.name}</h4><p class="text-sm text-gray-300 font-jp">${upgradeInfo.description}</p></div><button onclick="buyUpgrade('${key}')" class="upgrade-button bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg font-jp transition-colors flex-shrink-0" ${disabled ? 'disabled' : ''}>${buttonText}</button></div>`;
             }
             dom.upgradesSectionEl.querySelector('.space-y-3').innerHTML = contentHTML;
         }
@@ -312,13 +375,28 @@
 
         // --- Game Logic ---
         function updateTimer() { if (!state.isGameRunning) return; state.timeLeft -= 1; if (state.timeLeft < 0) state.timeLeft = 0; dom.timerEl.textContent = state.timeLeft; if (state.timeLeft <= 0) endDay(); }
-        function populateShelf() { dom.ingredientShelfEl.innerHTML = ''; for (const key in INGREDIENTS) { const bottle = document.createElement('div'); bottle.className = 'ingredient-bottle font-bold p-2 font-jp'; bottle.textContent = INGREDIENTS[key].name; bottle.style.backgroundColor = INGREDIENTS[key].color; bottle.style.color = getContrastingTextColor(INGREDIENTS[key].color); bottle.style.setProperty('--glow-color', INGREDIENTS[key].glow); bottle.dataset.ingredient = key; bottle.addEventListener('click', () => addIngredient(key, bottle)); dom.ingredientShelfEl.appendChild(bottle); } }
+        function populateShelf() { 
+            const currentIngredients = translations[state.language].INGREDIENTS;
+            dom.ingredientShelfEl.innerHTML = ''; 
+            for (const key in currentIngredients) { 
+                const ingredient = currentIngredients[key];
+                const bottle = document.createElement('div'); 
+                bottle.className = 'ingredient-bottle font-bold p-2 font-jp'; 
+                bottle.textContent = ingredient.name; 
+                bottle.style.backgroundColor = ingredient.color; 
+                bottle.style.color = getContrastingTextColor(ingredient.color); 
+                bottle.style.setProperty('--glow-color', ingredient.glow); 
+                bottle.dataset.ingredient = key; 
+                bottle.addEventListener('click', () => addIngredient(key, bottle)); 
+                dom.ingredientShelfEl.appendChild(bottle); 
+            } 
+        }
         function getContrastingTextColor(hex){ if(!hex) return '#000'; const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); return((r*299)+(g*587)+(b*114))/1000>=128?'#111':'#fff'; }
         function addIngredient(key, element) { if (!state.isGameRunning || !state.canInteract || state.shakerContents.length >= 5) return; state.shakerContents.push(key); updateShakerVisual(); element.classList.add('selected'); setTimeout(() => element.classList.remove('selected'), 500); playSound('pour', 'C3', '8n'); }
         function addIce() { if (!state.isGameRunning || !state.canInteract || state.shakerHasIce) return; state.shakerHasIce = true; updateShakerVisual(); playSound('ice'); }
         function shake() { if (!state.isGameRunning || !state.canInteract || (state.shakerContents.length === 0 && !state.shakerHasIce)) return; state.canInteract = false; dom.customerDialogueEl.classList.remove('show'); dom.shakerAreaEl.classList.add('shake-animation'); for(let i=0; i<5; i++) setTimeout(()=>playSound('shake', '8n'), i*80); setTimeout(() => { dom.shakerAreaEl.classList.remove('shake-animation'); checkRecipe(); }, 500); }
         function resetShaker() { state.shakerContents = []; state.shakerHasIce = false; updateShakerVisual(); dom.finalCocktailEl.classList.remove('animate-fill'); dom.finalCocktailEl.style.height = '0%'; dom.resultTextEl.textContent = '';}
-        function updateShakerVisual() { const liquidHeight = (state.shakerContents.length / 5) * 100; const mixedColor = state.shakerContents.length > 0 ? '#' + state.shakerContents.reduce((avg, key) => { let c = INGREDIENTS[key].color.substring(1); avg[0] += parseInt(c.substring(0,2), 16); avg[1] += parseInt(c.substring(2,4), 16); avg[2] += parseInt(c.substring(4,6), 16); return avg; }, [0, 0, 0]).map(c => Math.round(c / state.shakerContents.length).toString(16).padStart(2, '0')).join('') : 'transparent'; dom.shakerContentsEl.style.background = `linear-gradient(to top, ${mixedColor} 0%, ${mixedColor} ${liquidHeight}%, transparent ${liquidHeight}%)`; dom.shakerIceCubesEl.innerHTML = ''; if (state.shakerHasIce) { for (let i = 0; i < 5; i++) { const ice = document.createElement('div'); ice.className = 'ice-cube'; ice.style.cssText = `width:${Math.random()*10+15}px; height:${Math.random()*10+15}px; left:${Math.random()*70}%; bottom:${Math.random()*(liquidHeight>20?liquidHeight-20:0)}%; transform:rotate(${Math.random()*90}deg);`; dom.shakerIceCubesEl.appendChild(ice); } } }
+        function updateShakerVisual() { const liquidHeight = (state.shakerContents.length / 5) * 100; const currentIngredients = translations[state.language].INGREDIENTS; const mixedColor = state.shakerContents.length > 0 ? '#' + state.shakerContents.reduce((avg, key) => { let c = currentIngredients[key].color.substring(1); avg[0] += parseInt(c.substring(0,2), 16); avg[1] += parseInt(c.substring(2,4), 16); avg[2] += parseInt(c.substring(4,6), 16); return avg; }, [0, 0, 0]).map(c => Math.round(c / state.shakerContents.length).toString(16).padStart(2, '0')).join('') : 'transparent'; dom.shakerContentsEl.style.background = `linear-gradient(to top, ${mixedColor} 0%, ${mixedColor} ${liquidHeight}%, transparent ${liquidHeight}%)`; dom.shakerIceCubesEl.innerHTML = ''; if (state.shakerHasIce) { for (let i = 0; i < 5; i++) { const ice = document.createElement('div'); ice.className = 'ice-cube'; ice.style.cssText = `width:${Math.random()*10+15}px; height:${Math.random()*10+15}px; left:${Math.random()*70}%; bottom:${Math.random()*(liquidHeight>20?liquidHeight-20:0)}%; transform:rotate(${Math.random()*90}deg);`; dom.shakerIceCubesEl.appendChild(ice); } } }
         function showFloatingText(text, color, element) { const el = document.createElement('div'); el.className = 'floating-text'; el.textContent = text; el.style.color = color; element.appendChild(el); setTimeout(() => el.remove(), 1500); }
         function showDialogue(lines) { dom.customerDialogueEl.textContent = lines[Math.floor(Math.random() * lines.length)]; dom.customerDialogueEl.classList.add('show');}
         function updateScore() { if (state.score < 0) state.score = 0; dom.scoreEl.textContent = state.score.toLocaleString(); }
@@ -326,7 +404,6 @@
         function updateComboDisplay() { if(state.combo > 1) { dom.comboDisplayEl.textContent = `${state.combo} COMBO!`; dom.comboDisplayEl.style.opacity = '1'; dom.comboDisplayEl.style.transform = 'translateX(-50%) scale(1)'; } else { dom.comboDisplayEl.style.opacity = '0'; dom.comboDisplayEl.style.transform = 'translateX(-50%) scale(0.5)'; } }
         function scheduleHappyHour() { const delay = Math.random() * 20000 + 15000; state.happyHourTimeout = setTimeout(startHappyHour, delay); }
         function startHappyHour() { if(!state.isGameRunning) return; state.isHappyHour = true; dom.happyHourBannerEl.classList.remove('hidden'); playSound('happyHour'); }
-        function endHappyHour() { if(!state.isGameRunning) return; state.isHappyHour = false; dom.happyHourBannerEl.classList.add('hidden'); }
         
         function generateOrder() {
             state.canInteract = false; 
@@ -338,17 +415,19 @@
                 dom.recipeDisplayEl.style.opacity = '0'; 
             } 
             setTimeout(() => {
+                const currentLangData = translations[state.language];
                 const rand = Math.random(); 
-                if (rand < 0.10) { state.currentCustomer = MILLIONAIRE_CUSTOMER; } 
-                else if (rand < 0.25) { state.currentCustomer = DEATH_CUSTOMER; } 
-                else { state.currentCustomer = CUSTOMERS[Math.floor(Math.random() * CUSTOMERS.length)]; } 
-                state.currentOrder = COCKTAILS[Math.floor(Math.random() * COCKTAILS.length)]; 
+                if (rand < 0.10) { state.currentCustomer = currentLangData.MILLIONAIRE_CUSTOMER; } 
+                else if (rand < 0.25) { state.currentCustomer = currentLangData.DEATH_CUSTOMER; } 
+                else { state.currentCustomer = currentLangData.CUSTOMERS[Math.floor(Math.random() * currentLangData.CUSTOMERS.length)]; } 
+                state.currentOrder = currentLangData.COCKTAILS[Math.floor(Math.random() * currentLangData.COCKTAILS.length)]; 
                 
                 dom.customerEl.src = state.currentCustomer.image;
                 dom.customerEl.onerror = () => { dom.customerEl.src = `https://placehold.co/120x120/4A5568/FFFFFF?text=images/${state.currentCustomer.image.split('/')[1]}`; };
 
-                dom.customerEl.classList.toggle('scale-125', state.currentCustomer === DEATH_CUSTOMER || state.currentCustomer === MILLIONAIRE_CUSTOMER); 
-                dom.timerDisplayEl.classList.toggle('timer-danger', state.currentCustomer === DEATH_CUSTOMER); 
+                const isSpecial = state.currentCustomer.name === currentLangData.DEATH_CUSTOMER.name || state.currentCustomer.name === currentLangData.MILLIONAIRE_CUSTOMER.name;
+                dom.customerEl.classList.toggle('scale-125', isSpecial); 
+                dom.timerDisplayEl.classList.toggle('timer-danger', state.currentCustomer.name === currentLangData.DEATH_CUSTOMER.name); 
                 
                 dom.customerNameEl.textContent = state.currentCustomer.name; 
                 dom.customerEl.classList.remove('slide-out'); 
@@ -358,8 +437,8 @@
                     dom.orderIngredientsEl.innerHTML = ''; 
                     [...state.currentOrder.ingredients].sort(() => 0.5 - Math.random()).forEach(key => { 
                         const div = document.createElement('div'); 
-                        div.style.cssText = `width:24px; height:24px; background-color:${INGREDIENTS[key].color}; border-radius:9999px; border:3px solid #4b5563; box-shadow: 0 1px 3px rgba(0,0,0,0.2);`; 
-                        div.title = INGREDIENTS[key].name; 
+                        div.style.cssText = `width:24px; height:24px; background-color:${currentLangData.INGREDIENTS[key].color}; border-radius:9999px; border:3px solid #4b5563; box-shadow: 0 1px 3px rgba(0,0,0,0.2);`; 
+                        div.title = currentLangData.INGREDIENTS[key].name; 
                         dom.orderIngredientsEl.appendChild(div); 
                     }); 
                     dom.orderBubbleEl.style.opacity = '1'; 
@@ -371,10 +450,11 @@
         }
 
         function updateRecipeDisplay() {
+            const currentLangData = translations[state.language];
             if (state.currentOrder) {
-                const recipeItems = state.currentOrder.ingredients.map(key => INGREDIENTS[key].name);
-                if (state.currentOrder.needsIce) recipeItems.push("氷");
-                dom.recipeDisplayEl.innerHTML = `<p class="font-bold font-jp text-amber-300 border-b border-amber-300/50 mb-1">レシピ</p><p class="text-sm font-jp">${recipeItems.join('、')}</p>`;
+                const recipeItems = state.currentOrder.ingredients.map(key => currentLangData.INGREDIENTS[key].name.replace('\n', ''));
+                if (state.currentOrder.needsIce) recipeItems.push(currentLangData.ice);
+                dom.recipeDisplayEl.innerHTML = `<p class="font-bold font-jp text-amber-300 border-b border-amber-300/50 mb-1">${currentLangData.recipe}</p><p class="text-sm font-jp">${recipeItems.join(', ')}</p>`;
                 dom.recipeDisplayEl.style.opacity = '1';
             } else {
                 dom.recipeDisplayEl.style.opacity = '0';
@@ -382,33 +462,34 @@
         }
 
         function checkRecipe() {
+            const currentLangData = translations[state.language];
             dom.finalCocktailEl.style.background = dom.shakerContentsEl.style.background; 
             dom.finalCocktailEl.style.setProperty('--fill-height', '80%'); 
             dom.finalCocktailEl.classList.add('animate-fill'); 
             const madeRecipeSorted = JSON.stringify([...state.shakerContents].sort()); 
             const isCorrect = JSON.stringify([...state.currentOrder.ingredients].sort()) === madeRecipeSorted && state.currentOrder.needsIce === state.shakerHasIce; 
-            let foundSecret = !isCorrect ? SECRET_COCKTAILS.find(c => JSON.stringify([...c.ingredients].sort()) === madeRecipeSorted && c.needsIce === state.shakerHasIce) : null; 
+            let foundSecret = !isCorrect ? currentLangData.SECRET_COCKTAILS.find(c => JSON.stringify([...c.ingredients].sort()) === madeRecipeSorted && c.needsIce === state.shakerHasIce) : null; 
             if (isCorrect) { 
                 state.combo++; 
                 let comboBonus = state.combo * 10 * (state.upgrades.shaker.purchased ? 1.2 : 1); 
                 let points = 100 + comboBonus; 
-                if(state.currentCustomer === DEATH_CUSTOMER) points = 300; 
+                if(state.currentCustomer.name === currentLangData.DEATH_CUSTOMER.name) points = 300; 
                 if(state.isHappyHour) points *= 2; 
                 if(state.currentOrder.needsIce && state.upgrades.iceMachine.purchased) points += 20; 
                 points = Math.round(points); 
                 state.score += points; 
                 showFloatingText(`+¥${points}`, '#84cc16', dom.scoreDisplayEl); 
-                if (state.currentCustomer === MILLIONAIRE_CUSTOMER) { 
+                if (state.currentCustomer.name === currentLangData.MILLIONAIRE_CUSTOMER.name) { 
                     const tip = 200 * (state.isHappyHour ? 2 : 1); 
                     state.score += tip; 
                     setTimeout(() => { 
-                        showFloatingText(`チップ +¥${tip}!`, '#ffd700', dom.scoreDisplayEl); 
+                        showFloatingText(`Tip +¥${tip}!`, '#ffd700', dom.scoreDisplayEl); 
                         playSound('tip'); 
                     }, 300); 
                 } 
                 
                 showDialogue(state.currentCustomer.quotes.success); 
-                dom.resultTextEl.textContent = '成功！ 😋'; 
+                dom.resultTextEl.textContent = currentLangData.resultSuccess; 
                 dom.resultTextEl.style.color = '#65a30d'; 
                 playSound('success'); 
                 playSound('combo'); 
@@ -417,21 +498,21 @@
                 let bonus = foundSecret.bonus * (state.isHappyHour ? 2 : 1); 
                 state.score += bonus; 
                 showFloatingText(`SECRET! +¥${bonus}`, '#f0abfc', dom.scoreDisplayEl); 
-                dom.resultTextEl.textContent = `シークレット！ 🍸`; 
+                dom.resultTextEl.textContent = currentLangData.resultSecret; 
                 dom.resultTextEl.style.color = '#c026d3'; 
                 playSound('tip'); 
                 setTimeout(proceedToNextCustomer, 2000); 
             } else { 
                 state.combo = 0; 
-                let points = (state.currentCustomer === DEATH_CUSTOMER ? -50 : -20); 
+                let points = (state.currentCustomer.name === currentLangData.DEATH_CUSTOMER.name ? -50 : -20); 
                 if(state.upgrades.barManual.purchased) points /= 2; 
                 points = Math.round(points); 
                 state.score += points; 
                 showFloatingText(`¥${points}`, '#ef4444', dom.scoreDisplayEl); 
                 showDialogue(state.currentCustomer.quotes.fail); 
-                dom.resultTextEl.textContent = '失敗... 😖'; 
+                dom.resultTextEl.textContent = currentLangData.resultFail; 
                 dom.resultTextEl.style.color = '#dc2626'; 
-                if (state.currentCustomer !== DEATH_CUSTOMER) dom.customerEl.classList.add('angry');
+                if (state.currentCustomer.name !== currentLangData.DEATH_CUSTOMER.name) dom.customerEl.classList.add('angry');
                 playSound('fail'); 
                 setTimeout(proceedToNextCustomer, 2000); 
             } 
@@ -443,7 +524,7 @@
             if (!correctGarnish) { proceedToNextCustomer(); return; } 
             dom.garnishContainerEl.classList.remove('hidden'); 
             dom.garnishContainerEl.classList.add('flex'); 
-            dom.garnishContainerEl.innerHTML = `<h3 class="text-xl font-bold mb-2">仕上げは？</h3><div id="garnish-options" class="flex gap-4"></div>`; 
+            dom.garnishContainerEl.innerHTML = `<h3 class="text-xl font-bold mb-2">${translations[state.language].garnishPrompt}</h3><div id="garnish-options" class="flex gap-4"></div>`; 
             const optionsEl = dom.garnishContainerEl.querySelector('#garnish-options'); 
             const options = new Set([correctGarnish]); 
             while(options.size < 3) { 
@@ -491,7 +572,7 @@
                 'order-bubble', 'customer-name', 'order-text', 'order-ingredients', 'bar-counter', 
                 'shaker-area', 'shaker-ice-cubes', 'shaker-contents', 'add-ice-button', 'shake-button', 
                 'reset-button', 'cocktail-glass', 'final-cocktail', 'result-text', 'ingredient-shelf', 
-                'garnish-container', 'recipe-display'
+                'garnish-container', 'recipe-display', 'language-switch'
             ];
             allElementIds.forEach(id => {
                 const camelCaseId = id.replace(/-(\w)/g, (_, c) => c.toUpperCase());
@@ -499,7 +580,6 @@
             });
 
             setupSounds();
-            populateShelf();
             
             // Bind all buttons
             dom.startButtonEl.addEventListener('click', () => { startAudio(); startDay(); });
@@ -507,6 +587,14 @@
             dom.addIceButtonEl.addEventListener('click', () => { if(state.canInteract) addIce(); });
             dom.shakeButtonEl.addEventListener('click', shake);
             dom.resetButtonEl.addEventListener('click', () => { if (state.canInteract) resetShaker(); });
+            dom.languageSwitchEl.addEventListener('click', () => {
+                const newLang = state.language === 'ja' ? 'en' : 'ja';
+                setLanguage(newLang);
+            });
+            
+            // Set initial language
+            const savedLang = localStorage.getItem('bartenderLang') || 'ja';
+            setLanguage(savedLang);
         }
 
         initialSetup();
@@ -514,6 +602,7 @@
     </script>
 </body>
 </html>
+
 
 
 
