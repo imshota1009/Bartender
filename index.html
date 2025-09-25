@@ -117,8 +117,10 @@
                 </div>
             </div>
             <div id="combo-display" class="absolute left-1/2 -translate-x-1/2 top-0 text-3xl font-bold text-orange-400 opacity-0 transform scale-50"></div>
-            <div class="flex items-start justify-end gap-4">
-                <div id="recipe-display" class="bg-gray-900/70 p-2 rounded-lg border border-gray-500 text-right opacity-0"></div>
+            <div class="flex flex-col items-start justify-end gap-4">
+                 <div class="flex gap-4 ml-auto items-center">
+
+                 
                 <div id="timer-display" class="bg-red-600 rounded-full px-4 py-2 transition-all duration-300 flex-shrink-0">
                     <h2 class="text-xl md:text-2xl font-bold"><span data-lang-key="timeLabel">時間</span>: <span id="timer">60</span></h2>
                 </div>
@@ -127,6 +129,10 @@
                     <span>JA</span>
                     <span>EN</span>
                     <div class="lang-switch-toggle"></div>
+                </div>
+                </div>
+                <div class="flex items-end justify-end ml-auto">
+                    <div id="recipe-display" class="bg-gray-900/70 p-2 rounded-lg border border-gray-500 text-right opacity-0"></div>
                 </div>
             </div>
         </header>
@@ -454,7 +460,7 @@
             if (state.currentOrder) {
                 const recipeItems = state.currentOrder.ingredients.map(key => currentLangData.INGREDIENTS[key].name.replace('\n', ''));
                 if (state.currentOrder.needsIce) recipeItems.push(currentLangData.ice);
-                dom.recipeDisplayEl.innerHTML = `<p class="font-bold font-jp text-amber-300 border-b border-amber-300/50 mb-1">${currentLangData.recipe}</p><p class="text-sm font-jp">${recipeItems.join(', ')}</p>`;
+                dom.recipeDisplayEl.innerHTML = `<p class="font-bold font-jp text-center text-amber-300 border-b border-amber-300/50 mb-1">${currentLangData.recipe}</p><p class="text-sm font-jp">${recipeItems.join(', ')}</p>`;
                 dom.recipeDisplayEl.style.opacity = '1';
             } else {
                 dom.recipeDisplayEl.style.opacity = '0';
