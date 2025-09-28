@@ -3,6 +3,8 @@
 # 🍸 Bartender Game 🍹  
 **A simple browser-based bartender simulation game**
 
+**This is a PC-recommended game. Setting the screen size to 67% makes it just the right size to play.**
+
 </div>
 
 <p align="center">
