@@ -12,12 +12,17 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Playfair+Display:wght@700&family=M+PLUS+Rounded+1c:wght@700&display=swap"
         rel="stylesheet">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <style>
         body {
             font-family: 'Inter', sans-serif;
             background-color: #111;
             background-image: radial-gradient(circle at center, #333 0%, #111 70%);
             overflow: hidden;
+            overscroll-behavior: none;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .font-title {
@@ -31,11 +36,22 @@
         .game-view {
             width: 100%;
             max-width: 800px;
-            height: 95vh;
-            max-height: 900px;
+            height: 100dvh;
+            /* Use dynamic viewport height */
+            max-height: 950px;
             background: #262626;
             box-shadow: 0 0 40px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0, 0, 0, 0.5);
-            border: 4px solid #4a5568;
+            border: none;
+            /* Remove border on mobile for full immersion */
+        }
+
+        @media (min-width: 768px) {
+            .game-view {
+                height: 95vh;
+                max-height: 900px;
+                border: 4px solid #4a5568;
+                border-radius: 1rem;
+            }
         }
 
         #bar-counter {
@@ -539,21 +555,21 @@
                             <div id="shaker-ice-cubes" class="absolute inset-0"></div>
                             <div id="shaker-contents" class="w-full h-full transition-all duration-300"></div>
                         </div>
-                        <div class="flex flex-col gap-1 w-full max-w-[140px]">
+                        <div class="flex flex-col gap-2 w-full max-w-[140px]">
                             <button id="add-ice-button" data-lang-key="addIce"
-                                class="bg-blue-500 hover:bg-blue-600 text-white text-xs md:text-sm font-bold py-1 md:py-2 px-2 rounded hover:scale-105 transition-transform font-jp">氷</button>
+                                class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold py-3 md:py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">氷</button>
                             <button id="glass-button" data-lang-key="glassLabel"
-                                class="bg-purple-500 hover:bg-purple-600 text-white text-xs md:text-sm font-bold py-1 md:py-2 px-2 rounded hover:scale-105 transition-transform font-jp">グラス</button>
+                                class="bg-purple-500 hover:bg-purple-600 text-white text-sm font-bold py-3 md:py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">グラス</button>
                             <button id="ingredient-button" data-lang-key="ingredientsLabel"
-                                class="bg-orange-500 hover:bg-orange-600 text-white text-xs md:text-sm font-bold py-1 md:py-2 px-2 rounded hover:scale-105 transition-transform font-jp">材料</button>
+                                class="bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold py-3 md:py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">材料</button>
                             <div class="flex gap-1">
                                 <button id="shake-button" data-lang-key="shake"
-                                    class="w-full bg-green-600 hover:bg-green-700 text-white text-xs md:text-sm font-bold py-1 md:py-2 px-2 rounded hover:scale-105 transition-transform font-jp">シェイク！</button>
+                                    class="w-full bg-green-600 hover:bg-green-700 text-white text-sm font-bold py-3 md:py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">シェイク</button>
                             </div>
                             <button id="talk-button" data-lang-key="talk"
-                                class="w-full bg-yellow-600 hover:bg-yellow-700 text-white text-xs md:text-sm font-bold py-1 md:py-2 px-2 rounded hover:scale-105 transition-transform font-jp">話す</button>
+                                class="w-full bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-bold py-3 md:py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">話す</button>
                             <button id="reset-button" data-lang-key="reset"
-                                class="bg-red-700 hover:bg-red-800 text-white text-xs md:text-sm font-bold py-1 md:py-2 px-2 rounded hover:scale-105 transition-transform font-jp">リセット</button>
+                                class="bg-red-700 hover:bg-red-800 text-white text-sm font-bold py-3 md:py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">リセット</button>
                         </div>
                     </div>
                     <!-- Glass & Result -->
@@ -582,23 +598,29 @@
     <div id="glass-selection-overlay"
         class="absolute inset-0 bg-black/90 z-50 flex flex-col items-center justify-center hidden">
         <h2 class="text-3xl font-bold text-white mb-8 font-jp" data-lang-key="glassLabel">グラス選択:</h2>
-        <div class="grid grid-cols-3 gap-8">
-            <div class="glass-option cursor-pointer hover:scale-110 transition-transform flex flex-col items-center gap-2"
+        <div class="grid grid-cols-3 gap-4 md:gap-8 w-full max-w-lg px-4">
+            <div class="glass-option cursor-pointer bg-gray-800/80 p-4 rounded-xl hover:bg-gray-700 active:scale-95 transition-all flex flex-col items-center gap-2"
                 onclick="selectGlass('collins')">
-                <div class="w-12 h-20 md:w-16 md:h-24 border-2 border-white/50 rounded-sm bg-white/10"></div>
-                <span class="text-white font-jp" data-lang-key="glassCollins">ロング</span>
-            </div>
-            <div class="glass-option cursor-pointer hover:scale-110 transition-transform flex flex-col items-center gap-2"
-                onclick="selectGlass('rocks')">
-                <div class="w-12 h-10 md:w-16 md:h-12 border-2 border-white/50 rounded-sm bg-white/10 mt-10 md:mt-12">
+                <div
+                    class="w-12 h-20 md:w-16 md:h-24 border-2 border-white/50 rounded-sm bg-white/10 pointer-events-none">
                 </div>
-                <span class="text-white font-jp" data-lang-key="glassRocks">ロック</span>
+                <span class="text-white font-jp text-sm md:text-base pointer-events-none"
+                    data-lang-key="glassCollins">ロング</span>
             </div>
-            <div class="glass-option cursor-pointer hover:scale-110 transition-transform flex flex-col items-center gap-2"
+            <div class="glass-option cursor-pointer bg-gray-800/80 p-4 rounded-xl hover:bg-gray-700 active:scale-95 transition-all flex flex-col items-center gap-2"
+                onclick="selectGlass('rocks')">
+                <div
+                    class="w-12 h-10 md:w-16 md:h-12 border-2 border-white/50 rounded-sm bg-white/10 mt-10 md:mt-12 pointer-events-none">
+                </div>
+                <span class="text-white font-jp text-sm md:text-base pointer-events-none"
+                    data-lang-key="glassRocks">ロック</span>
+            </div>
+            <div class="glass-option cursor-pointer bg-gray-800/80 p-4 rounded-xl hover:bg-gray-700 active:scale-95 transition-all flex flex-col items-center gap-2"
                 onclick="selectGlass('cocktail')">
-                <div class="w-12 h-12 md:w-16 md:h-16 border-2 border-white/50 rounded-b-full bg-white/10 mt-8"
+                <div class="w-12 h-12 md:w-16 md:h-16 border-2 border-white/50 rounded-b-full bg-white/10 mt-8 pointer-events-none"
                     style="clip-path: polygon(0 0, 100% 0, 50% 100%);"></div>
-                <span class="text-white font-jp" data-lang-key="glassCocktail">カクテル</span>
+                <span class="text-white font-jp text-sm md:text-base pointer-events-none"
+                    data-lang-key="glassCocktail">カクテル</span>
             </div>
         </div>
     </div>
@@ -608,7 +630,7 @@
         class="absolute inset-0 bg-black/95 z-50 flex flex-col items-center justify-start pt-10 pb-4 px-4 hidden">
         <h2 class="text-3xl font-bold text-white mb-6 font-jp" data-lang-key="ingredientsLabel">材料選択</h2>
         <div id="ingredient-grid"
-            class="grid grid-cols-4 md:grid-cols-5 gap-3 md:gap-4 w-full max-w-4xl overflow-y-auto custom-scrollbar p-2">
+            class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4 w-full max-w-4xl overflow-y-auto custom-scrollbar p-2 pb-20">
             <!-- Javascript will populate this -->
         </div>
         <button id="close-ingredient-overlay"
