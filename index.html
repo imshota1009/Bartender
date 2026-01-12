@@ -36,13 +36,15 @@
         .game-view {
             width: 100%;
             max-width: 800px;
+            height: 100vh;
+            /* Fallback */
             height: 100dvh;
-            /* Use dynamic viewport height */
-            max-height: 950px;
+            max-height: 900px;
             background: #262626;
             box-shadow: 0 0 40px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0, 0, 0, 0.5);
-            border: none;
-            /* Remove border on mobile for full immersion */
+            border: 4px solid #4a5568;
+            /* Ensure bottom doesn't get cut off on mobile browsers with bars */
+            padding-bottom: env(safe-area-inset-bottom);
         }
 
         @media (min-width: 768px) {
@@ -480,9 +482,10 @@
 
     <!-- Game View -->
     <div id="game-container" class="game-view mx-auto rounded-2xl md:p-6 flex-col relative overflow-hidden hidden">
-        <!-- Scrollable Game Content -->
-        <div id="game-scroll-wrapper" class="w-full h-full overflow-y-auto flex flex-col p-4">
-            <header class="grid grid-cols-2 items-start mb-4 px-2 relative font-jp">
+        <!-- Scrollable Game Content with Safe Area Padding -->
+        <div id="game-scroll-wrapper" class="w-full h-full overflow-y-auto flex flex-col p-4 pb-20 md:pb-4"
+            style="padding-bottom: env(safe-area-inset-bottom);">
+            <header class="grid grid-cols-2 items-start mb-2 px-2 relative font-jp shrink-0">
                 <div class="flex flex-col text-left">
                     <h2 class="text-sm md:text-lg font-bold"><span data-lang-key="dayLabel">Day</span>: <span
                             id="day-display">1</span></h2>
@@ -521,8 +524,9 @@
                 <div id="happy-hour-banner"
                     class="absolute -top-4 w-full text-center text-4xl font-bold text-yellow-300 font-jp hidden z-10">
                 </div>
-                <!-- Customer Area -->
-                <div id="customer-area" class="h-[250px] flex flex-col items-center justify-end mb-4 relative z-0">
+                <!-- Customer Area - Reduced Height -->
+                <div id="customer-area"
+                    class="h-[200px] md:h-[250px] flex flex-col items-center justify-end mb-2 relative z-0 shrink-0">
                     <!-- Window Background -->
                     <div id="bg-window"
                         class="absolute top-4 bottom-0 left-1/2 -translate-x-1/2 w-64 h-full bg-gray-800 rounded-t-full border-4 border-amber-900 border-b-0 opacity-80 z-0 transition-all duration-1000 overflow-hidden box-border pointer-events-none">
@@ -555,21 +559,21 @@
                             <div id="shaker-ice-cubes" class="absolute inset-0"></div>
                             <div id="shaker-contents" class="w-full h-full transition-all duration-300"></div>
                         </div>
-                        <div class="flex flex-col gap-2 w-full max-w-[140px]">
+                        <div class="flex flex-col gap-1 w-full max-w-[140px]">
                             <button id="add-ice-button" data-lang-key="addIce"
-                                class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold py-3 md:py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">氷</button>
+                                class="bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">氷</button>
                             <button id="glass-button" data-lang-key="glassLabel"
-                                class="bg-purple-500 hover:bg-purple-600 text-white text-sm font-bold py-3 md:py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">グラス</button>
+                                class="bg-purple-500 hover:bg-purple-600 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">グラス</button>
                             <button id="ingredient-button" data-lang-key="ingredientsLabel"
-                                class="bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold py-3 md:py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">材料</button>
+                                class="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">材料</button>
                             <div class="flex gap-1">
                                 <button id="shake-button" data-lang-key="shake"
-                                    class="w-full bg-green-600 hover:bg-green-700 text-white text-sm font-bold py-3 md:py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">シェイク</button>
+                                    class="w-full bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">シェイク</button>
                             </div>
                             <button id="talk-button" data-lang-key="talk"
-                                class="w-full bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-bold py-3 md:py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">話す</button>
+                                class="w-full bg-yellow-600 hover:bg-yellow-700 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">話す</button>
                             <button id="reset-button" data-lang-key="reset"
-                                class="bg-red-700 hover:bg-red-800 text-white text-sm font-bold py-3 md:py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">リセット</button>
+                                class="bg-red-700 hover:bg-red-800 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">リセット</button>
                         </div>
                     </div>
                     <!-- Glass & Result -->
