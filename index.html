@@ -12,17 +12,12 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Playfair+Display:wght@700&family=M+PLUS+Rounded+1c:wght@700&display=swap"
         rel="stylesheet">
-    <meta name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <style>
         body {
             font-family: 'Inter', sans-serif;
             background-color: #111;
             background-image: radial-gradient(circle at center, #333 0%, #111 70%);
             overflow: hidden;
-            overscroll-behavior: none;
-            touch-action: manipulation;
-            -webkit-tap-highlight-color: transparent;
         }
 
         .font-title {
@@ -36,24 +31,11 @@
         .game-view {
             width: 100%;
             max-width: 800px;
-            height: 100vh;
-            /* Fallback */
-            height: 100dvh;
+            height: 95vh;
             max-height: 900px;
             background: #262626;
             box-shadow: 0 0 40px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0, 0, 0, 0.5);
             border: 4px solid #4a5568;
-            /* Ensure bottom doesn't get cut off on mobile browsers with bars */
-            padding-bottom: env(safe-area-inset-bottom);
-        }
-
-        @media (min-width: 768px) {
-            .game-view {
-                height: 95vh;
-                max-height: 900px;
-                border: 4px solid #4a5568;
-                border-radius: 1rem;
-            }
         }
 
         #bar-counter {
@@ -482,10 +464,9 @@
 
     <!-- Game View -->
     <div id="game-container" class="game-view mx-auto rounded-2xl md:p-6 flex-col relative overflow-hidden hidden">
-        <!-- Scrollable Game Content with Optimized Safe Area Padding -->
-        <div id="game-scroll-wrapper" class="w-full h-full overflow-y-auto flex flex-col p-4 pb-24 md:pb-4"
-            style="padding-bottom: max(6rem, env(safe-area-inset-bottom));">
-            <header class="grid grid-cols-2 items-start mb-1 px-2 relative font-jp shrink-0">
+        <!-- Scrollable Game Content -->
+        <div id="game-scroll-wrapper" class="w-full h-full overflow-y-auto flex flex-col p-4">
+            <header class="grid grid-cols-2 items-start mb-4 px-2 relative font-jp">
                 <div class="flex flex-col text-left">
                     <h2 class="text-sm md:text-lg font-bold"><span data-lang-key="dayLabel">Day</span>: <span
                             id="day-display">1</span></h2>
@@ -524,9 +505,8 @@
                 <div id="happy-hour-banner"
                     class="absolute -top-4 w-full text-center text-4xl font-bold text-yellow-300 font-jp hidden z-10">
                 </div>
-                <!-- Customer Area - Compact -->
-                <div id="customer-area"
-                    class="h-[160px] md:h-[250px] flex flex-col items-center justify-end mb-1 relative z-0 shrink-0">
+                <!-- Customer Area -->
+                <div id="customer-area" class="h-[250px] flex flex-col items-center justify-end mb-4 relative z-0">
                     <!-- Window Background -->
                     <div id="bg-window"
                         class="absolute top-4 bottom-0 left-1/2 -translate-x-1/2 w-64 h-full bg-gray-800 rounded-t-full border-4 border-amber-900 border-b-0 opacity-80 z-0 transition-all duration-1000 overflow-hidden box-border pointer-events-none">
@@ -551,7 +531,7 @@
                 </div>
                 <!-- Bar Counter -->
                 <div id="bar-counter"
-                    class="p-2 md:p-4 flex-grow flex items-center justify-between gap-2 md:gap-4 rounded-lg relative mb-4">
+                    class="p-2 md:p-4 flex-grow flex items-center justify-between gap-2 md:gap-4 rounded-lg relative">
                     <!-- Shaker & Buttons -->
                     <div class="w-1/3 flex flex-col items-center justify-end h-full gap-2">
                         <div id="shaker-area"
@@ -561,19 +541,19 @@
                         </div>
                         <div class="flex flex-col gap-1 w-full max-w-[140px]">
                             <button id="add-ice-button" data-lang-key="addIce"
-                                class="bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">氷</button>
+                                class="bg-blue-500 hover:bg-blue-600 text-white text-xs md:text-sm font-bold py-1 md:py-2 px-2 rounded hover:scale-105 transition-transform font-jp">氷</button>
                             <button id="glass-button" data-lang-key="glassLabel"
-                                class="bg-purple-500 hover:bg-purple-600 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">グラス</button>
+                                class="bg-purple-500 hover:bg-purple-600 text-white text-xs md:text-sm font-bold py-1 md:py-2 px-2 rounded hover:scale-105 transition-transform font-jp">グラス</button>
                             <button id="ingredient-button" data-lang-key="ingredientsLabel"
-                                class="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">材料</button>
+                                class="bg-orange-500 hover:bg-orange-600 text-white text-xs md:text-sm font-bold py-1 md:py-2 px-2 rounded hover:scale-105 transition-transform font-jp">材料</button>
                             <div class="flex gap-1">
                                 <button id="shake-button" data-lang-key="shake"
-                                    class="w-full bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">シェイク</button>
+                                    class="w-full bg-green-600 hover:bg-green-700 text-white text-xs md:text-sm font-bold py-1 md:py-2 px-2 rounded hover:scale-105 transition-transform font-jp">シェイク！</button>
                             </div>
                             <button id="talk-button" data-lang-key="talk"
-                                class="w-full bg-yellow-600 hover:bg-yellow-700 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">話す</button>
+                                class="w-full bg-yellow-600 hover:bg-yellow-700 text-white text-xs md:text-sm font-bold py-1 md:py-2 px-2 rounded hover:scale-105 transition-transform font-jp">話す</button>
                             <button id="reset-button" data-lang-key="reset"
-                                class="bg-red-700 hover:bg-red-800 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">リセット</button>
+                                class="bg-red-700 hover:bg-red-800 text-white text-xs md:text-sm font-bold py-1 md:py-2 px-2 rounded hover:scale-105 transition-transform font-jp">リセット</button>
                         </div>
                     </div>
                     <!-- Glass & Result -->
@@ -602,29 +582,23 @@
     <div id="glass-selection-overlay"
         class="absolute inset-0 bg-black/90 z-50 flex flex-col items-center justify-center hidden">
         <h2 class="text-3xl font-bold text-white mb-8 font-jp" data-lang-key="glassLabel">グラス選択:</h2>
-        <div class="grid grid-cols-3 gap-4 md:gap-8 w-full max-w-lg px-4">
-            <div class="glass-option cursor-pointer bg-gray-800/80 p-4 rounded-xl hover:bg-gray-700 active:scale-95 transition-all flex flex-col items-center gap-2"
+        <div class="grid grid-cols-3 gap-8">
+            <div class="glass-option cursor-pointer hover:scale-110 transition-transform flex flex-col items-center gap-2"
                 onclick="selectGlass('collins')">
-                <div
-                    class="w-12 h-20 md:w-16 md:h-24 border-2 border-white/50 rounded-sm bg-white/10 pointer-events-none">
-                </div>
-                <span class="text-white font-jp text-sm md:text-base pointer-events-none"
-                    data-lang-key="glassCollins">ロング</span>
+                <div class="w-12 h-20 md:w-16 md:h-24 border-2 border-white/50 rounded-sm bg-white/10"></div>
+                <span class="text-white font-jp" data-lang-key="glassCollins">ロング</span>
             </div>
-            <div class="glass-option cursor-pointer bg-gray-800/80 p-4 rounded-xl hover:bg-gray-700 active:scale-95 transition-all flex flex-col items-center gap-2"
+            <div class="glass-option cursor-pointer hover:scale-110 transition-transform flex flex-col items-center gap-2"
                 onclick="selectGlass('rocks')">
-                <div
-                    class="w-12 h-10 md:w-16 md:h-12 border-2 border-white/50 rounded-sm bg-white/10 mt-10 md:mt-12 pointer-events-none">
+                <div class="w-12 h-10 md:w-16 md:h-12 border-2 border-white/50 rounded-sm bg-white/10 mt-10 md:mt-12">
                 </div>
-                <span class="text-white font-jp text-sm md:text-base pointer-events-none"
-                    data-lang-key="glassRocks">ロック</span>
+                <span class="text-white font-jp" data-lang-key="glassRocks">ロック</span>
             </div>
-            <div class="glass-option cursor-pointer bg-gray-800/80 p-4 rounded-xl hover:bg-gray-700 active:scale-95 transition-all flex flex-col items-center gap-2"
+            <div class="glass-option cursor-pointer hover:scale-110 transition-transform flex flex-col items-center gap-2"
                 onclick="selectGlass('cocktail')">
-                <div class="w-12 h-12 md:w-16 md:h-16 border-2 border-white/50 rounded-b-full bg-white/10 mt-8 pointer-events-none"
+                <div class="w-12 h-12 md:w-16 md:h-16 border-2 border-white/50 rounded-b-full bg-white/10 mt-8"
                     style="clip-path: polygon(0 0, 100% 0, 50% 100%);"></div>
-                <span class="text-white font-jp text-sm md:text-base pointer-events-none"
-                    data-lang-key="glassCocktail">カクテル</span>
+                <span class="text-white font-jp" data-lang-key="glassCocktail">カクテル</span>
             </div>
         </div>
     </div>
@@ -634,7 +608,7 @@
         class="absolute inset-0 bg-black/95 z-50 flex flex-col items-center justify-start pt-10 pb-4 px-4 hidden">
         <h2 class="text-3xl font-bold text-white mb-6 font-jp" data-lang-key="ingredientsLabel">材料選択</h2>
         <div id="ingredient-grid"
-            class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4 w-full max-w-4xl overflow-y-auto custom-scrollbar p-2 pb-20">
+            class="grid grid-cols-4 md:grid-cols-5 gap-3 md:gap-4 w-full max-w-4xl overflow-y-auto custom-scrollbar p-2">
             <!-- Javascript will populate this -->
         </div>
         <button id="close-ingredient-overlay"
@@ -673,7 +647,7 @@
 
             <!-- Secrets Section Removed -->
         </main>
-        <footer class="text-center pt-6 pb-24 md:pb-6" style="padding-bottom: max(6rem, env(safe-area-inset-bottom));">
+        <footer class="text-center pt-6">
             <button id="next-day-button" data-lang-key="nextDayButton"
                 class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-xl shadow-lg transition-transform transform font-jp button-pulse">次の日へ</button>
         </footer>
@@ -775,12 +749,12 @@
                             { name: 'カウボーイ', ingredients: ['whiskey', 'milk'], needsIce: false, bonus: 600 }
                         ],
                         CUSTOMERS: [
-                            { name: "酒場の常連", image: 'images/bar_regular.png', quotes: { order: ["いつもの頼むよ"], success: ["これだよ、これ！"], fail: ["うーん、味が違うな…"], chat: { any: ["ここの火は、暖かいな。", "マスター、新しい冒険の話はあるかい？"], morning: ["おはよう。朝から飲む酒は格別だ。", "今日はいい天気だな。"], day: ["昼休みの一杯さ。", "午後は仕事に戻らなきゃな。"], evening: ["やれやれ、今日も疲れたよ。", "夕焼けが綺麗だったな。"], night: ["最近、街道に魔物が出るらしくてね。", "今夜は少し冷えるな..."], midnight: ["まだ起きてるのかい？", "夜更かしは肌に悪いぜ...なんてな。"] } } },
-                            { name: "錬金術師", image: 'images/scientist.png', quotes: { order: ["黄金比の調合で頼む"], success: ["計算通り、完璧な調合だ"], fail: ["調合失敗だ"], chat: { any: ["君の調合技術、興味深いよ。", "エリクサーの研究は進まないな。"], morning: ["昨夜の実験失敗で、徹夜してしまったよ。", "朝露は最高の触媒になるんだ。"], night: ["昨日の実験で小屋が吹き飛んでね...", "月明かりは魔力を高める。"], midnight: ["真夜中こそ、真理に近づける時間だ...", "こんな時間まで研究熱心だね、君も。"] } } },
-                            { name: "吟遊詩人", image: 'images/artist.png', quotes: { order: ["詩想が湧くような一杯を"], success: ["素晴らしい！詩が書けそうだ！"], fail: ["これでは詩が書けない"], chat: { any: ["次の英雄譚の主役は君にしようか。", "このグラスの輝き...宝石のようだ。"], day: ["昼下がりの酒場で歌うのも悪くない。", "小鳥のさえずりが新しいメロディをくれたよ。"], evening: ["夕暮れは別れの歌が似合う...", "世界中を旅してきたが、この味は初めてだ。"], night: ["夜の静寂は詩人の友だ。", "星空を見上げてごらん。物語が見えるはずさ。"] } } },
-                            { name: "未亡人", image: 'images/Landlady.png', quotes: { order: ["…強いお酒を。全て忘れたいの…"], success: ["…ありがとう。少し楽になったわ"], fail: ["…やっぱり、思い出してしまう"], chat: { any: ["優しくしないで...辛くなるから。", "あの人は戦場へ行ったきり..."], evening: ["雨の音は、あの日の馬蹄の音に似ている。", "夕暮れは寂しいわね..."], night: ["夜は思い出が蘇って眠れないの。", "暗闇がまた、私を包み込む..."] } } },
-                            { name: "若き大富豪", image: 'images/Greenhorn.png', quotes: { order: ["商談成立の祝いだ！最高の一杯を！"], success: ["黄金の味がする！乾杯！"], fail: ["祝いの席には合わないな"], chat: { any: ["金で買えないものはない...そう思うだろう？", "この店に投資してもいいんだぜ？"], morning: ["早起きは三両の得、ってね！", "今日の市場は活気がすごいぞ！"], day: ["東方の香辛料が高く売れてね！", "ランチミーティングも悪くない。"], night: ["今夜は朝まで祝杯だ！", "金貨の輝きより美しいものはないな。"] } } },
-                            { name: "疲れた農夫", image: 'images/farmer_man.png', quotes: { order: ["あー…何か、強いのをくれ…"], success: ["…ふぅ。生き返るなぁ"], fail: ["…泥水みたいだ"], chat: { any: ["今年の不作は酷えもんだ...", "領主様の税が重くてな。"], evening: ["やっと一日の仕事が終わった...", "腰が痛え..."], night: ["明日の畑仕事、起きられるかな。", "雨が降らねえとなぁ..."], midnight: ["こんな時間まで飲んでる場合じゃねえんだが...", "眠れなくてな..."] } } }
+                            { name: "酒場の常連", image: 'images/bar_regular.png', activeTime: ['morning', 'day', 'evening', 'night'], quotes: { order: ["いつもの頼むよ"], success: ["これだよ、これ！"], fail: ["うーん、味が違うな…"], chat: ["最近、街道に魔物が出るらしくてね。", "ここの火は、暖かいな。", "マスター、新しい冒険の話はあるかい？"] } },
+                            { name: "錬金術師", image: 'images/scientist.png', activeTime: ['night', 'midnight'], quotes: { order: ["黄金比の調合で頼む"], success: ["計算通り、完璧な調合だ"], fail: ["調合失敗だ"], chat: ["昨日の実験で小屋が吹き飛んでね...", "エリクサーの研究は進まないな。", "君の調合技術、興味深いよ。"] } },
+                            { name: "吟遊詩人", image: 'images/artist.png', activeTime: ['day', 'evening'], quotes: { order: ["詩想が湧くような一杯を"], success: ["素晴らしい！詩が書けそうだ！"], fail: ["これでは詩が書けない"], chat: ["次の英雄譚の主役は君にしようか。", "このグラスの輝き...宝石のようだ。", "世界中を旅してきたが、この味は初めてだ。"] } },
+                            { name: "未亡人", image: 'images/Landlady.png', activeTime: ['evening', 'night'], quotes: { order: ["…強いお酒を。全て忘れたいの…"], success: ["…ありがとう。少し楽になったわ"], fail: ["…やっぱり、思い出してしまう"], chat: ["あの人は戦場へ行ったきり...", "雨の音は、あの日の馬蹄の音に似ている。", "優しくしないで...辛くなるから。"] } },
+                            { name: "若き大富豪", image: 'images/Greenhorn.png', activeTime: ['morning', 'day'], quotes: { order: ["商談成立の祝いだ！最高の一杯を！"], success: ["黄金の味がする！乾杯！"], fail: ["祝いの席には合わないな"], chat: ["東方の香辛料が高く売れてね！", "金で買えないものはない...そう思うだろう？", "この店に投資してもいいんだぜ？"] } },
+                            { name: "疲れた農夫", image: 'images/farmer_man.png', activeTime: ['evening', 'night', 'midnight'], quotes: { order: ["あー…何か、強いのをくれ…"], success: ["…ふぅ。生き返るなぁ"], fail: ["…泥水みたいだ"], chat: ["今年の不作は酷えもんだ...", "領主様の税が重くてな。", "明日の畑仕事、起きられるかな。"] } }
                         ],
                         MILLIONAIRE_CUSTOMER: { name: "古の大富豪", image: 'images/millionaire.png', quotes: { order: ["王城で飲むような最高級品を"], success: ["素晴らしい！金貨を弾もう"], fail: ["豚に食わせる酒か？"], chat: ["王とも対等に渡り合う、それが商人だ。", "孤独だよ、富の頂というのは。", "君の腕を見込んで、新しい店を持たせてやろうか。"] } },
                         DEATH_CUSTOMER: { name: "森の魔女", image: 'images/mysterious_figure.png', quotes: { order: ["…魔力が満ちるような一杯を"], success: ["…ふふ、力が湧いてくるわ"], fail: ["…これはただの泥水ね"], chat: ["...森の奥は静かでいいわよ。", "...永遠の命に興味はある？", "...黒猫を見なかった？"] } },
@@ -855,12 +829,12 @@
                             { name: 'Cowboy', ingredients: ['whiskey', 'milk'], needsIce: false, bonus: 600 }
                         ],
                         CUSTOMERS: [
-                            { name: "Tavern Regular", image: 'images/bar_regular.png', quotes: { order: ["The usual, please."], success: ["That's the stuff!"], fail: ["Hmm, tastes different..."], chat: ["Monsters on the road lately.", "The fire here is warm.", "Any new adventure tales, master?"] } },
-                            { name: "Alchemist", image: 'images/scientist.png', quotes: { order: ["A perfect golden ratio blend."], success: ["Calculated perfection."], fail: ["Failed concoction."], chat: ["My lab exploded yesterday...", "Elixir research is slow.", "Your mixing skills are intriguing."] } },
-                            { name: "Bard", image: 'images/artist.png', quotes: { order: ["Something to inspire a song."], success: ["Magnificent! I feel a poem coming!"], fail: ["I cannot write with this."], chat: ["You shall be in my next saga.", "This glass shines like a gem.", "I've traveled far, but this taste is new."] } },
-                            { name: "The Widow", image: 'images/Landlady.png', quotes: { order: ["...Something strong. To forget..."], success: ["...Thank you. The pain fades slightly."], fail: ["...The memories return."], chat: ["He never returned from the war...", "Rain sounds like hooves.", "Don't be kind... it hurts."] } },
-                            { name: "Young Merchant", image: 'images/Greenhorn.png', quotes: { order: ["To celebrate a deal! The best you have!"], success: ["Tastes like gold! Cheers!"], fail: ["Not fit for a celebration."], chat: ["Spices from the East are selling high!", "Gold makes the world turn, eh?", "I could invest in this tavern."] } },
-                            { name: "Weary Farmer", image: 'images/farmer_man.png', quotes: { order: ["Just... give me something strong..."], success: ["...Ah. Life returns."], fail: ["...Tastes like mud."], chat: ["The harvest is bad this year...", "The Lord's taxes are heavy.", "Work starts at dawn again."] } }
+                            { name: "Tavern Regular", image: 'images/bar_regular.png', activeTime: ['morning', 'day', 'evening', 'night'], quotes: { order: ["The usual, please."], success: ["That's the stuff!"], fail: ["Hmm, tastes different..."], chat: ["Monsters on the road lately.", "The fire here is warm.", "Any new adventure tales, master?"] } },
+                            { name: "Alchemist", image: 'images/scientist.png', activeTime: ['night', 'midnight'], quotes: { order: ["A perfect golden ratio blend."], success: ["Calculated perfection."], fail: ["Failed concoction."], chat: ["My lab exploded yesterday...", "Elixir research is slow.", "Your mixing skills are intriguing."] } },
+                            { name: "Bard", image: 'images/artist.png', activeTime: ['day', 'evening'], quotes: { order: ["Something to inspire a song."], success: ["Magnificent! I feel a poem coming!"], fail: ["I cannot write with this."], chat: ["You shall be in my next saga.", "This glass shines like a gem.", "I've traveled far, but this taste is new."] } },
+                            { name: "The Widow", image: 'images/Landlady.png', activeTime: ['evening', 'night'], quotes: { order: ["...Something strong. To forget..."], success: ["...Thank you. The pain fades slightly."], fail: ["...The memories return."], chat: ["He never returned from the war...", "Rain sounds like hooves.", "Don't be kind... it hurts."] } },
+                            { name: "Young Merchant", image: 'images/Greenhorn.png', activeTime: ['morning', 'day'], quotes: { order: ["To celebrate a deal! The best you have!"], success: ["Tastes like gold! Cheers!"], fail: ["Not fit for a celebration."], chat: ["Spices from the East are selling high!", "Gold makes the world turn, eh?", "I could invest in this tavern."] } },
+                            { name: "Weary Farmer", image: 'images/farmer_man.png', activeTime: ['evening', 'night', 'midnight'], quotes: { order: ["Just... give me something strong..."], success: ["...Ah. Life returns."], fail: ["...Tastes like mud."], chat: ["The harvest is bad this year...", "The Lord's taxes are heavy.", "Work starts at dawn again."] } }
                         ],
                         MILLIONAIRE_CUSTOMER: { name: "Elder Tycoon", image: 'images/millionaire.png', quotes: { order: ["Something fit for a King."], success: ["Splendid! Here is gold."], fail: ["Swill for pigs."], chat: ["Merchants rival Kings.", "It is lonely at the top.", "I might buy you a new shop."] } },
                         DEATH_CUSTOMER: { name: "The Witch", image: 'images/mysterious_figure.png', quotes: { order: ["...I need a potion to restore my mana."], success: ["...Hehe, power flows through me."], fail: ["...This is just muddy water."], chat: ["...The deep forest is peaceful.", "...Interested in eternal life?", "...Have you seen my black cat?"] } },
@@ -1144,25 +1118,7 @@
                 function talk() {
                     if (!state.isGameRunning || !state.canInteract || !state.currentCustomer || state.hasTalked) return;
                     state.hasTalked = true;
-
-                    // Time-based Chat Logic
-                    let chats = [];
-                    const rawChat = state.currentCustomer.quotes.chat;
-
-                    if (Array.isArray(rawChat)) {
-                        chats = rawChat;
-                    } else if (typeof rawChat === 'object') {
-                        const phase = getRealTimePhase();
-                        // Combine general 'any' chats with specific time phase chats
-                        if (rawChat.any) chats = chats.concat(rawChat.any);
-                        if (rawChat[phase]) chats = chats.concat(rawChat[phase]);
-
-                        // Fallback if empty (shouldn't happen if data is good)
-                        if (chats.length === 0) chats = ["..."];
-                    } else {
-                        chats = ["..."];
-                    }
-
+                    const chats = state.currentCustomer.quotes.chat || ["..."];
                     showDialogue(chats);
                     // Bonus for talking
                     state.score += 50;
