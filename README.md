@@ -30,6 +30,21 @@
 - 🌃 **Beautiful Design**  
   Moody bar backgrounds and stylish fonts enhance the atmosphere.  
 
+- 🏠 **Bar Interior Customization** *(NEW!)*  
+  Change wallpapers (Classic/Modern/Fantasy) and lighting (Warm/Cool/Neon) to personalize your bar!
+
+- 📸 **Photo Mode** *(NEW!)*  
+  Take screenshots of your cocktails and share on Twitter/LINE!
+
+- 📱 **Gesture Shake** *(NEW!)*  
+  Shake your smartphone to mix cocktails - uses accelerometer for real motion detection!
+
+- 🌦️ **Weather & Events**  
+  Dynamic weather effects (sunny/rainy/snowy) and seasonal events affect gameplay.
+
+- 🍺 **Drunkenness System**  
+  Watch customer intoxication levels - their speech gets slurred as they drink more!
+
 ---
 
 ## 🕹️ How to Play
@@ -47,12 +62,22 @@
    Most cocktails need it—use the dedicated button to add.  
 
 5. **Shake It!**  
-   Once ingredients are ready, press "Shake!" to complete the cocktail.  
+   - 🖱️ Click "Shake!" button
+   - 📷 Use Camera Mode (shake with hand gestures)
+   - 📱 Use Gesture Mode (shake your phone!)
 
 6. **Serve & Results**  
    - ✅ Success → Score increases & customer satisfaction  
    - ❌ Failure → Score decreases, retry available  
-   - ⏰ Time’s up → Compete with your score within 60 seconds!  
+   - ⏰ Time's up → Compete with your score!  
+
+---
+
+## 📱 Mobile Features
+
+- **Gesture Shake**: Tap 📱 button → Shake your phone 5 times to complete!
+- **Photo Mode**: Tap 📸 button → Take screenshots → Share on social media
+- **Touch Controls**: All buttons optimized for mobile touch
 
 ---
 
@@ -64,20 +89,21 @@
   <img src="https://img.shields.io/badge/JavaScript-ES6+-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black">
   <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white">
   <img src="https://img.shields.io/badge/Tone.js-FF6F61?style=for-the-badge&logo=googlechrome&logoColor=white">
-  <img src="https://img.shields.io/badge/Google%20Fonts-4285F4?style=for-the-badge&logo=googlefonts&logoColor=white">
+  <img src="https://img.shields.io/badge/MediaPipe-4285F4?style=for-the-badge&logo=google&logoColor=white">
+  <img src="https://img.shields.io/badge/html2canvas-00B4AB?style=for-the-badge&logo=canvas&logoColor=white">
 </p>
 
 ---
 
 ## 🚀 Future Improvements
 
-- Add new cocktail recipes, ingredients, and customer characters  
-- Implement multiple game modes (Endless / Time Attack, etc.)  
+- Add BGM options for interior customization  
 - Online leaderboard functionality  
-- Enhanced controls for mobile devices  
+- More wallpaper and lighting themes  
+- Additional customer characters and cocktail recipes
 
 ---
 
 <div align="center">
-  <p>🍸 Tonight’s perfect cocktail depends on your skills 🍸</p>
+  <p>🍸 Tonight's perfect cocktail depends on your skills 🍸</p>
 </div>

@@ -7,17 +7,28 @@
     <title>バーテンダーゲーム</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <!-- MediaPipe Hands for skeleton detection -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Playfair+Display:wght@700&family=M+PLUS+Rounded+1c:wght@700&display=swap"
         rel="stylesheet">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <style>
         body {
             font-family: 'Inter', sans-serif;
             background-color: #111;
             background-image: radial-gradient(circle at center, #333 0%, #111 70%);
             overflow: hidden;
+            overscroll-behavior: none;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .font-title {
@@ -31,11 +42,24 @@
         .game-view {
             width: 100%;
             max-width: 800px;
-            height: 95vh;
+            height: 100vh;
+            /* Fallback */
+            height: 100dvh;
             max-height: 900px;
             background: #262626;
             box-shadow: 0 0 40px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0, 0, 0, 0.5);
             border: 4px solid #4a5568;
+            /* Ensure bottom doesn't get cut off on mobile browsers with bars */
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        @media (min-width: 768px) {
+            .game-view {
+                height: 95vh;
+                max-height: 900px;
+                border: 4px solid #4a5568;
+                border-radius: 1rem;
+            }
         }
 
         #bar-counter {
@@ -124,29 +148,55 @@
             filter: sepia(0.8) saturate(3) hue-rotate(-50deg) brightness(0.8);
         }
 
+        /* Time of Day Backgrounds */
+        #bg-window {
+            transition: background 2s ease;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .time-morning {
+            background: linear-gradient(to bottom, #87CEEB, #E0F7FA);
+        }
+
+        .time-day {
+            background: linear-gradient(to bottom, #4FC3F7, #FFF59D);
+        }
+
+        /* .time-evening unused in current logic but kept for safety */
+        .time-evening {
+            background: linear-gradient(to bottom, #FF9800, #F57C00);
+        }
+
+        .time-night {
+            background: linear-gradient(to bottom, #1a237e, #000000);
+        }
+
         #customer-dialogue {
             position: absolute;
-            top: 0;
-            /* Changed from bottom: 100% to keep it inside the area */
+            top: 5px;
             left: 50%;
             transform: translateX(-50%);
-            background-color: white;
+            background-color: rgba(255, 255, 255, 0.98);
             color: #333;
-            padding: 8px 16px;
-            border-radius: 12px;
-            min-width: 180px;
-            max-width: 250px;
+            padding: 10px 18px;
+            border-radius: 16px;
+            min-width: 200px;
+            max-width: 300px;
             text-align: center;
             opacity: 0;
             transition: opacity 0.3s, transform 0.3s;
             pointer-events: none;
-            z-index: 10;
+            z-index: 30;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 0 3px rgba(251, 191, 36, 0.5);
+            font-size: 0.9rem;
+            line-height: 1.4;
+            font-weight: 500;
         }
 
         #customer-dialogue.show {
             opacity: 1;
             transform: translateX(-50%) translateY(0);
-            /* Removed negative translate */
         }
 
         #customer-dialogue::after {
@@ -155,9 +205,10 @@
             top: 100%;
             left: 50%;
             transform: translateX(-50%);
-            border-width: 10px;
+            border-width: 12px;
             border-style: solid;
-            border-color: white transparent transparent transparent;
+            border-color: rgba(255, 255, 255, 0.98) transparent transparent transparent;
+            filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.2));
         }
 
         #game-overlay {
@@ -456,17 +507,1117 @@
         }
 
         /* Deep Dark */
+
+        /* Camera Shake Feature Styles */
+        #camera-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 160px;
+            height: 120px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 3px solid #fbbf24;
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+            z-index: 100;
+            background: #000;
+            display: none;
+        }
+
+        #camera-container.active {
+            display: block;
+            animation: camera-glow 1s infinite alternate;
+        }
+
+        @keyframes camera-glow {
+            from {
+                box-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+            }
+
+            to {
+                box-shadow: 0 0 40px rgba(251, 191, 36, 0.9);
+            }
+        }
+
+        #camera-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+            /* Mirror effect */
+        }
+
+        #camera-canvas {
+            display: none;
+        }
+
+        #shake-counter {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3rem;
+            font-weight: bold;
+            color: #fbbf24;
+            text-shadow: 0 0 10px #000, 0 0 20px #fbbf24;
+            pointer-events: none;
+            z-index: 101;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.2s;
+        }
+
+        #shake-counter.active {
+            opacity: 1;
+        }
+
+        #shake-counter.shake-pulse {
+            animation: shake-pulse 0.2s ease-out;
+        }
+
+        @keyframes shake-pulse {
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+
+            50% {
+                transform: translate(-50%, -50%) scale(1.5);
+            }
+
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        #camera-mode-btn {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #000;
+            font-weight: bold;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            font-size: 0.75rem;
+        }
+
+        #camera-mode-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.7);
+        }
+
+        #camera-mode-btn.active {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            animation: btn-active-glow 1.5s infinite alternate;
+        }
+
+        @keyframes btn-active-glow {
+            from {
+                box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+            }
+
+            to {
+                box-shadow: 0 0 25px rgba(34, 197, 94, 0.9);
+            }
+        }
+
+        #shake-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #22c55e, #fbbf24);
+            width: 0%;
+            transition: width 0.2s ease-out;
+            border-radius: 0 0 12px 12px;
+        }
+
+        #camera-overlay-text {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #fff;
+            font-size: 0.65rem;
+            text-shadow: 0 0 5px #000;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .motion-flash {
+            animation: motion-flash 0.15s ease-out;
+        }
+
+        @keyframes motion-flash {
+            0% {
+                filter: brightness(1);
+            }
+
+            50% {
+                filter: brightness(1.5);
+            }
+
+            100% {
+                filter: brightness(1);
+            }
+        }
+
+        /* Skeleton Canvas for Hand Tracking */
+        #skeleton-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        /* Detection Status Indicator */
+        #detection-status {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            z-index: 10;
+            transition: all 0.3s;
+        }
+
+        #detection-status.detected {
+            background: rgba(34, 197, 94, 0.9);
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+        }
+
+        #detection-status.not-detected {
+            background: rgba(239, 68, 68, 0.8);
+        }
+
+        #detection-icon {
+            font-size: 1rem;
+        }
+
+        #detection-text {
+            color: #fff;
+            font-weight: bold;
+        }
+
+        /* Hand detected animation */
+        @keyframes hand-pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
+        #detection-status.detected #detection-icon {
+            animation: hand-pulse 1s infinite;
+        }
+
+        /* Help/Rules Overlay Styles */
+        #help-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border: 3px solid #fff;
+            color: #fff;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 90;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.5);
+            transition: all 0.3s;
+            display: none;
+        }
+
+        #help-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 25px rgba(99, 102, 241, 0.7);
+        }
+
+        #help-button.visible {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #help-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 200;
+            display: none;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        #help-overlay.active {
+            display: block;
+        }
+
+        .help-content {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 30px;
+            background: linear-gradient(135deg, #1e293b, #334155);
+            border-radius: 20px;
+            border: 2px solid #6366f1;
+            box-shadow: 0 0 40px rgba(99, 102, 241, 0.3);
+        }
+
+        .help-title {
+            font-size: 2rem;
+            font-weight: bold;
+            text-align: center;
+            color: #fbbf24;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+        }
+
+        .help-section {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .help-section-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #60a5fa;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .help-section-content {
+            color: #e5e7eb;
+            line-height: 1.8;
+            font-size: 0.95rem;
+        }
+
+        .help-section-content ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .help-section-content li {
+            padding: 5px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .help-section-content li::before {
+            content: '▸';
+            position: absolute;
+            left: 0;
+            color: #fbbf24;
+        }
+
+        .help-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .help-step-number {
+            width: 28px;
+            height: 28px;
+            min-width: 28px;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .help-close-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin-top: 20px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .help-close-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 20px rgba(99, 102, 241, 0.5);
+        }
+
+        .help-tip {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #000;
+            padding: 12px 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            font-weight: 500;
+        }
+
+        .help-tip strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        /* ===== NEW FEATURES STYLES ===== */
+
+        /* Menu Button */
+        #menu-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: 3px solid #fff;
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            z-index: 90;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.5);
+            transition: all 0.3s;
+            display: none;
+        }
+
+        #menu-button:hover {
+            transform: scale(1.1);
+        }
+
+        #menu-button.visible {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Menu Overlay */
+        #menu-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 200;
+            display: none;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        #menu-overlay.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .menu-btn {
+            width: 280px;
+            padding: 20px;
+            border-radius: 16px;
+            border: none;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .menu-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .menu-btn-cocktail {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #000;
+        }
+
+        .menu-btn-customer {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: #fff;
+        }
+
+        .menu-btn-market {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff;
+        }
+
+        .menu-btn-title {
+            background: linear-gradient(135deg, #ec4899, #db2777);
+            color: #fff;
+        }
+
+        .menu-btn-close {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+            color: #fff;
+            margin-top: 20px;
+        }
+
+        /* Encyclopedia Overlay (shared) */
+        .encyclopedia-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.97);
+            z-index: 210;
+            display: none;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .encyclopedia-overlay.active {
+            display: block;
+        }
+
+        .encyclopedia-content {
+            max-width: 700px;
+            margin: 0 auto;
+            padding-bottom: 100px;
+        }
+
+        .encyclopedia-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Interior Customization Styles */
+        /* Wallpaper Styles */
+        .wall-classic {
+            background: linear-gradient(180deg, #3d2817 0%, #2a1c0f 100%) !important;
+        }
+
+        .wall-modern {
+            background: linear-gradient(180deg, #374151 0%, #1f2937 100%) !important;
+        }
+
+        .wall-fantasy {
+            background: linear-gradient(180deg, #4c1d95 0%, #312e81 100%) !important;
+        }
+
+        /* Lighting Styles */
+        .light-warm::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: radial-gradient(ellipse at 50% 0%, rgba(255, 183, 77, 0.2) 0%, transparent 60%);
+            z-index: 1;
+        }
+
+        .light-cool::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: radial-gradient(ellipse at 50% 0%, rgba(96, 165, 250, 0.2) 0%, transparent 60%);
+            z-index: 1;
+        }
+
+        .light-neon::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: radial-gradient(ellipse at 50% 0%, rgba(236, 72, 153, 0.15) 0%, transparent 60%),
+                radial-gradient(ellipse at 20% 50%, rgba(34, 211, 238, 0.1) 0%, transparent 40%),
+                radial-gradient(ellipse at 80% 50%, rgba(168, 85, 247, 0.1) 0%, transparent 40%);
+            z-index: 1;
+            animation: neonPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes neonPulse {
+
+            0%,
+            100% {
+                opacity: 0.8;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        .encyclopedia-title {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .encyclopedia-progress {
+            font-size: 0.9rem;
+            color: #9ca3af;
+        }
+
+        .encyclopedia-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+        }
+
+        .encyclopedia-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .encyclopedia-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-3px);
+        }
+
+        .encyclopedia-item.locked {
+            opacity: 0.5;
+        }
+
+        .encyclopedia-item-image {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 8px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+
+        .encyclopedia-item-name {
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .encyclopedia-close {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 220;
+        }
+
+        /* Market Overlay */
+        #market-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.97);
+            z-index: 210;
+            display: none;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        #market-overlay.active {
+            display: block;
+        }
+
+        .market-content {
+            max-width: 700px;
+            margin: 0 auto;
+            padding-bottom: 100px;
+        }
+
+        .market-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .market-title {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #10b981;
+            margin-bottom: 8px;
+        }
+
+        .market-money {
+            font-size: 1.2rem;
+            color: #fbbf24;
+        }
+
+        .market-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px;
+        }
+
+        .market-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .market-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .market-item.owned {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.2);
+        }
+
+        .market-item.affordable:not(.owned):hover {
+            border-color: #fbbf24;
+        }
+
+        .market-item.too-expensive {
+            opacity: 0.5;
+        }
+
+        .market-item-color {
+            width: 50px;
+            height: 50px;
+            margin: 0 auto 8px;
+            border-radius: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .market-item-name {
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .market-item-price {
+            font-size: 0.75rem;
+            color: #fbbf24;
+        }
+
+        .market-item-owned {
+            font-size: 0.7rem;
+            color: #10b981;
+        }
+
+        /* Title Display */
+        #title-display {
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, rgba(236, 72, 153, 0.9), rgba(219, 39, 119, 0.9));
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #fff;
+            z-index: 50;
+            box-shadow: 0 2px 10px rgba(236, 72, 153, 0.4);
+        }
+
+        /* Title Celebration */
+        .title-celebration {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 300;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .title-celebration.active {
+            display: flex;
+            animation: fadeIn 0.5s;
+        }
+
+        .title-celebration-icon {
+            font-size: 5rem;
+            animation: bounce 1s infinite;
+        }
+
+        .title-celebration-text {
+            font-size: 1.5rem;
+            color: #fff;
+            text-align: center;
+        }
+
+        .title-celebration-name {
+            font-size: 2.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* Detail Modal */
+        .detail-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 250;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .detail-modal.active {
+            display: flex;
+        }
+
+        .detail-content {
+            background: linear-gradient(135deg, #1e293b, #334155);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .detail-image {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 15px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .detail-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #fbbf24;
+            margin-bottom: 10px;
+        }
+
+        .detail-info {
+            color: #d1d5db;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .detail-close {
+            margin-top: 20px;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* ===== PHASE 2: WEATHER, DRUNK, ANIMATIONS ===== */
+
+        /* Weather Overlay */
+        #weather-overlay {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 5;
+            overflow: hidden;
+        }
+
+        /* Rain Effect */
+        .weather-rain .rain-drop {
+            position: absolute;
+            width: 2px;
+            height: 20px;
+            background: linear-gradient(to bottom, transparent, rgba(174, 194, 224, 0.5));
+            animation: rain-fall linear infinite;
+        }
+
+        @keyframes rain-fall {
+            0% {
+                transform: translateY(-100vh);
+            }
+
+            100% {
+                transform: translateY(100vh);
+            }
+        }
+
+        /* Snow Effect */
+        .weather-snow .snow-flake {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.8;
+            animation: snow-fall linear infinite;
+        }
+
+        @keyframes snow-fall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+            }
+
+            100% {
+                transform: translateY(100vh) rotate(360deg);
+            }
+        }
+
+        /* Weather Indicator */
+        #weather-indicator {
+            position: absolute;
+            top: 8px;
+            right: 80px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            z-index: 50;
+        }
+
+        /* Drunk Text Effect */
+        .drunk-text {
+            animation: drunk-wobble 0.5s ease-in-out infinite;
+        }
+
+        @keyframes drunk-wobble {
+
+            0%,
+            100% {
+                transform: rotate(-1deg);
+            }
+
+            50% {
+                transform: rotate(1deg);
+            }
+        }
+
+        .drunk-heavy .drunk-text {
+            animation: drunk-heavy-wobble 0.3s ease-in-out infinite;
+            color: #f472b6 !important;
+        }
+
+        @keyframes drunk-heavy-wobble {
+
+            0%,
+            100% {
+                transform: rotate(-3deg) translateX(-2px);
+            }
+
+            50% {
+                transform: rotate(3deg) translateX(2px);
+            }
+        }
+
+        /* Passed Out Effect */
+        .customer-passed-out {
+            filter: grayscale(0.8) brightness(0.6);
+            animation: passed-out 2s ease-in-out infinite;
+        }
+
+        @keyframes passed-out {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(5px);
+            }
+        }
+
+        /* Drunk Meter */
+        #drunk-meter {
+            position: absolute;
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 8px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 4px;
+            overflow: hidden;
+            z-index: 25;
+        }
+
+        #drunk-meter-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #22c55e, #eab308, #ef4444);
+            transition: width 0.3s;
+        }
+
+        /* Liquid Shake Animation */
+        .shaker-liquid-wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 100%;
+            background: inherit;
+            animation: liquid-wave 0.15s ease-in-out infinite alternate;
+        }
+
+        @keyframes liquid-wave {
+            0% {
+                transform: translateY(0) skewX(-5deg);
+                border-radius: 0 0 5px 5px;
+            }
+
+            100% {
+                transform: translateY(-5px) skewX(5deg);
+                border-radius: 5px 5px 0 0;
+            }
+        }
+
+        /* Sparkle Particles */
+        .sparkle-container {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            overflow: visible;
+        }
+
+        .sparkle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: radial-gradient(circle, #fff 0%, #fbbf24 50%, transparent 70%);
+            border-radius: 50%;
+            animation: sparkle-burst 1s ease-out forwards;
+        }
+
+        @keyframes sparkle-burst {
+            0% {
+                opacity: 1;
+                transform: scale(0) translate(0, 0);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.5) translate(var(--tx), var(--ty));
+            }
+
+            100% {
+                opacity: 0;
+                transform: scale(0.5) translate(calc(var(--tx) * 2), calc(var(--ty) * 2));
+            }
+        }
+
+        /* Seasonal Event Banner */
+        #event-banner {
+            position: absolute;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #ec4899, #8b5cf6);
+            padding: 6px 20px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            z-index: 50;
+            box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4);
+            display: none;
+        }
+
+        #event-banner.active {
+            display: block;
+            animation: event-pulse 2s infinite;
+        }
+
+        @keyframes event-pulse {
+
+            0%,
+            100% {
+                transform: translateX(-50%) scale(1);
+            }
+
+            50% {
+                transform: translateX(-50%) scale(1.05);
+            }
+        }
+
+        /* Christmas Theme */
+        .event-christmas #event-banner {
+            background: linear-gradient(135deg, #dc2626, #16a34a);
+        }
+
+        /* Summer Festival Theme */
+        .event-summer #event-banner {
+            background: linear-gradient(135deg, #f97316, #facc15);
+        }
     </style>
 </head>
 
 <body class="text-white flex items-center justify-center min-h-screen">
     <audio id="bgm-audio" loop src="background.mp3"></audio>
+    <!-- Weather Overlay -->
+    <div id="weather-overlay"></div>
 
     <!-- Game View -->
     <div id="game-container" class="game-view mx-auto rounded-2xl md:p-6 flex-col relative overflow-hidden hidden">
-        <!-- Scrollable Game Content -->
-        <div id="game-scroll-wrapper" class="w-full h-full overflow-y-auto flex flex-col p-4">
-            <header class="grid grid-cols-2 items-start mb-4 px-2 relative font-jp">
+        <!-- Scrollable Game Content with Optimized Safe Area Padding -->
+        <div id="game-scroll-wrapper" class="w-full h-full overflow-y-auto flex flex-col p-4 pb-24 md:pb-4"
+            style="padding-bottom: max(6rem, env(safe-area-inset-bottom));">
+            <!-- Title Display -->
+            <div id="title-display" class="font-jp">🌱 見習いバーテンダー</div>
+            <!-- Weather Indicator -->
+            <div id="weather-indicator" class="font-jp">☀️ 晴れ</div>
+            <!-- Event Banner -->
+            <div id="event-banner" class="font-jp">🎆 イベント開催中！</div>
+            <header class="grid grid-cols-2 items-start mb-1 px-2 relative font-jp shrink-0">
                 <div class="flex flex-col text-left">
                     <h2 class="text-sm md:text-lg font-bold"><span data-lang-key="dayLabel">Day</span>: <span
                             id="day-display">1</span></h2>
@@ -487,8 +1638,8 @@
                             <h2 class="text-lg md:text-2xl font-bold"><span data-lang-key="timeLabel">時間</span>: <span
                                     id="timer">60</span></h2>
                         </div>
-                        <!-- Language Switch -->
-                        <div id="language-switch" class="lang-switch">
+                        <!-- Language Switch (Hidden - Japanese Only) -->
+                        <div id="language-switch" class="lang-switch" style="display: none;">
                             <span>JA</span>
                             <span>EN</span>
                             <div class="lang-switch-toggle"></div>
@@ -505,8 +1656,9 @@
                 <div id="happy-hour-banner"
                     class="absolute -top-4 w-full text-center text-4xl font-bold text-yellow-300 font-jp hidden z-10">
                 </div>
-                <!-- Customer Area -->
-                <div id="customer-area" class="h-[250px] flex flex-col items-center justify-end mb-4 relative z-0">
+                <!-- Customer Area - Compact -->
+                <div id="customer-area"
+                    class="h-[200px] md:h-[280px] flex flex-col items-center justify-end mb-1 relative z-0 shrink-0 pt-10">
                     <!-- Window Background -->
                     <div id="bg-window"
                         class="absolute top-4 bottom-0 left-1/2 -translate-x-1/2 w-64 h-full bg-gray-800 rounded-t-full border-4 border-amber-900 border-b-0 opacity-80 z-0 transition-all duration-1000 overflow-hidden box-border pointer-events-none">
@@ -528,10 +1680,14 @@
                                 class="flex gap-1 md:gap-2 flex-wrap max-w-[100px] md:max-w-none justify-center"></div>
                         </div>
                     </div>
+                    <!-- Drunk Meter -->
+                    <div id="drunk-meter">
+                        <div id="drunk-meter-fill"></div>
+                    </div>
                 </div>
                 <!-- Bar Counter -->
                 <div id="bar-counter"
-                    class="p-2 md:p-4 flex-grow flex items-center justify-between gap-2 md:gap-4 rounded-lg relative">
+                    class="p-2 md:p-4 flex-grow flex items-center justify-between gap-2 md:gap-4 rounded-lg relative mb-4">
                     <!-- Shaker & Buttons -->
                     <div class="w-1/3 flex flex-col items-center justify-end h-full gap-2">
                         <div id="shaker-area"
@@ -541,19 +1697,31 @@
                         </div>
                         <div class="flex flex-col gap-1 w-full max-w-[140px]">
                             <button id="add-ice-button" data-lang-key="addIce"
-                                class="bg-blue-500 hover:bg-blue-600 text-white text-xs md:text-sm font-bold py-1 md:py-2 px-2 rounded hover:scale-105 transition-transform font-jp">氷</button>
+                                class="bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">氷</button>
                             <button id="glass-button" data-lang-key="glassLabel"
-                                class="bg-purple-500 hover:bg-purple-600 text-white text-xs md:text-sm font-bold py-1 md:py-2 px-2 rounded hover:scale-105 transition-transform font-jp">グラス</button>
+                                class="bg-purple-500 hover:bg-purple-600 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">グラス</button>
                             <button id="ingredient-button" data-lang-key="ingredientsLabel"
-                                class="bg-orange-500 hover:bg-orange-600 text-white text-xs md:text-sm font-bold py-1 md:py-2 px-2 rounded hover:scale-105 transition-transform font-jp">材料</button>
+                                class="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">材料</button>
                             <div class="flex gap-1">
                                 <button id="shake-button" data-lang-key="shake"
-                                    class="w-full bg-green-600 hover:bg-green-700 text-white text-xs md:text-sm font-bold py-1 md:py-2 px-2 rounded hover:scale-105 transition-transform font-jp">シェイク！</button>
+                                    class="w-full bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">シェイク</button>
                             </div>
+                            <button id="camera-mode-btn" class="w-full font-jp" data-lang-key="cameraMode">📷
+                                カメラモード</button>
+                            <button id="gesture-shake-btn"
+                                class="w-full bg-pink-500 hover:bg-pink-600 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md"
+                                onclick="toggleGestureShake()">
+                                📱 ジェスチャー
+                            </button>
+                            <button id="photo-btn"
+                                class="w-full bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md"
+                                onclick="openPhotoMode()">
+                                📸 撮影
+                            </button>
                             <button id="talk-button" data-lang-key="talk"
-                                class="w-full bg-yellow-600 hover:bg-yellow-700 text-white text-xs md:text-sm font-bold py-1 md:py-2 px-2 rounded hover:scale-105 transition-transform font-jp">話す</button>
+                                class="w-full bg-yellow-600 hover:bg-yellow-700 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">話す</button>
                             <button id="reset-button" data-lang-key="reset"
-                                class="bg-red-700 hover:bg-red-800 text-white text-xs md:text-sm font-bold py-1 md:py-2 px-2 rounded hover:scale-105 transition-transform font-jp">リセット</button>
+                                class="bg-red-700 hover:bg-red-800 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">リセット</button>
                         </div>
                     </div>
                     <!-- Glass & Result -->
@@ -582,23 +1750,59 @@
     <div id="glass-selection-overlay"
         class="absolute inset-0 bg-black/90 z-50 flex flex-col items-center justify-center hidden">
         <h2 class="text-3xl font-bold text-white mb-8 font-jp" data-lang-key="glassLabel">グラス選択:</h2>
-        <div class="grid grid-cols-3 gap-8">
-            <div class="glass-option cursor-pointer hover:scale-110 transition-transform flex flex-col items-center gap-2"
+        <div class="grid grid-cols-3 gap-4 md:gap-8 w-full max-w-lg px-4">
+            <div class="glass-option cursor-pointer bg-gray-800/80 p-4 rounded-xl hover:bg-gray-700 active:scale-95 transition-all flex flex-col items-center gap-2"
                 onclick="selectGlass('collins')">
-                <div class="w-12 h-20 md:w-16 md:h-24 border-2 border-white/50 rounded-sm bg-white/10"></div>
-                <span class="text-white font-jp" data-lang-key="glassCollins">ロング</span>
-            </div>
-            <div class="glass-option cursor-pointer hover:scale-110 transition-transform flex flex-col items-center gap-2"
-                onclick="selectGlass('rocks')">
-                <div class="w-12 h-10 md:w-16 md:h-12 border-2 border-white/50 rounded-sm bg-white/10 mt-10 md:mt-12">
+                <div
+                    class="w-12 h-20 md:w-16 md:h-24 border-2 border-white/50 rounded-sm bg-white/10 pointer-events-none">
                 </div>
-                <span class="text-white font-jp" data-lang-key="glassRocks">ロック</span>
+                <span class="text-white font-jp text-sm md:text-base pointer-events-none"
+                    data-lang-key="glassCollins">ロング</span>
             </div>
-            <div class="glass-option cursor-pointer hover:scale-110 transition-transform flex flex-col items-center gap-2"
+            <div class="glass-option cursor-pointer bg-gray-800/80 p-4 rounded-xl hover:bg-gray-700 active:scale-95 transition-all flex flex-col items-center gap-2"
+                onclick="selectGlass('rocks')">
+                <div
+                    class="w-12 h-10 md:w-16 md:h-12 border-2 border-white/50 rounded-sm bg-white/10 mt-10 md:mt-12 pointer-events-none">
+                </div>
+                <span class="text-white font-jp text-sm md:text-base pointer-events-none"
+                    data-lang-key="glassRocks">ロック</span>
+            </div>
+            <div class="glass-option cursor-pointer bg-gray-800/80 p-4 rounded-xl hover:bg-gray-700 active:scale-95 transition-all flex flex-col items-center gap-2"
                 onclick="selectGlass('cocktail')">
-                <div class="w-12 h-12 md:w-16 md:h-16 border-2 border-white/50 rounded-b-full bg-white/10 mt-8"
+                <div class="w-12 h-12 md:w-16 md:h-16 border-2 border-white/50 rounded-b-full bg-white/10 mt-8 pointer-events-none"
                     style="clip-path: polygon(0 0, 100% 0, 50% 100%);"></div>
-                <span class="text-white font-jp" data-lang-key="glassCocktail">カクテル</span>
+                <span class="text-white font-jp text-sm md:text-base pointer-events-none"
+                    data-lang-key="glassCocktail">カクテル</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Photo Mode Overlay -->
+    <div id="photo-mode-overlay"
+        class="fixed inset-0 bg-black/95 z-[300] flex flex-col items-center justify-center hidden">
+        <div class="text-center">
+            <h2 class="text-2xl font-bold text-white mb-4 font-jp" data-lang-key="photoTitle">📷 フォトモード</h2>
+            <div id="photo-preview" class="bg-gray-800 rounded-lg p-4 mb-4 inline-block">
+                <canvas id="photo-canvas" style="max-width: 90vw; max-height: 50vh;"></canvas>
+            </div>
+            <div class="flex flex-wrap gap-3 justify-center">
+                <button onclick="downloadPhoto()"
+                    class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg font-jp text-lg">
+                    💾 保存
+                </button>
+                <button onclick="shareToTwitter()"
+                    class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg font-jp text-lg">
+                    𝕏 シェア
+                </button>
+                <button onclick="shareToLINE()"
+                    class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg font-jp text-lg">
+                    LINE
+                </button>
+                <button onclick="closePhotoMode()"
+                    class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg font-jp text-lg"
+                    data-lang-key="menuClose">
+                    ✖ 閉じる
+                </button>
             </div>
         </div>
     </div>
@@ -608,7 +1812,7 @@
         class="absolute inset-0 bg-black/95 z-50 flex flex-col items-center justify-start pt-10 pb-4 px-4 hidden">
         <h2 class="text-3xl font-bold text-white mb-6 font-jp" data-lang-key="ingredientsLabel">材料選択</h2>
         <div id="ingredient-grid"
-            class="grid grid-cols-4 md:grid-cols-5 gap-3 md:gap-4 w-full max-w-4xl overflow-y-auto custom-scrollbar p-2">
+            class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4 w-full max-w-4xl overflow-y-auto custom-scrollbar p-2 pb-20">
             <!-- Javascript will populate this -->
         </div>
         <button id="close-ingredient-overlay"
@@ -647,10 +1851,110 @@
 
             <!-- Secrets Section Removed -->
         </main>
-        <footer class="text-center pt-6">
+        <footer class="text-center pt-6 pb-24 md:pb-6 flex flex-col gap-4 items-center"
+            style="padding-bottom: max(6rem, env(safe-area-inset-bottom));">
+            <button onclick="openMarket()"
+                class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg text-xl shadow-lg transition-transform transform font-jp">🛒
+                材料を仕入れる</button>
             <button id="next-day-button" data-lang-key="nextDayButton"
                 class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-xl shadow-lg transition-transform transform font-jp button-pulse">次の日へ</button>
         </footer>
+    </div>
+
+    <!-- Help Button (Fixed) -->
+    <button id="help-button" class="font-jp">?</button>
+
+    <!-- Help/Rules Overlay -->
+    <div id="help-overlay">
+        <div class="help-content font-jp">
+            <h1 class="help-title" data-lang-key="helpTitle">📖 遊び方ガイド</h1>
+
+            <div class="help-section">
+                <div class="help-section-title">🎯 ゲームの目的</div>
+                <div class="help-section-content">
+                    お客さんの注文通りにカクテルを作って、お金を稼ごう！<br>
+                    7日間営業して、伝説のバーテンダーを目指そう！
+                </div>
+            </div>
+
+            <div class="help-section">
+                <div class="help-section-title">🍸 カクテルの作り方</div>
+                <div class="help-section-content">
+                    <div class="help-step">
+                        <div class="help-step-number">1</div>
+                        <div>お客さんの注文を確認（右上にレシピが表示される）</div>
+                    </div>
+                    <div class="help-step">
+                        <div class="help-step-number">2</div>
+                        <div><strong>「材料」ボタン</strong>をタップして、必要な材料を選ぶ</div>
+                    </div>
+                    <div class="help-step">
+                        <div class="help-step-number">3</div>
+                        <div>レシピに氷が書いてあったら<strong>「氷を入れる」ボタン</strong>をタップ</div>
+                    </div>
+                    <div class="help-step">
+                        <div class="help-step-number">4</div>
+                        <div><strong>グラスをタップ</strong>して、正しいグラスを選ぶ</div>
+                    </div>
+                    <div class="help-step">
+                        <div class="help-step-number">5</div>
+                        <div><strong>「シェイク」ボタン</strong>でカクテル完成！</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="help-section">
+                <div class="help-section-title">📷 カメラモード（実際のコップでシェイク！）</div>
+                <div class="help-section-content">
+                    <div class="help-step">
+                        <div class="help-step-number">1</div>
+                        <div><strong>「📷 カメラモード」ボタン</strong>をタップ</div>
+                    </div>
+                    <div class="help-step">
+                        <div class="help-step-number">2</div>
+                        <div>カメラへのアクセスを許可</div>
+                    </div>
+                    <div class="help-step">
+                        <div class="help-step-number">3</div>
+                        <div>実際のコップを持って、カメラの前で<strong>5回シェイク</strong>！</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="help-section">
+                <div class="help-section-title">🔘 ボタンの説明</div>
+                <div class="help-section-content">
+                    <ul>
+                        <li><strong>材料</strong> - カクテルの材料を選ぶ</li>
+                        <li><strong>氷を入れる</strong> - 氷を追加する</li>
+                        <li><strong>グラス</strong> - グラスの種類を選ぶ</li>
+                        <li><strong>シェイク</strong> - カクテルを完成させる</li>
+                        <li><strong>話す</strong> - お客さんと話す（ボーナスポイント！）</li>
+                        <li><strong>リセット</strong> - 作り直す</li>
+                        <li><strong>📷 カメラモード</strong> - カメラでシェイク</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="help-section">
+                <div class="help-section-title">⭐ コツ</div>
+                <div class="help-section-content">
+                    <ul>
+                        <li>レシピ通りに作ると<strong>連続ボーナス</strong>がもらえる！</li>
+                        <li>お客さんと<strong>話す</strong>とチップがもらえる</li>
+                        <li>1日の終わりに<strong>アップグレード</strong>を買おう</li>
+                        <li>時間内にたくさん作れば高得点！</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="help-tip">
+                <strong>💡 ヒント</strong>
+                いつでもこの画面を見たいときは、右上の「？」ボタンをタップしてね！
+            </div>
+
+            <button id="help-close-btn" class="help-close-btn">わかった！ゲームに戻る</button>
+        </div>
     </div>
 
     <!-- Initial Start Screen -->
@@ -659,6 +1963,9 @@
         <h1 class="font-title text-6xl md:text-8xl mb-4">Bartender</h1>
         <button id="start-button" data-lang-key="startButton"
             class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg text-2xl shadow-lg transition-transform transform font-jp button-pulse">ゲーム開始</button>
+        <button id="help-start-btn"
+            class="mt-4 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg text-lg shadow-lg transition-transform transform font-jp">📖
+            遊び方を見る</button>
     </div>
 
     <!-- Ending Overlay -->
@@ -673,11 +1980,170 @@
             Screen</button>
     </div>
 
+    <!-- Camera Container for Real Shake -->
+    <div id="camera-container">
+        <video id="camera-video" autoplay playsinline muted></video>
+        <canvas id="camera-canvas"></canvas>
+        <canvas id="skeleton-canvas"></canvas>
+        <div id="detection-status">
+            <span id="detection-icon">🔍</span>
+            <span id="detection-text">認識中...</span>
+        </div>
+        <div id="shake-counter">0</div>
+        <div id="shake-progress"></div>
+        <div id="camera-overlay-text">コップを振ってシェイク！</div>
+    </div>
+
     <!-- Story Overlay -->
     <div id="story-overlay">
         <h1 id="story-title" class="story-title">Chapter 1</h1>
         <p id="story-text" class="story-text">物語の始まり...</p>
         <p class="story-continue font-jp">Click to start</p>
+    </div>
+
+    <!-- Menu Button -->
+    <button id="menu-button" class="font-jp">☰</button>
+
+    <!-- Menu Overlay -->
+    <div id="menu-overlay">
+        <h2 class="text-3xl font-bold text-white mb-8 font-jp" data-lang-key="menuTitle">📋 メニュー</h2>
+        <button class="menu-btn menu-btn-cocktail font-jp" onclick="openCocktailEncyclopedia()"
+            data-lang-key="menuCocktails">
+            🍸 カクテル図鑑
+        </button>
+        <button class="menu-btn menu-btn-customer font-jp" onclick="openCustomerEncyclopedia()"
+            data-lang-key="menuCustomers">
+            👥 お客さん図鑑
+        </button>
+        <button class="menu-btn menu-btn-title font-jp" onclick="openTitleList()" data-lang-key="menuTitles">
+            🏆 称号一覧
+        </button>
+        <button class="menu-btn menu-btn-interior font-jp" onclick="openInteriorShop()" data-lang-key="menuInterior">
+            🏠 内装変更
+        </button>
+        <button class="menu-btn menu-btn-settings font-jp" onclick="openSettings()" data-lang-key="menuSettings">
+            ⚙️ 設定
+        </button>
+        <button class="menu-btn menu-btn-close font-jp" onclick="closeMenu()" data-lang-key="menuClose">
+            ✖ 閉じる
+        </button>
+    </div>
+
+    <!-- Interior Shop Overlay -->
+    <div id="interior-shop-overlay" class="encyclopedia-overlay">
+        <div class="encyclopedia-content" style="max-width: 600px;">
+            <div class="encyclopedia-header">
+                <h2 class="encyclopedia-title text-amber-400 font-jp" data-lang-key="interiorTitle">🏠 内装カスタマイズ</h2>
+                <p class="text-white/60 font-jp" id="interior-money">所持金: ¥0</p>
+            </div>
+            <div id="interior-shop-content" style="padding: 15px; display: flex; flex-direction: column; gap: 20px;">
+                <!-- Categories added dynamically -->
+            </div>
+            <button class="encyclopedia-close font-jp" onclick="closeInteriorShop()" data-lang-key="menuClose">✖
+                閉じる</button>
+        </div>
+    </div>
+
+    <!-- Settings Overlay -->
+    <div id="settings-overlay" class="encyclopedia-overlay">
+        <div class="encyclopedia-content" style="max-width: 400px;">
+            <div class="encyclopedia-header">
+                <h2 class="encyclopedia-title text-amber-400 font-jp" data-lang-key="settingsTitle">⚙️ 設定</h2>
+            </div>
+            <div style="padding: 20px;">
+                <div style="margin-bottom: 20px;">
+                    <label class="font-jp text-white text-lg block mb-2" data-lang-key="languageLabel">🌐 言語 /
+                        Language</label>
+                    <select id="language-select" class="font-jp"
+                        style="width: 100%; padding: 10px; border-radius: 8px; font-size: 16px; background: #333; color: white; border: 2px solid #555;">
+                        <option value="ja">🇯🇵 日本語</option>
+                        <option value="en">🇺🇸 English</option>
+                    </select>
+                    <p class="text-gray-400 text-sm mt-2 font-jp" data-lang-key="languageNote">※ 言語変更は再起動後に反映されます</p>
+                </div>
+                <button onclick="saveSettingsAndRestart()"
+                    class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg font-jp text-lg mt-4"
+                    data-lang-key="saveAndRestart">
+                    💾 保存して再起動
+                </button>
+            </div>
+            <button class="encyclopedia-close font-jp" onclick="closeSettings()" data-lang-key="menuClose">✖
+                閉じる</button>
+        </div>
+    </div>
+
+    <!-- Cocktail Encyclopedia Overlay -->
+    <div id="cocktail-encyclopedia" class="encyclopedia-overlay">
+        <div class="encyclopedia-content">
+            <div class="encyclopedia-header">
+                <h2 class="encyclopedia-title text-amber-400 font-jp">🍸 カクテル図鑑</h2>
+                <p id="cocktail-progress" class="encyclopedia-progress">発見: 0 / 0</p>
+            </div>
+            <div id="cocktail-grid" class="encyclopedia-grid">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+        <button class="encyclopedia-close font-jp" onclick="closeCocktailEncyclopedia()">閉じる</button>
+    </div>
+
+    <!-- Customer Encyclopedia Overlay -->
+    <div id="customer-encyclopedia" class="encyclopedia-overlay">
+        <div class="encyclopedia-content">
+            <div class="encyclopedia-header">
+                <h2 class="encyclopedia-title text-purple-400 font-jp">👥 お客さん図鑑</h2>
+                <p id="customer-progress" class="encyclopedia-progress">出会い: 0 / 0</p>
+            </div>
+            <div id="customer-grid" class="encyclopedia-grid">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+        <button class="encyclopedia-close font-jp" onclick="closeCustomerEncyclopedia()">閉じる</button>
+    </div>
+
+    <!-- Title List Overlay -->
+    <div id="title-overlay" class="encyclopedia-overlay">
+        <div class="encyclopedia-content">
+            <div class="encyclopedia-header">
+                <h2 class="encyclopedia-title text-pink-400 font-jp">🏆 称号一覧</h2>
+                <p id="title-current" class="encyclopedia-progress">現在の称号: 見習いバーテンダー</p>
+            </div>
+            <div id="title-grid" class="encyclopedia-grid">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+        <button class="encyclopedia-close font-jp" onclick="closeTitleList()">閉じる</button>
+    </div>
+
+    <!-- Market Overlay -->
+    <div id="market-overlay">
+        <div class="market-content font-jp">
+            <div class="market-header">
+                <h2 class="market-title">🛒 材料市場</h2>
+                <p class="market-money">所持金: ¥<span id="market-money">0</span></p>
+            </div>
+            <div id="market-grid" class="market-grid">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+        <button class="encyclopedia-close font-jp" onclick="closeMarket()">閉じる</button>
+    </div>
+
+    <!-- Detail Modal -->
+    <div id="detail-modal" class="detail-modal">
+        <div class="detail-content font-jp">
+            <img id="detail-image" class="detail-image" src="" alt="">
+            <h3 id="detail-name" class="detail-name"></h3>
+            <p id="detail-info" class="detail-info"></p>
+            <button class="detail-close" onclick="closeDetailModal()">閉じる</button>
+        </div>
+    </div>
+
+    <!-- Title Celebration -->
+    <div id="title-celebration" class="title-celebration" onclick="closeTitleCelebration()">
+        <div class="title-celebration-icon">🏆</div>
+        <p class="title-celebration-text font-jp">称号を獲得しました！</p>
+        <p id="celebration-title-name" class="title-celebration-name font-jp"></p>
+        <p class="text-white/60 font-jp mt-4">タップして続ける</p>
     </div>
 
     <script>
@@ -693,7 +2159,7 @@
                 const translations = {
                     ja: {
                         dayLabel: "Day", moneyLabel: "所持金", salesLabel: "本日の売上", timeLabel: "時間", orderLabel: "注文:",
-                        addIce: "氷を入れる", shake: "シェイク", stir: "ステア", build: "ビルド", talk: "話す", reset: "リセット",
+                        addIce: "氷を入れる", shake: "シェイク", stir: "ステア", build: "ビルド", talk: "話す", reset: "リセット", cameraMode: "📷 カメラモード",
                         glassLabel: "グラス選択:", glassShort: "ショート", glassRocks: "ロック", glassCollins: "ロング", glassCocktail: "カクテル",
                         dayEndTitle: "Day End", dayEndSubtitle: "営業終了", dailyEarningsLabel: "本日の売上", totalAssetsLabel: "総資産",
                         upgradesTitle: "アップグレード", nextDayButton: "次の日へ", startButton: "ゲーム開始",
@@ -702,6 +2168,45 @@
                         reasonRecipe: "（レシピ）", reasonIce: "（氷）", reasonGlass: "（グラス）",
                         bossIncoming: "【特別客 来店】",
                         ingredientsLabel: "材料",
+                        // Menu items
+                        menuTitle: "📋 メニュー",
+                        menuCocktails: "🍸 カクテル図鑑",
+                        menuCustomers: "👥 お客さん図鑑",
+                        menuTitles: "🏆 称号一覧",
+                        menuInterior: "🏠 内装変更",
+                        menuSettings: "⚙️ 設定",
+                        menuClose: "✖ 閉じる",
+                        // Interior Shop
+                        interiorTitle: "🏠 内装カスタマイズ",
+                        interiorMoney: "所持金",
+                        wallpaperLabel: "🖼️ 壁紙",
+                        lightingLabel: "💡 照明",
+                        bgmLabel: "🎵 BGM",
+                        interiorEquipped: "✓ 使用中",
+                        interiorOwned: "所持",
+                        interiorBuy: "購入",
+                        // Settings
+                        settingsTitle: "⚙️ 設定",
+                        languageLabel: "🌐 言語 / Language",
+                        languageNote: "※ 言語変更は再起動後に反映されます",
+                        saveAndRestart: "💾 保存して再起動",
+                        // Help
+                        helpTitle: "📖 遊び方",
+                        helpClose: "✖ 閉じる &amp; ゲーム開始",
+                        helpBasicsTitle: "🎮 基本ルール",
+                        helpBasicsText: "お客さんが注文したカクテルを作って、たくさん稼ごう！",
+                        helpMakingTitle: "🍸 カクテルの作り方",
+                        helpStep1: "お客さんの注文を確認（右上にレシピが表示される）",
+                        helpStep2: "「材料」ボタンをタップして、必要な材料を選ぶ",
+                        helpStep3: "レシピに氷が書いてあったら「氷を入れる」ボタンをタップ",
+                        helpStep4: "グラスをタップして、正しいグラスを選ぶ",
+                        helpStep5: "「シェイク」ボタンでカクテル完成！",
+                        helpCameraTitle: "📷 カメラモード（実際のコップでシェイク！）",
+                        helpCameraStep1: "「📷 カメラモード」ボタンをタップ",
+                        helpCameraStep2: "カメラへのアクセスを許可",
+                        helpCameraStep3: "実際のコップを持って、カメラの前で5回シェイク！",
+                        helpButtonsTitle: "🔘 ボタンの説明",
+                        helpTipsTitle: "⭐ コツ",
                         INGREDIENTS: {
                             vodka: { name: 'ウォッカ', color: '#e0f7fa', glow: '#80deea', alcohol: 40 },
                             gin: { name: 'ジン', color: '#e8f5e9', glow: '#a5d6a7', alcohol: 40 },
@@ -749,15 +2254,62 @@
                             { name: 'カウボーイ', ingredients: ['whiskey', 'milk'], needsIce: false, bonus: 600 }
                         ],
                         CUSTOMERS: [
-                            { name: "酒場の常連", image: 'images/bar_regular.png', activeTime: ['morning', 'day', 'evening', 'night'], quotes: { order: ["いつもの頼むよ"], success: ["これだよ、これ！"], fail: ["うーん、味が違うな…"], chat: ["最近、街道に魔物が出るらしくてね。", "ここの火は、暖かいな。", "マスター、新しい冒険の話はあるかい？"] } },
-                            { name: "錬金術師", image: 'images/scientist.png', activeTime: ['night', 'midnight'], quotes: { order: ["黄金比の調合で頼む"], success: ["計算通り、完璧な調合だ"], fail: ["調合失敗だ"], chat: ["昨日の実験で小屋が吹き飛んでね...", "エリクサーの研究は進まないな。", "君の調合技術、興味深いよ。"] } },
-                            { name: "吟遊詩人", image: 'images/artist.png', activeTime: ['day', 'evening'], quotes: { order: ["詩想が湧くような一杯を"], success: ["素晴らしい！詩が書けそうだ！"], fail: ["これでは詩が書けない"], chat: ["次の英雄譚の主役は君にしようか。", "このグラスの輝き...宝石のようだ。", "世界中を旅してきたが、この味は初めてだ。"] } },
-                            { name: "未亡人", image: 'images/Landlady.png', activeTime: ['evening', 'night'], quotes: { order: ["…強いお酒を。全て忘れたいの…"], success: ["…ありがとう。少し楽になったわ"], fail: ["…やっぱり、思い出してしまう"], chat: ["あの人は戦場へ行ったきり...", "雨の音は、あの日の馬蹄の音に似ている。", "優しくしないで...辛くなるから。"] } },
-                            { name: "若き大富豪", image: 'images/Greenhorn.png', activeTime: ['morning', 'day'], quotes: { order: ["商談成立の祝いだ！最高の一杯を！"], success: ["黄金の味がする！乾杯！"], fail: ["祝いの席には合わないな"], chat: ["東方の香辛料が高く売れてね！", "金で買えないものはない...そう思うだろう？", "この店に投資してもいいんだぜ？"] } },
-                            { name: "疲れた農夫", image: 'images/farmer_man.png', activeTime: ['evening', 'night', 'midnight'], quotes: { order: ["あー…何か、強いのをくれ…"], success: ["…ふぅ。生き返るなぁ"], fail: ["…泥水みたいだ"], chat: ["今年の不作は酷えもんだ...", "領主様の税が重くてな。", "明日の畑仕事、起きられるかな。"] } }
+                            // --- MORNING ---
+                            { time: "morning", name: "若い農民", image: 'images/morning/young_farmer_man.png', quotes: { order: ["仕事前に精が出るやつを！"], success: ["うめぇ！これで畑仕事も捗る！"], fail: ["うっ…腹が…"], chat: { any: ["今年は雨が少なくて心配だ。", "朝飯前の酒は格別だな！"], morning: ["鶏より早く起きたぜ。", "畑の土の匂いがするだろう？"] } } },
+                            { time: "morning", name: "年配の農婦", image: 'images/morning/old_farmer_woman.png', quotes: { order: ["あったかいミルクとかあるかい？"], success: ["あらあら、美味しいわねぇ。"], fail: ["これ、古くないかい？"], chat: { any: ["腰が痛くてねぇ。", "孫が可愛くて仕方ないのよ。"], morning: ["早起きは三文の得ってね。", "新鮮な野菜を持ってきたわよ。"] } } },
+                            { time: "morning", name: "農民の娘", image: 'images/morning/farmer_girl.png', quotes: { order: ["甘いジュースみたいなのくれる？"], success: ["わぁ！お花畑みたい！"], fail: ["苦い…ぺっ！"], chat: { any: ["将来はお店を持ちたいな。", "お父さんの手伝いは大変。"], morning: ["朝の空気って気持ちいい！", "小鳥さんとお話してきたの。"] } } },
+                            { time: "morning", name: "村の若者", image: 'images/morning/village_boy.png', quotes: { order: ["なんかカッコイイやつ！"], success: ["おれ、強くなった気がする！"], fail: ["うえぇ…大人の味だ…"], chat: { any: ["冒険者になりたいんだ。", "剣の稽古をしてきたんだぜ。"], morning: ["朝飯食い損ねたんだ。", "今日も特訓だ！"] } } },
+                            { time: "morning", name: "麦わら帽子の農夫", image: 'images/morning/straw_farmer.png', quotes: { order: ["喉が渇いた、水代わりの頼む。"], success: ["ふぅ、生き返るわい。"], fail: ["なんだこりゃ、泥水か？"], chat: { any: ["明日は市場に行く日だ。", "カラスが多くて困るわい。"], morning: ["今日も暑くなりそうだ。", "鍬の手入れは欠かせん。"] } } },
+                            { time: "morning", name: "花売りの女性", image: 'images/morning/flower_woman.png', quotes: { order: ["お花のように綺麗な一杯を。"], success: ["素敵…香りも素晴らしいわ。"], fail: ["これ、枯れてるわよ。"], chat: { any: ["お花はいかがですか？", "この街は花が似合うわ。"], morning: ["朝露に濡れた花が一番よ。", "今日もいい香りね。"] } } },
+                            { time: "morning", name: "パン屋の女性", image: 'images/morning/baker_woman.png', quotes: { order: ["仕事終わりの一杯、頼むわ！"], success: ["焼きたてパンより最高！"], fail: ["粉っぽい味がするわね。"], chat: { any: ["パンの焼き加減は難しいの。", "小麦粉が値上がりしてて…"], morning: ["夜明け前から働いてクタクタよ。", "朝の仕込みが終わったの。"] } } },
+
+                            // --- NOON ---
+                            { time: "noon", name: "ハゲた商人", image: 'images/noon/bald_merchant.png', quotes: { order: ["儲かりそうな黄金色の酒を。"], success: ["これは金運が上がりそうだ！"], fail: ["安酒の味がするな。"], chat: { any: ["金こそが力だ。", "いい商談があったんだ。"], day: ["昼飯時の商談はうまくいく。", "市場の相場を見てきた。"] } } },
+                            { time: "noon", name: "そばかすの町娘", image: 'images/noon/freckle_girl.png', quotes: { order: ["さっぱりしたのがいいな。"], success: ["スッキリして美味しい！"], fail: ["なんか変な味…"], chat: { any: ["最近、新しい服を買ったの。", "隣の家の犬が可愛いのよ。"], day: ["お買い物に行ってきたの。", "お天気よくて最高！"] } } },
+                            { time: "noon", name: "学者", image: 'images/noon/scholar_man.png', quotes: { order: ["知性を刺激する一杯を所望する。"], success: ["ふむ、論理的な味わいだ。"], fail: ["非科学的な味だ。"], chat: { any: ["この世界の理を解明したい。", "古い文献を探している。"], day: ["図書館の帰りでね。", "昼下がりの読書は至福だ。"] } } },
+                            { time: "noon", name: "貴婦人", image: 'images/noon/pink_lady.png', quotes: { order: ["わたくしに相応しい上品なものを。"], success: ["オホホ、悪くなくてよ。"], fail: ["なんて下品な味！"], chat: { any: ["今度の舞踏会、楽しみですわ。", "このドレス、特注品なのよ。"], day: ["お茶会も飽きましたわ。", "日差しが肌によくないわ。"] } } },
+                            { time: "noon", name: "町娘", image: 'images/noon/town_girl.png', quotes: { order: ["可愛い色のカクテルお願い！"], success: ["映える～！最高！"], fail: ["可愛くないしマズい…"], chat: { any: ["あの兵士さん、カッコいいよね。", "流行りのスイーツ食べた？"], day: ["ランチの後のデザート代わり。", "友達と待ち合わせなの。"] } } },
+                            { time: "noon", name: "商人の妻", image: 'images/noon/merchant_wife.png', quotes: { order: ["夫には内緒で…強いのを。"], success: ["あら、酔っちゃいそう。"], fail: ["夫の稼ぎの方がマシね。"], chat: { any: ["うちの人は働きすぎなの。", "へそくり、貯まってるわよ。"], day: ["昼下がりの情事…なんてね。", "買い物ついでに寄ったの。"] } } },
+                            { time: "noon", name: "鍛冶屋", image: 'images/noon/blacksmith_man.png', quotes: { order: ["火照った体を冷やすやつをくれ！"], success: ["くぅ～！染み渡る！"], fail: ["ぬるい！鉄を打つ気になれん！"], chat: { any: ["鉄は嘘をつかねぇ。", "いい剣はいい鉄からだ。"], day: ["炉の火が熱すぎてな。", "昼飯の後の休憩だ。"] } } },
+                            { time: "noon", name: "バンダナの町娘", image: 'images/noon/bandana_girl.png', quotes: { order: ["元気がでるやつ！"], success: ["元気100倍！"], fail: ["テンション下がるわ～"], chat: { any: ["掃除洗濯、終わらせなきゃ。", "バンダナ、可愛いでしょ？"], day: ["井戸端会議も疲れるわ。", "天気がいいから洗濯日和！"] } } },
+                            { time: "noon", name: "メイド", image: 'images/noon/maid_woman.png', quotes: { order: ["ご主人様には内緒で…甘いのを。"], success: ["夢のような味ですぅ…"], fail: ["お仕置きレベルです…"], chat: { any: ["お皿割っちゃって…。", "ご主人様、厳しいんです。"], day: ["お屋敷の買い出し中です。", "少しだけサボり…休憩です。"] } } },
+                            { time: "noon", name: "芸術家", image: 'images/noon/artist_man.png', quotes: { order: ["インスピレーションが湧く色を。"], success: ["見えた！傑作が見えたぞ！"], fail: ["凡庸な色だ…"], chat: { any: ["芸術は爆発ではない、調和だ。", "君の顔、絵になるね。"], day: ["光の加減が良い時間だ。", "スケッチに出かけるところさ。"] } } },
+                            { time: "noon", name: "職人", image: 'images/noon/craftsman_man.png', quotes: { order: ["いつもの、シンプルなので。"], success: ["いい仕事してますねぇ。"], fail: ["手抜きはいかんよ。"], chat: { any: ["職人の魂は細部に宿る。", "道具は大切にな。"], day: ["午後の仕事前に気合を入れる。", "良い素材が入ったんだ。"] } } },
+                            { time: "noon", name: "宝石商", image: 'images/noon/jeweler_woman.png', quotes: { order: ["宝石のように輝く一杯を。"], success: ["ダイヤモンド級の輝きね！"], fail: ["曇った石ころね。"], chat: { any: ["輝きは永遠よ。", "鑑定してあげましょうか？"], day: ["商談の前に景気付けよ。", "金は裏切らないわ。"] } } },
+                            { time: "noon", name: "ピンク髪の町娘", image: 'images/noon/pink_town_girl.png', quotes: { order: ["シュワシュワするやつ！"], success: ["パチパチして楽しい！"], fail: ["気が抜けてる…"], chat: { any: ["髪色、変えたの気づいた？", "リボン集めてるんだ。"], day: ["お散歩って楽しいな。", "街は賑やかで好き。"] } } },
+
+                            // --- NIGHT ---
+                            { time: "night", name: "老賢者", image: 'images/night/old_wise_man.png', quotes: { order: ["悠久の時を感じる酒を。"], success: ["…素晴らしい。歴史の味がする。"], fail: ["…歴史を知らぬ若造め。"], chat: { any: ["世界は広い、若者よ。", "星の動きが不穏じゃ…"], night: ["夜は考え事には最適じゃ。", "昔の冒険を思い出すのぅ。"] } } },
+                            { time: "night", name: "緑服の貴族", image: 'images/night/green_noble_man.png', quotes: { order: ["気品あふれる一杯を頼む。"], success: ["我が領地にも欲しい味だ。"], fail: ["庶民の味だな。"], chat: { any: ["領民の生活も楽ではない。", "税率をどうするか…"], night: ["夜会など退屈だ。", "ここで飲む方が落ち着く。"] } } },
+                            { time: "night", name: "金髪の貴婦人", image: 'images/night/blonde_noble_woman.png', quotes: { order: ["美しさを保つ秘薬のようなものを。"], success: ["肌に艶が出そうね！"], fail: ["シワが増えそう…"], chat: { any: ["若さとは儚いものね。", "あの男、しつこいのよ。"], night: ["月明かりは肌を綺麗に見せるの。", "内緒の話をしてあげる。"] } } },
+                            { time: "night", name: "執事", image: 'images/night/butler_man.png', quotes: { order: ["主人の好みを確かめたくて。"], success: ["これなら旦那様も満足でしょう。"], fail: ["お粗末でございます。"], chat: { any: ["全ては主人のために。", "完璧であれ、それが執事です。"], night: ["主人が寝静まった後の休息です。", "屋敷の管理も大変でして。"] } } },
+                            { time: "night", name: "踊り子", image: 'images/night/dancer_woman.png', quotes: { order: ["情熱的な赤いやつ！"], success: ["踊りだしたくなるわ！"], fail: ["リズムが狂うわ。"], chat: { any: ["ダンスは魂の会話よ。", "足がパンパンだわ。"], night: ["今夜のステージは最高だった。", "月夜に踊るのが好きなの。"] } } },
+                            { time: "night", name: "旅人", image: 'images/night/traveler_man.png', quotes: { order: ["旅の疲れを癒やす一杯を。"], success: ["故郷の味を思い出す…"], fail: ["旅の空の方がマシだ。"], chat: { any: ["次の街までどれくらいだ？", "地図にない道を行くのが好きだ。"], night: ["野宿もいいが、酒場はいいね。", "星を頼りに歩いてきた。"] } } },
+                            { time: "night", name: "巻き髪の令嬢", image: 'images/night/curly_lady.png', quotes: { order: ["甘くてとろけるようなのを。"], success: ["王子様のキスみたい！"], fail: ["子供だましね。"], chat: { any: ["お父様に内緒できちゃった。", "早く大人になりたいわ。"], night: ["夜遊びなんて初めて。", "ドキドキしちゃう。"] } } },
+                            { time: "night", name: "衛兵", image: 'images/night/guard_man.png', quotes: { order: ["巡回終わりの一杯だ！"], success: ["これで明日も守れる！"], fail: ["まずっ！目が覚めるわ！"], chat: { any: ["街の平和は俺が守る。", "怪しい奴を見なかったか？"], night: ["夜警は冷えるんだ。", "非番なんだ、ゆっくりさせてくれ。"] } } },
+                            { time: "night", name: "吟遊詩人", image: 'images/night/bard_man.png', quotes: { order: ["詩想が湧くような一杯を"], success: ["素晴らしい！詩が書けそうだ！"], fail: ["これでは詩が書けない"], chat: { any: ["次の英雄譚の主役は君にしようか。", "このグラスの輝き...宝石のようだ。"], night: ["夜の静寂は詩人の友だ。", "星空のメロディが聞こえるかい？"] } } },
+                            { time: "night", name: "陽気な女将", image: 'images/night/tavern_lady.png', quotes: { order: ["同業者の腕前、見せてもらおうか！"], success: ["やるねえ！うちにも欲しい！"], fail: ["まだまだだねっ！"], chat: { any: ["客商売は笑顔が一番さ。", "酔払いには水をぶっかけるんだよ。"], night: ["繁盛してるじゃないか。", "今度うちの酒も飲みに来な。"] } } },
+                            { time: "night", name: "魔法使い", image: 'images/night/wizard_man.png', quotes: { order: ["マナが回復するポーションを。"], success: ["魔力が満ちてくる…！"], fail: ["ただの水か？"], chat: { any: ["魔法は便利だが代償がある。", "火の精霊が騒いでいる。"], night: ["夜は魔力が強まる。", "星の配置が不吉だ…"] } } },
+                            { time: "night", name: "ピンク髪の踊り子", image: 'images/night/pink_dancer.png', quotes: { order: ["キラキラして可愛いの！"], success: ["ステージ映えしそう！"], fail: ["地味ね～"], chat: { any: ["ファンレターもらったの。", "新しいステップ見て！"], night: ["打ち上げよ！", "夜はこれからね！"] } } },
+                            { time: "night", name: "船乗り", image: 'images/night/sailor_man.png', quotes: { order: ["海のように塩辛い酒を！"], success: ["潮風を感じるぜ！"], fail: ["真水みてぇだ！"], chat: { any: ["海の男は陸には馴染めねぇ。", "クラーケンを見たことあるか？"], night: ["港の女に振られちまってな。", "今夜は月が綺麗だ、出航日和だ。"] } } },
+                            { time: "night", name: "傭兵", image: 'images/night/mercenary_man.png', quotes: { order: ["血が滾る強い酒を。"], success: ["戦場に戻りたくなってきたぜ。"], fail: ["気が抜けるな。"], chat: { any: ["金さえ貰えば誰とでも戦う。", "背中は誰にも見せるな。"], night: ["死んだ仲間に乾杯。", "夜風が傷に沁みる。"] } } },
+                            { time: "night", name: "鉄兜の騎士", image: 'images/night/knight_helmet.png', quotes: { order: ["王への忠誠を示す一杯を。"], success: ["我が生涯、王に捧ぐ！"], fail: ["不敬であるぞ！"], chat: { any: ["兜で前が見えにくいのだが。", "騎士道とは…"], night: ["夜警も騎士の務め。", "錆びないように手入れせねば。"] } } },
+                            { time: "night", name: "兵士", image: 'images/night/chain_soldier.png', quotes: { order: ["安くて酔えるやつ！"], success: ["うひょー！効くぅ！"], fail: ["薄めてないか？"], chat: { any: ["鎖帷子は重いんだよ。", "給料日前で金がねぇ。"], night: ["明日は演習なんだ。", "一杯だけ、一杯だけ…"] } } },
+                            { time: "night", name: "船長", image: 'images/night/captain_man.png', quotes: { order: ["世界一のラム酒を出せ！"], success: ["ヨーホー！最高だ！"], fail: ["甲板掃除させるぞ！"], chat: { any: ["俺の船に乗らないか？", "財宝の地図を持ってるんだ。"], night: ["陸の夜は静かすぎる。", "羅針盤が狂ってここに辿り着いた。"] } } },
+                            { time: "night", name: "赤マフラーの騎士", image: 'images/night/red_scarf_knight.png', quotes: { order: ["情熱の赤いやつを頼む。"], success: ["燃えてきたぞ！"], fail: ["冷めてしまった…"], chat: { any: ["このマフラーは母の形見だ。", "正義のために戦う！"], night: ["夜のパトロールだ。", "悪は夜に動く。"] } } },
+                            { time: "night", name: "太めの貴族", image: 'images/night/fat_noble_man.png', quotes: { order: ["一番高いものを所望する。"], success: ["金に糸目はつけんぞ！"], fail: ["安っぽい味だ。"], chat: { any: ["最近、腹回りが…。", "美食こそ我が人生。"], night: ["夜食に何を食べようか。", "晩餐会の帰りなのだ。"] } } },
+                            { time: "night", name: "酒場主人", image: 'images/night/red_beard_man.png', quotes: { order: ["同業者の手並み拝見。"], success: ["悔しいが美味い！"], fail: ["修行し直せ！"], chat: { any: ["酒場経営は大変だろう？", "客あしらいが大事だ。"], night: ["たまには客になるのもいい。", "店を閉めてきたところだ。"] } } },
+                            { time: "night", name: "司祭", image: 'images/night/priest_man.png', quotes: { order: ["神に感謝する清らかな水を…いや酒を。"], success: ["アーメン…素晴らしい。"], fail: ["罰当たりな味です。"], chat: { any: ["迷える子羊よ…。", "寄付をお願いします。"], night: ["夜の祈りを捧げねば。", "神は見ておられます。"] } } },
+                            { time: "night", name: "魔女", image: 'images/night/witch_woman.png', quotes: { order: ["トカゲの尻尾を入れた…冗談よ。"], success: ["ヒヒッ、良い魔力ね。"], fail: ["呪ってあげる。"], chat: { any: ["大鍋で煮込むのがコツよ。", "私の猫を知らない？"], night: ["サバトの時間よ。", "月夜はほうきが飛びやすいの。"] } } },
+                            { time: "night", name: "緑の魔法使い", image: 'images/night/green_mage_woman.png', quotes: { order: ["森の恵みを感じる一杯を。"], success: ["森が喜んでいるわ。"], fail: ["人工的な味ね。"], chat: { any: ["自然と共に生きるの。", "薬草のことなら任せて。"], night: ["森のざわめきが聞こえる。", "今夜は月が綺麗ね。"] } } },
+                            { time: "night", name: "王様", image: 'images/night/king_man.png', quotes: { order: ["余を満足させてみよ。"], success: ["国宝級の味である！"], fail: ["地下牢行きだ！"], chat: { any: ["国を治めるのは疲れる。", "お忍びである、声が高い！"], night: ["城を抜け出してきた。", "民の暮らしを見るのも王の務め。"] } } },
+                            { time: "night", name: "王女", image: 'images/night/princess_woman.png', quotes: { order: ["お城では飲めない刺激的なのを！"], success: ["これが下界の味…素敵！"], fail: ["お城の水の方が美味しいわ。"], chat: { any: ["お父様には内緒よ。", "冒険に憧れるわ。"], night: ["門限を破っちゃった。", "ガラスの靴はどこかしら？"] } } },
+                            { time: "night", name: "赤い王様", image: 'images/night/red_king.png', quotes: { order: ["覇王に相応しい激しい酒を！"], success: ["世界を征服できそうだ！"], fail: ["首をはねよ！"], chat: { any: ["隣国をどう攻めるか…", "強きことが正義だ。"], night: ["夜襲の計画を練る。", "余の辞書に敗北はない。"] } } },
+                            { time: "night", name: "女王", image: 'images/night/queen_woman.png', quotes: { order: ["優雅で、かつ力強い一杯を。"], success: ["跪きなさい、褒美をやろう。"], fail: ["退屈な味ね。"], chat: { any: ["王を操るのは私よ。", "美しさこそ権力。"], night: ["夜会は私の独壇場よ。", "愚かな民たちね…"] } } }
                         ],
-                        MILLIONAIRE_CUSTOMER: { name: "古の大富豪", image: 'images/millionaire.png', quotes: { order: ["王城で飲むような最高級品を"], success: ["素晴らしい！金貨を弾もう"], fail: ["豚に食わせる酒か？"], chat: ["王とも対等に渡り合う、それが商人だ。", "孤独だよ、富の頂というのは。", "君の腕を見込んで、新しい店を持たせてやろうか。"] } },
-                        DEATH_CUSTOMER: { name: "森の魔女", image: 'images/mysterious_figure.png', quotes: { order: ["…魔力が満ちるような一杯を"], success: ["…ふふ、力が湧いてくるわ"], fail: ["…これはただの泥水ね"], chat: ["...森の奥は静かでいいわよ。", "...永遠の命に興味はある？", "...黒猫を見なかった？"] } },
+
+                        MILLIONAIRE_CUSTOMER: { name: "古の大富豪", image: 'images/night/fat_noble_man.png', quotes: { order: ["王城で飲むような最高級品を"], success: ["素晴らしい！金貨を弾もう"], fail: ["豚に食わせる酒か？"], chat: ["王とも対等に渡り合う、それが商人だ。", "孤独だよ、富の頂というのは。", "君の腕を見込んで、新しい店を持たせてやろうか。"] } },
+                        DEATH_CUSTOMER: { name: "森の魔女", image: 'images/night/witch_woman.png', quotes: { order: ["…魔力が満ちるような一杯を"], success: ["…ふふ、力が湧いてくるわ"], fail: ["…これはただの泥水ね"], chat: ["...森の奥は静かでいいわよ。", "...永遠の命に興味はある？", "...黒猫を見なかった？"] } },
                         UPGRADES: {
                             shaker: { name: 'ミスリルのシェイカー', description: 'コンボボーナスが1.2倍になる' },
                             iceMachine: { name: '氷の魔道具', description: '氷を使うカクテルの評価が少し上がる' },
@@ -765,14 +2317,14 @@
                         },
                         STORY: {
                             1: { title: "Day 1: 冒険の始まり", text: "念願の自分の酒場をついに開店した。\nこの国の人々の止まり木のような場所。\n戦士や魔法使いたちが羽を休める、そんな場所にしたい。" },
-                            3: { title: "Day 3: 王宮の美食家", text: "「この街に面白い酒場主がいる」\nそんな噂を聞きつけて、王宮に仕える美食家が\n今夜来店するという情報が入った。", boss: { name: "王宮の美食家", image: 'images/Old Guard.png', quotes: { order: ["ジンのショートカクテルを。王の舌を満足させられるかな？"], success: ["...認める。王宮料理長にも劣らぬ腕だ。"], fail: ["期待外れだ。二度と来ない。"], chat: ["味だけではない。礼儀も評価対象だ。", "多くの店をとり潰してきた...君はどうかな？", "素材の良さを活かしたまえ。"] }, constraints: { includes: ['gin'], glass: 'cocktail' } } },
-                            5: { title: "Day 5: 衛兵隊長の悩み", text: "雨の降る夜。\n疲れ切った様子の衛兵隊長が、何かを探して歩き回っている。\n彼は今夜、答えを見つけることができるだろうか。", boss: { name: "衛兵隊長", image: 'images/Mercenary.png', quotes: { order: ["頭が冴えるような、とびきり強い酒をロックでくれ。"], success: ["...頭が晴れた。これで魔物の正体が掴めそうだ。"], fail: ["...ダメだ、霧が晴れない。"], chat: ["この街の闇は深い...", "君は何も見ていない。いいね？", "昨夜のアリバイを聞かせてもらおうか。"] }, constraints: { minAlcohol: 80, glass: 'rocks' } } },
-                            7: { title: "Day 7: 伝説の魔女", text: "一週間の営業を経て、あなたの名は国中に知れ渡った。\nそして今夜、全ての魔女が恐れ敬う\n「伝説の魔女」が、あなたの店を訪れる。", boss: { name: "伝説の魔女", image: 'images/mysterious_figure.png', quotes: { order: ["私の魔力を高める、至高の5素材の秘薬を。"], success: ["見事だ...魔法のような味わいだ。"], fail: ["まだ修行が足りないようだね。"], chat: ["カクテル作りは調合に似ている。", "魔力だけでは不十分だ。", "君の「魂」を見せてくれ。"] }, constraints: { exactCount: 5 } } }
+                            3: { title: "Day 3: 王宮の美食家", text: "「この街に面白い酒場主がいる」\nそんな噂を聞きつけて、王宮に仕える美食家が\n今夜来店するという情報が入った。", boss: { name: "王宮の美食家", image: 'images/night/green_noble_man.png', quotes: { order: ["ジンのショートカクテルを。王の舌を満足させられるかな？"], success: ["...認める。王宮料理長にも劣らぬ腕だ。"], fail: ["期待外れだ。二度と来ない。"], chat: ["味だけではない。礼儀も評価対象だ。", "多くの店をとり潰してきた...君はどうかな？", "素材の良さを活かしたまえ。"] }, constraints: { includes: ['gin'], glass: 'cocktail' } } },
+                            5: { title: "Day 5: 衛兵隊長の悩み", text: "雨の降る夜。\n疲れ切った様子の衛兵隊長が、何かを探して歩き回っている。\n彼は今夜、答えを見つけることができるだろうか。", boss: { name: "衛兵隊長", image: 'images/night/mercenary_man.png', quotes: { order: ["頭が冴えるような、とびきり強い酒をロックでくれ。"], success: ["...頭が晴れた。これで魔物の正体が掴めそうだ。"], fail: ["...ダメだ、霧が晴れない。"], chat: ["この街の闇は深い...", "君は何も見ていない。いいね？", "昨夜のアリバイを聞かせてもらおうか。"] }, constraints: { minAlcohol: 80, glass: 'rocks' } } },
+                            7: { title: "Day 7: 伝説の魔女", text: "一週間の営業を経て、あなたの名は国中に知れ渡った。\nそして今夜、全ての魔女が恐れ敬う\n「伝説の魔女」が、あなたの店を訪れる。", boss: { name: "伝説の魔女", image: 'images/night/witch_woman.png', quotes: { order: ["私の魔力を高める、至高の5素材の秘薬を。"], success: ["見事だ...魔法のような味わいだ。"], fail: ["まだ修行が足りないようだね。"], chat: ["カクテル作りは調合に似ている。", "魔力だけでは不十分だ。", "君の「魂」を見せてくれ。"] }, constraints: { exactCount: 5 } } }
                         }
                     },
                     en: {
                         dayLabel: "Day", moneyLabel: "Money", salesLabel: "Today's Sales", timeLabel: "Time", orderLabel: "Order:",
-                        addIce: "Add Ice", shake: "Shake", stir: "Stir", build: "Build", talk: "Talk", reset: "Reset",
+                        addIce: "Add Ice", shake: "Shake", stir: "Stir", build: "Build", talk: "Talk", reset: "Reset", cameraMode: "📷 Camera Mode",
                         glassLabel: "Glass:", glassShort: "Short", glassRocks: "Rocks", glassCollins: "Collins", glassCocktail: "Cocktail",
                         dayEndTitle: "Day End", dayEndSubtitle: "Business Closed", dailyEarningsLabel: "Today's Earnings", totalAssetsLabel: "Total Assets",
                         upgradesTitle: "Upgrades", nextDayButton: "Next Day", startButton: "Start Game",
@@ -781,6 +2333,45 @@
                         reasonRecipe: " (Recipe)", reasonIce: " (Ice)", reasonGlass: " (Glass)",
                         bossIncoming: "[SPECIAL GUEST]",
                         ingredientsLabel: "Ingredients",
+                        // Menu items
+                        menuTitle: "📋 Menu",
+                        menuCocktails: "🍸 Cocktail Encyclopedia",
+                        menuCustomers: "👥 Customer Encyclopedia",
+                        menuTitles: "🏆 Titles",
+                        menuInterior: "🏠 Interior",
+                        menuSettings: "⚙️ Settings",
+                        menuClose: "✖ Close",
+                        // Interior Shop
+                        interiorTitle: "🏠 Interior Customization",
+                        interiorMoney: "Money",
+                        wallpaperLabel: "🖼️ Wallpaper",
+                        lightingLabel: "💡 Lighting",
+                        bgmLabel: "🎵 BGM",
+                        interiorEquipped: "✓ Equipped",
+                        interiorOwned: "Owned",
+                        interiorBuy: "Buy",
+                        // Settings
+                        settingsTitle: "⚙️ Settings",
+                        languageLabel: "🌐 Language / 言語",
+                        languageNote: "* Language change takes effect after restart",
+                        saveAndRestart: "💾 Save & Restart",
+                        // Help
+                        helpTitle: "📖 How to Play",
+                        helpClose: "✖ Close & Start Game",
+                        helpBasicsTitle: "🎮 Basic Rules",
+                        helpBasicsText: "Make the cocktails your customers order and earn money!",
+                        helpMakingTitle: "🍸 How to Make Cocktails",
+                        helpStep1: "Check the customer's order (recipe shown in top right)",
+                        helpStep2: "Tap 'Ingredients' button and select the required ingredients",
+                        helpStep3: "If the recipe needs ice, tap 'Add Ice' button",
+                        helpStep4: "Tap the glass to select the correct glass type",
+                        helpStep5: "Tap 'Shake' button to complete the cocktail!",
+                        helpCameraTitle: "📷 Camera Mode (Shake with a real glass!)",
+                        helpCameraStep1: "Tap the '📷 Camera Mode' button",
+                        helpCameraStep2: "Allow camera access",
+                        helpCameraStep3: "Hold a real glass and shake in front of the camera 5 times!",
+                        helpButtonsTitle: "🔘 Button Guide",
+                        helpTipsTitle: "⭐ Tips",
                         INGREDIENTS: {
                             vodka: { name: 'Vodka', color: '#e0f7fa', glow: '#80deea' },
                             gin: { name: 'Gin', color: '#e8f5e9', glow: '#a5d6a7' },
@@ -829,15 +2420,15 @@
                             { name: 'Cowboy', ingredients: ['whiskey', 'milk'], needsIce: false, bonus: 600 }
                         ],
                         CUSTOMERS: [
-                            { name: "Tavern Regular", image: 'images/bar_regular.png', activeTime: ['morning', 'day', 'evening', 'night'], quotes: { order: ["The usual, please."], success: ["That's the stuff!"], fail: ["Hmm, tastes different..."], chat: ["Monsters on the road lately.", "The fire here is warm.", "Any new adventure tales, master?"] } },
-                            { name: "Alchemist", image: 'images/scientist.png', activeTime: ['night', 'midnight'], quotes: { order: ["A perfect golden ratio blend."], success: ["Calculated perfection."], fail: ["Failed concoction."], chat: ["My lab exploded yesterday...", "Elixir research is slow.", "Your mixing skills are intriguing."] } },
-                            { name: "Bard", image: 'images/artist.png', activeTime: ['day', 'evening'], quotes: { order: ["Something to inspire a song."], success: ["Magnificent! I feel a poem coming!"], fail: ["I cannot write with this."], chat: ["You shall be in my next saga.", "This glass shines like a gem.", "I've traveled far, but this taste is new."] } },
-                            { name: "The Widow", image: 'images/Landlady.png', activeTime: ['evening', 'night'], quotes: { order: ["...Something strong. To forget..."], success: ["...Thank you. The pain fades slightly."], fail: ["...The memories return."], chat: ["He never returned from the war...", "Rain sounds like hooves.", "Don't be kind... it hurts."] } },
-                            { name: "Young Merchant", image: 'images/Greenhorn.png', activeTime: ['morning', 'day'], quotes: { order: ["To celebrate a deal! The best you have!"], success: ["Tastes like gold! Cheers!"], fail: ["Not fit for a celebration."], chat: ["Spices from the East are selling high!", "Gold makes the world turn, eh?", "I could invest in this tavern."] } },
-                            { name: "Weary Farmer", image: 'images/farmer_man.png', activeTime: ['evening', 'night', 'midnight'], quotes: { order: ["Just... give me something strong..."], success: ["...Ah. Life returns."], fail: ["...Tastes like mud."], chat: ["The harvest is bad this year...", "The Lord's taxes are heavy.", "Work starts at dawn again."] } }
+                            { name: "Tavern Regular", time: "night", image: 'images/night/red_beard_man.png', quotes: { order: ["The usual, please."], success: ["That's the stuff!"], fail: ["Hmm, tastes different..."], chat: ["Monsters on the road lately.", "The fire here is warm.", "Any new adventure tales, master?"] } },
+                            { name: "Alchemist", time: "noon", image: 'images/noon/scholar_man.png', quotes: { order: ["A perfect golden ratio blend."], success: ["Calculated perfection."], fail: ["Failed concoction."], chat: ["My lab exploded yesterday...", "Elixir research is slow.", "Your mixing skills are intriguing."] } },
+                            { name: "Bard", time: "night", image: 'images/night/bard_man.png', quotes: { order: ["Something to inspire a song."], success: ["Magnificent! I feel a poem coming!"], fail: ["I cannot write with this."], chat: ["You shall be in my next saga.", "This glass shines like a gem.", "I've traveled far, but this taste is new."] } },
+                            { name: "The Widow", time: "night", image: 'images/night/blonde_noble_woman.png', quotes: { order: ["...Something strong. To forget..."], success: ["...Thank you. The pain fades slightly."], fail: ["...The memories return."], chat: ["He never returned from the war...", "Rain sounds like hooves.", "Don't be kind... it hurts."] } },
+                            { name: "Young Merchant", time: "noon", image: 'images/noon/bald_merchant.png', quotes: { order: ["To celebrate a deal! The best you have!"], success: ["Tastes like gold! Cheers!"], fail: ["Not fit for a celebration."], chat: ["Spices from the East are selling high!", "Gold makes the world turn, eh?", "I could invest in this tavern."] } },
+                            { name: "Weary Farmer", time: "morning", image: 'images/morning/young_farmer_man.png', quotes: { order: ["Just... give me something strong..."], success: ["...Ah. Life returns."], fail: ["...Tastes like mud."], chat: ["The harvest is bad this year...", "The Lord's taxes are heavy.", "Work starts at dawn again."] } }
                         ],
-                        MILLIONAIRE_CUSTOMER: { name: "Elder Tycoon", image: 'images/millionaire.png', quotes: { order: ["Something fit for a King."], success: ["Splendid! Here is gold."], fail: ["Swill for pigs."], chat: ["Merchants rival Kings.", "It is lonely at the top.", "I might buy you a new shop."] } },
-                        DEATH_CUSTOMER: { name: "The Witch", image: 'images/mysterious_figure.png', quotes: { order: ["...I need a potion to restore my mana."], success: ["...Hehe, power flows through me."], fail: ["...This is just muddy water."], chat: ["...The deep forest is peaceful.", "...Interested in eternal life?", "...Have you seen my black cat?"] } },
+                        MILLIONAIRE_CUSTOMER: { name: "Elder Tycoon", image: 'images/night/fat_noble_man.png', quotes: { order: ["Something fit for a King."], success: ["Splendid! Here is gold."], fail: ["Swill for pigs."], chat: ["Merchants rival Kings.", "It is lonely at the top.", "I might buy you a new shop."] } },
+                        DEATH_CUSTOMER: { name: "The Witch", image: 'images/night/witch_woman.png', quotes: { order: ["...I need a potion to restore my mana."], success: ["...Hehe, power flows through me."], fail: ["...This is just muddy water."], chat: ["...The deep forest is peaceful.", "...Interested in eternal life?", "...Have you seen my black cat?"] } },
                         UPGRADES: {
                             shaker: { name: 'Mithril Shaker', description: 'Combo bonus increases to 1.2x' },
                             iceMachine: { name: 'Ice Magic Tool', description: 'Slightly improves score for cocktails with ice' },
@@ -845,9 +2436,9 @@
                         },
                         STORY: {
                             1: { title: "Day 1: A New Adventure", text: "Finally, my own tavern is open.\nA haven for the weary souls of the kingdom.\nWhere warriors and mages rest their wings." },
-                            3: { title: "Day 3: The Royal Gourmet", text: "\"There's an interesting tavern keeper here.\"\nHearing the rumors, the Royal Gourmet\nis visiting tonight.", boss: { name: "Royal Gourmet", image: 'images/Old Guard.png', quotes: { order: ["A Gin Short Cocktail. Fit for a King?"], success: ["...I admit it. Rivals the Royal Chef."], fail: ["Disappointing. I shall not return."], chat: ["Manners matter too.", "I've closed many taverns.", "Show me quality."] }, constraints: { includes: ['gin'], glass: 'cocktail' } } },
-                            5: { title: "Day 5: The Captain's Worry", text: "A rainy night.\nA tired Guard Captain seeks answers.\nWill he find them at the bottom of a glass?", boss: { name: "Guard Captain", image: 'images/Mercenary.png', quotes: { order: ["Strong, on the rocks. Clear my head."], success: ["...The fog lifts. I see the beast now."], fail: ["...No use. The mist remains."], chat: ["The darkness is deep...", "You saw nothing. Understood?", "Where were you last night?"] }, constraints: { minAlcohol: 80, glass: 'rocks' } } },
-                            7: { title: "Day 7: The Legendary Witch", text: "After a week, your name is known across the land.\nTonight, the legendary \"Great Witch\"\ncomes to test your soul.", boss: { name: "Legendary Witch", image: 'images/mysterious_figure.png', quotes: { order: ["A supreme 5-ingredient potion to boost my magic."], success: ["Magnificent... Tastes like magic."], fail: ["You lack discipline."], chat: ["Mixing cocktails is like alchemy.", "Magic alone is not enough.", "Show me your 'soul'."] }, constraints: { exactCount: 5 } } }
+                            3: { title: "Day 3: The Royal Gourmet", text: "\"There's an interesting tavern keeper here.\"\nHearing the rumors, the Royal Gourmet\nis visiting tonight.", boss: { name: "Royal Gourmet", image: 'images/night/green_noble_man.png', quotes: { order: ["A Gin Short Cocktail. Fit for a King?"], success: ["...I admit it. Rivals the Royal Chef."], fail: ["Disappointing. I shall not return."], chat: ["Manners matter too.", "I've closed many taverns.", "Show me quality."] }, constraints: { includes: ['gin'], glass: 'cocktail' } } },
+                            5: { title: "Day 5: The Captain's Worry", text: "A rainy night.\nA tired Guard Captain seeks answers.\nWill he find them at the bottom of a glass?", boss: { name: "Guard Captain", image: 'images/night/mercenary_man.png', quotes: { order: ["Strong, on the rocks. Clear my head."], success: ["...The fog lifts. I see the beast now."], fail: ["...No use. The mist remains."], chat: ["The darkness is deep...", "You saw nothing. Understood?", "Where were you last night?"] }, constraints: { minAlcohol: 80, glass: 'rocks' } } },
+                            7: { title: "Day 7: The Legendary Witch", text: "After a week, your name is known across the land.\nTonight, the legendary \"Great Witch\"\ncomes to test your soul.", boss: { name: "Legendary Witch", image: 'images/night/witch_woman.png', quotes: { order: ["A supreme 5-ingredient potion to boost my magic."], success: ["Magnificent... Tastes like magic."], fail: ["You lack discipline."], chat: ["Mixing cocktails is like alchemy.", "Magic alone is not enough.", "Show me your 'soul'."] }, constraints: { exactCount: 5 } } }
                         }
                     }
                 };
@@ -874,9 +2465,49 @@
                 // --- DOM Elements ---
                 const dom = {};
 
+                // --- Ingredient Prices ---
+                const INGREDIENT_PRICES = {
+                    vodka: 300, gin: 350, rum: 300, tequila: 400, brandy: 500,
+                    beer: 150, cassis: 250, lime: 50, orangeJuice: 80, tomatoJuice: 100,
+                    pineappleJuice: 120, tonic: 60, cola: 50, gingerAle: 60,
+                    whiskey: 450, soda: 40, kahlua: 350, milk: 40, tripleSec: 300, grenadine: 150
+                };
+
+                // --- Starter Ingredients ---
+                const STARTER_INGREDIENTS = ['vodka', 'gin', 'rum', 'lime', 'orangeJuice', 'tonic', 'cola', 'soda'];
+
+                // --- Title Definitions ---
+                const TITLES = [
+                    { id: 'beginner', name: '見習いバーテンダー', nameEn: 'Apprentice Bartender', icon: '🌱', condition: () => true },
+                    { id: 'mixologist', name: 'カクテル職人', nameEn: 'Mixologist', icon: '🍸', condition: () => state.discoveredCocktails.length >= 10 },
+                    { id: 'socialite', name: '社交家', nameEn: 'Socialite', icon: '💬', condition: () => state.totalTalks >= 20 },
+                    { id: 'wealthy', name: '金持ち', nameEn: 'Wealthy', icon: '💰', condition: () => state.totalMoney >= 50000 },
+                    { id: 'collector', name: 'コレクター', nameEn: 'Collector', icon: '📚', condition: () => state.metCustomers.length >= 30 },
+                    { id: 'master', name: '伝説のバーテンダー', nameEn: 'Legendary Bartender', icon: '👑', condition: () => state.discoveredCocktails.length >= translations.ja.COCKTAILS.length }
+                ];
+
+                // --- Interior Customization Items ---
+                const INTERIOR_ITEMS = {
+                    wallpaper: [
+                        { id: 'classic', name: 'クラシック', nameEn: 'Classic', price: 0, description: '落ち着いた木目調', descEn: 'Calm wood grain', customerBonus: [] },
+                        { id: 'modern', name: 'モダン', nameEn: 'Modern', price: 5000, description: '都会的な白壁', descEn: 'Urban white walls', customerBonus: ['noble', 'merchant'] },
+                        { id: 'fantasy', name: 'ファンタジー', nameEn: 'Fantasy', price: 8000, description: '魔法的な紫の壁', descEn: 'Magical purple walls', customerBonus: ['wizard', 'witch'] }
+                    ],
+                    lighting: [
+                        { id: 'warm', name: '暖色', nameEn: 'Warm', price: 0, description: '温かみのある照明', descEn: 'Warm lighting', customerBonus: [] },
+                        { id: 'cool', name: '寒色', nameEn: 'Cool', price: 3000, description: '洗練された青白い光', descEn: 'Refined cool light', customerBonus: ['knight', 'guard'] },
+                        { id: 'neon', name: 'ネオン', nameEn: 'Neon', price: 6000, description: 'パーティー向けカラフル', descEn: 'Colorful party lights', customerBonus: ['dancer', 'bard'] }
+                    ],
+                    bgm: [
+                        { id: 'jazz', name: 'ジャズ', nameEn: 'Jazz', price: 0, description: '落ち着いたジャズ', descEn: 'Relaxing jazz', customerBonus: [] },
+                        { id: 'medieval', name: '中世風', nameEn: 'Medieval', price: 4000, description: 'リュートの調べ', descEn: 'Lute melodies', customerBonus: ['knight', 'princess'] },
+                        { id: 'tavern', name: '酒場風', nameEn: 'Tavern', price: 4000, description: '賑やかな酒場BGM', descEn: 'Lively tavern music', customerBonus: ['sailor', 'mercenary'] }
+                    ]
+                };
+
                 // --- Game State ---
                 let state = {
-                    score: 0, timeLeft: 60, timerInterval: null,
+                    score: 0, timeLeft: 90, timerInterval: null,
                     shakerContents: [], shakerHasIce: false, isGameRunning: false,
                     canInteract: true, combo: 0, isHappyHour: false,
                     happyHourTimeout: null, garnishTimeout: null,
@@ -886,8 +2517,31 @@
                     language: 'ja',
                     isBossActive: false,
                     hasTalked: false,
-                    selectedGlass: null, // 'collins', 'rocks', 'cocktail'
-                    discoveredSecrets: [] // Array of secret cocktail names
+                    selectedGlass: null,
+                    discoveredSecrets: [],
+                    timeOfDay: 'morning',
+                    // === NEW FEATURES ===
+                    ownedIngredients: [...STARTER_INGREDIENTS],
+                    discoveredCocktails: [],
+                    metCustomers: [],
+                    currentTitle: 'beginner',
+                    totalTalks: 0,
+                    // === PHASE 2: Weather, Drunk, Events ===
+                    currentWeather: 'sunny', // sunny, rainy, snowy
+                    currentEvent: null, // null, 'summer', 'christmas'
+                    customerDrunkLevel: 0, // 0-100, 100+ = passed out
+                    unlockedTitles: ['beginner'],
+                    // === PHASE 3: Interior Customization ===
+                    interior: {
+                        wallpaper: 'classic',
+                        lighting: 'warm',
+                        bgm: 'jazz'
+                    },
+                    ownedInterior: {
+                        wallpaper: ['classic'],
+                        lighting: ['warm'],
+                        bgm: ['jazz']
+                    }
                 };
 
                 // --- Sound Engine ---
@@ -926,6 +2580,34 @@
                         }
                         updateRecipeDisplay();
                     }
+
+                    // === Update Phase 2 displays ===
+                    if (typeof updateWeatherDisplay === 'function') updateWeatherDisplay();
+                    if (typeof checkSeasonalEvent === 'function') checkSeasonalEvent();
+                    if (typeof updateTitleDisplay === 'function') updateTitleDisplay();
+
+                    // === Update current customer name/dialogue for new language ===
+                    if (state.isGameRunning && state.currentCustomer) {
+                        const newLangData = translations[lang];
+                        // Find matching customer in new language by image path
+                        const allCustomers = [
+                            ...newLangData.CUSTOMERS,
+                            newLangData.MILLIONAIRE_CUSTOMER,
+                            newLangData.DEATH_CUSTOMER
+                        ];
+                        const matchingCustomer = allCustomers.find(c => c && c.image === state.currentCustomer.image);
+                        if (matchingCustomer) {
+                            // Update customer name and quotes to new language
+                            state.currentCustomer.name = matchingCustomer.name;
+                            state.currentCustomer.quotes = matchingCustomer.quotes;
+                            // Update displayed name
+                            const customerNameEl = document.getElementById('customer-name');
+                            if (customerNameEl) customerNameEl.textContent = matchingCustomer.name;
+                            // Hide current dialogue (displayed text can't be translated live)
+                            // It will show new language text on next interaction
+                            dom.customerDialogueEl.classList.remove('show');
+                        }
+                    }
                 }
 
                 function showView(view) {
@@ -939,12 +2621,23 @@
                 }
 
                 function startDay() {
-                    Object.assign(state, { score: 0, timer: 60, isGameRunning: false, canInteract: false, combo: 0, isHappyHour: false, currentCustomer: null, currentOrder: null, isBossActive: false, hasTalked: false });
+                    Object.assign(state, { score: 0, timer: 90, isGameRunning: false, canInteract: false, combo: 0, isHappyHour: false, currentCustomer: null, currentOrder: null, isBossActive: false, hasTalked: false, timeOfDay: 'morning' });
                     dom.gameContainerEl.classList.remove('boss-mode');
 
                     showView('game');
                     dom.gameOverlayEl.style.opacity = '0';
                     dom.gameOverlayEl.style.pointerEvents = 'none';
+
+                    // === NEW: Show menu button and update title display ===
+                    showMenuButton();
+                    updateTitleDisplay();
+
+                    // === PHASE 2: Weather, Events, Reset Drunk ===
+                    setRandomWeather();
+                    checkSeasonalEvent();
+                    resetDrunkLevel();
+
+                    updateEnvironmentVisuals(); // Initial visual update
 
                     const currentLangData = translations[state.language];
                     const storyEvent = currentLangData.STORY && currentLangData.STORY[state.day];
@@ -964,8 +2657,20 @@
                         state.timer--;
                         dom.timerEl.textContent = state.timer;
 
-                        // Real-time updates (check every second)
-                        updateRealTimeEnvironment();
+                        // Game Time Logic (90s total)
+                        let newTimeOfDay = state.timeOfDay;
+                        if (state.timer > 60) newTimeOfDay = 'morning';
+                        else if (state.timer > 30) newTimeOfDay = 'noon';
+                        else newTimeOfDay = 'night';
+
+                        if (newTimeOfDay !== state.timeOfDay) {
+                            state.timeOfDay = newTimeOfDay;
+                            updateEnvironmentVisuals();
+
+                            // Notification
+                            const timeText = newTimeOfDay === 'noon' ? '☀️ こんにちは！ (お昼)' : '🌙 こんばんは！ (夜)';
+                            showFloatingText(timeText, '#fbbf24', dom.gameContainerEl);
+                        }
 
                         // Boss Trigger Check (moved to generateOrder for better flow)
                     } else {
@@ -973,25 +2678,18 @@
                     }
                 }
 
-                // --- Real-time Logic ---
-                function getRealTimePhase() {
-                    const hour = new Date().getHours();
-                    if (hour >= 5 && hour < 11) return 'morning';
-                    if (hour >= 11 && hour < 16) return 'day';
-                    if (hour >= 16 && hour < 19) return 'evening';
-                    if (hour >= 19 && hour <= 23) return 'night';
-                    return 'midnight'; // 0 - 5
-                }
-
-                function updateRealTimeEnvironment() {
-                    const phase = getRealTimePhase();
+                // --- Time Logic ---
+                function updateEnvironmentVisuals() {
                     const windowEl = document.getElementById('bg-window');
-
-                    // Remove all time classes
+                    // Remove all time classes (including old ones if any)
                     windowEl.classList.remove('time-morning', 'time-day', 'time-evening', 'time-night', 'time-midnight');
 
-                    // Add current phase class
-                    windowEl.classList.add(`time-${phase}`);
+                    // Map game time to CSS classes
+                    let cssClass = 'time-morning';
+                    if (state.timeOfDay === 'noon') cssClass = 'time-day'; // Use time-day for noon
+                    if (state.timeOfDay === 'night') cssClass = 'time-night';
+
+                    windowEl.classList.add(cssClass);
                 }
 
                 function showStoryOverlay(eventData, callback) {
@@ -1023,7 +2721,7 @@
                     state.timerInterval = setInterval(updateTimer, 1000);
                     scheduleHappyHour();
                     startAudio();
-                    updateRealTimeEnvironment(); // Initial call for environment
+                    updateEnvironmentVisuals(); // Initial call for environment
                 }
 
                 function endDay() {
@@ -1035,6 +2733,11 @@
                     if (dom.bgmAudioEl) dom.bgmAudioEl.playbackRate = 1.0;
 
                     state.totalMoney += state.score;
+
+                    // === NEW: Save progress, check titles, hide menu button ===
+                    saveGameData();
+                    checkTitles();
+                    hideMenuButton();
 
                     if (dom.timerDisplayEl) dom.timerDisplayEl.classList.remove('timer-danger');
 
@@ -1118,13 +2821,34 @@
                 function talk() {
                     if (!state.isGameRunning || !state.canInteract || !state.currentCustomer || state.hasTalked) return;
                     state.hasTalked = true;
-                    const chats = state.currentCustomer.quotes.chat || ["..."];
+
+                    // Time-based Chat Logic
+                    let chats = [];
+                    const rawChat = state.currentCustomer.quotes.chat;
+
+                    if (Array.isArray(rawChat)) {
+                        chats = rawChat;
+                    } else if (typeof rawChat === 'object') {
+                        const phase = state.timeOfDay; // Use game time instead of getRealTimePhase
+                        // Combine general 'any' chats with specific time phase chats
+                        if (rawChat.any) chats = chats.concat(rawChat.any);
+                        if (rawChat[phase]) chats = chats.concat(rawChat[phase]);
+
+                        // Fallback if empty (shouldn't happen if data is good)
+                        if (chats.length === 0) chats = ["..."];
+                    } else {
+                        chats = ["..."];
+                    }
+
                     showDialogue(chats);
                     // Bonus for talking
                     state.score += 50;
                     updateScore();
                     showFloatingText("+¥50 (Talk)", "#60a5fa", dom.customerEl.parentElement);
                     playSound('pop', '8n');
+
+                    // === NEW: Record talk for title system ===
+                    recordTalk();
                 }
                 // Removed unused shake function
 
@@ -1233,30 +2957,27 @@
                             }
                         }
 
-                        // --- Real-time Customer Selection ---
-                        const phase = getRealTimePhase();
-                        let potentialCustomers = currentLangData.CUSTOMERS.filter(c =>
-                            !c.activeTime || c.activeTime.includes(phase)
-                        );
+                        // --- Time-based Customer Selection ---
+                        let potentialCustomers = currentLangData.CUSTOMERS.filter(c => c.time === state.timeOfDay);
 
-                        // Fallback if no match (shouldn't happen with correct data)
+                        // Fallback
                         if (potentialCustomers.length === 0) potentialCustomers = currentLangData.CUSTOMERS;
 
                         // Special Customers Chance
                         if (forcedCustomer) { // If a boss is forced
                             state.currentCustomer = forcedCustomer;
                             state.bossEncounterActive = true; // Ensure boss mode is active
-                        } else if (Math.random() < 0.10) { // 10% chance for Millionaire
+                        } else if (Math.random() < 0.10 && state.timeOfDay === 'night') { // Millionaire (Night only)
                             state.currentCustomer = JSON.parse(JSON.stringify(currentLangData.MILLIONAIRE_CUSTOMER));
-                        } else if (Math.random() < 0.05) { // 5% chance for Death/Witch (total 15% special)
+                        } else if (Math.random() < 0.05 && state.timeOfDay === 'night') { // Death/Witch (Night only)
                             state.currentCustomer = JSON.parse(JSON.stringify(currentLangData.DEATH_CUSTOMER));
                         } else {
                             const template = potentialCustomers[Math.floor(Math.random() * potentialCustomers.length)];
                             state.currentCustomer = JSON.parse(JSON.stringify(template));
                         }
 
-                        // Update Window immediately when customer appears
-                        updateRealTimeEnvironment();
+                        // Update Window immediately
+                        updateEnvironmentVisuals();
 
                         dom.customerDialogueEl.classList.remove('show');
                         dom.customerEl.src = state.currentCustomer.image;
@@ -1366,12 +3087,16 @@
                     state.canInteract = false;
                     dom.customerDialogueEl.classList.remove('show');
 
+                    // === PHASE 2: Add liquid wave effect during shake ===
+                    addLiquidWaveEffect();
+
                     dom.shakerAreaEl.classList.add('shake-animation');
                     // Play sound multiple times for effect
                     for (let i = 0; i < 5; i++) setTimeout(() => playSound('shake'), i * 80);
 
                     setTimeout(() => {
                         dom.shakerAreaEl.classList.remove('shake-animation');
+                        removeLiquidWaveEffect(); // Remove wave after shake
                         validateCocktail();
                     }, 800);
                 };
@@ -1467,11 +3192,15 @@
                         if (state.isHappyHour) points *= 2;
                         if (state.currentOrder.needsIce && state.upgrades.iceMachine.purchased) points += 20;
 
+                        // === PHASE 2: Event multiplier ===
+                        points *= getEventMultiplier();
+
                         state.score += Math.round(points);
                         showFloatingText(`+¥${Math.round(points)}`, '#84cc16', dom.scoreDisplayEl);
 
+                        // === PHASE 2: Weather tip multiplier ===
                         if (state.currentCustomer.name === currentLangData.MILLIONAIRE_CUSTOMER.name) {
-                            const tip = 200 * (state.isHappyHour ? 2 : 1);
+                            const tip = Math.round(200 * (state.isHappyHour ? 2 : 1) * getWeatherTipMultiplier());
                             state.score += tip;
                             setTimeout(() => { showFloatingText(`Tip +¥${tip}!`, '#ffd700', dom.scoreDisplayEl); playSound('tip'); }, 300);
                         }
@@ -1483,6 +3212,19 @@
                         if (state.bossEncounterActive && isCorrect) {
                             state.bossDefeated = true;
                         }
+
+                        // === NEW: Record cocktail and customer for encyclopedias ===
+                        if (state.currentOrder.name) {
+                            recordCocktailDiscovery(state.currentOrder.name);
+                        }
+                        if (state.currentCustomer.name) {
+                            recordCustomerMet(state.currentCustomer.name);
+                        }
+
+                        // === PHASE 2: Add drunk level and sparkle effect ===
+                        addDrunkLevel(totalAlcohol);
+                        createSparkles(dom.cocktailGlassEl);
+
                         startGarnishMiniGame();
                     } else if (foundSecret) {
                         let bonus = foundSecret.bonus * (state.isHappyHour ? 2 : 1);
@@ -1651,12 +3393,1242 @@
                     // Initialize Ingredients
                     generateIngredients();
 
-                    // Set initial language
+                    // Set initial language (load from localStorage or default to Japanese)
                     const savedLang = localStorage.getItem('bartenderLang') || 'ja';
                     setLanguage(savedLang);
 
                     // Force hide old shelf logic if any
                     if (dom.ingredientShelfEl) dom.ingredientShelfEl.style.display = 'none';
+
+                    // Camera Mode Button
+                    document.getElementById('camera-mode-btn').addEventListener('click', toggleCameraMode);
+
+                    // Help Button Logic
+                    const helpButton = document.getElementById('help-button');
+                    const helpOverlay = document.getElementById('help-overlay');
+                    const helpCloseBtn = document.getElementById('help-close-btn');
+                    const helpStartBtn = document.getElementById('help-start-btn');
+
+                    function openHelp() {
+                        helpOverlay.classList.add('active');
+                    }
+
+                    function closeHelp() {
+                        helpOverlay.classList.remove('active');
+                    }
+
+                    helpButton.addEventListener('click', openHelp);
+                    helpCloseBtn.addEventListener('click', closeHelp);
+                    helpStartBtn.addEventListener('click', openHelp);
+
+                    // Show help button when game is running
+                    const originalStartDay = startDay;
+                    startDay = function () {
+                        helpButton.classList.add('visible');
+                        originalStartDay();
+                    };
+
+                    // Load saved game data and apply interior
+                    loadGameData();
+                    applyInteriorVisuals();
+                }
+
+                // ========================================
+                // CAMERA SHAKE FEATURE - Hand Tracking with MediaPipe
+                // ========================================
+
+                let cameraState = {
+                    isActive: false,
+                    stream: null,
+                    hands: null,
+                    camera: null,
+                    shakeCount: 0,
+                    shakesRequired: 5,
+                    lastShakeTime: 0,
+                    shakeCooldown: 200,
+                    previousWristY: null,
+                    handDetected: false,
+                    shakeDirection: null
+                };
+
+                const cameraVideo = document.getElementById('camera-video');
+                const cameraCanvas = document.getElementById('camera-canvas');
+                const skeletonCanvas = document.getElementById('skeleton-canvas');
+                const cameraContainer = document.getElementById('camera-container');
+                const shakeCounter = document.getElementById('shake-counter');
+                const shakeProgress = document.getElementById('shake-progress');
+                const cameraModeBtn = document.getElementById('camera-mode-btn');
+                const cameraOverlayText = document.getElementById('camera-overlay-text');
+                const detectionStatus = document.getElementById('detection-status');
+                const detectionIcon = document.getElementById('detection-icon');
+                const detectionText = document.getElementById('detection-text');
+                let skeletonCtx = null;
+
+                async function toggleCameraMode() {
+                    if (cameraState.isActive) {
+                        stopCamera();
+                    } else {
+                        await startCamera();
+                    }
+                }
+
+                async function startCamera() {
+                    try {
+                        // Request camera access
+                        cameraState.stream = await navigator.mediaDevices.getUserMedia({
+                            video: {
+                                facingMode: 'user',
+                                width: { ideal: 640 },
+                                height: { ideal: 480 }
+                            },
+                            audio: false
+                        });
+
+                        cameraVideo.srcObject = cameraState.stream;
+                        await cameraVideo.play();
+
+                        // Setup skeleton canvas
+                        skeletonCanvas.width = cameraVideo.videoWidth || 320;
+                        skeletonCanvas.height = cameraVideo.videoHeight || 240;
+                        skeletonCtx = skeletonCanvas.getContext('2d');
+
+                        // Initialize MediaPipe Hands
+                        cameraState.hands = new Hands({
+                            locateFile: (file) => {
+                                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+                            }
+                        });
+
+                        cameraState.hands.setOptions({
+                            maxNumHands: 2,
+                            modelComplexity: 1,
+                            minDetectionConfidence: 0.5,
+                            minTrackingConfidence: 0.5
+                        });
+
+                        cameraState.hands.onResults(onHandResults);
+
+                        // Start camera loop
+                        cameraState.camera = new Camera(cameraVideo, {
+                            onFrame: async () => {
+                                if (cameraState.isActive && cameraState.hands) {
+                                    await cameraState.hands.send({ image: cameraVideo });
+                                }
+                            },
+                            width: 640,
+                            height: 480
+                        });
+                        cameraState.camera.start();
+
+                        cameraState.isActive = true;
+                        cameraState.shakeCount = 0;
+                        cameraContainer.classList.add('active');
+                        cameraModeBtn.classList.add('active');
+                        cameraModeBtn.innerHTML = '📷 カメラON';
+                        updateShakeUI();
+
+                        // Show guidance
+                        showFloatingText("📷 手認識モード開始！", "#fbbf24", dom.gameContainerEl);
+
+                    } catch (error) {
+                        console.error('Camera error:', error);
+                        let errorMsg = state.language === 'ja'
+                            ? 'カメラにアクセスできませんでした'
+                            : 'Could not access camera';
+                        alert(errorMsg);
+                    }
+                }
+
+                function stopCamera() {
+                    if (cameraState.camera) {
+                        cameraState.camera.stop();
+                        cameraState.camera = null;
+                    }
+                    if (cameraState.stream) {
+                        cameraState.stream.getTracks().forEach(track => track.stop());
+                        cameraState.stream = null;
+                    }
+                    if (cameraState.hands) {
+                        cameraState.hands.close();
+                        cameraState.hands = null;
+                    }
+
+                    cameraState.isActive = false;
+                    cameraState.previousWristY = null;
+                    cameraState.shakeCount = 0;
+                    cameraState.handDetected = false;
+
+                    cameraContainer.classList.remove('active');
+                    cameraModeBtn.classList.remove('active');
+                    cameraModeBtn.innerHTML = '📷 カメラモード';
+                    shakeCounter.classList.remove('active');
+                    detectionStatus.classList.remove('detected', 'not-detected');
+                }
+
+                function onHandResults(results) {
+                    if (!skeletonCtx) return;
+
+                    // Clear skeleton canvas
+                    skeletonCtx.save();
+                    skeletonCtx.clearRect(0, 0, skeletonCanvas.width, skeletonCanvas.height);
+
+                    // Mirror the canvas for selfie view
+                    skeletonCtx.translate(skeletonCanvas.width, 0);
+                    skeletonCtx.scale(-1, 1);
+
+                    if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                        // Hand detected!
+                        if (!cameraState.handDetected) {
+                            cameraState.handDetected = true;
+                            updateDetectionStatus(true);
+                        }
+
+                        for (const landmarks of results.multiHandLandmarks) {
+                            // Draw hand skeleton
+                            drawHandSkeleton(landmarks);
+
+                            // Detect shake motion using wrist position
+                            const wrist = landmarks[0]; // Wrist landmark
+                            detectShakeMotion(wrist);
+                        }
+                    } else {
+                        // No hand detected
+                        if (cameraState.handDetected) {
+                            cameraState.handDetected = false;
+                            updateDetectionStatus(false);
+                        }
+                        cameraState.previousWristY = null;
+                        cameraState.shakeDirection = null;
+                    }
+
+                    skeletonCtx.restore();
+                }
+
+                function drawHandSkeleton(landmarks) {
+                    const w = skeletonCanvas.width;
+                    const h = skeletonCanvas.height;
+
+                    // Hand connections
+                    const connections = [
+                        [0, 1], [1, 2], [2, 3], [3, 4], // Thumb
+                        [0, 5], [5, 6], [6, 7], [7, 8], // Index
+                        [0, 9], [9, 10], [10, 11], [11, 12], // Middle
+                        [0, 13], [13, 14], [14, 15], [15, 16], // Ring
+                        [0, 17], [17, 18], [18, 19], [19, 20], // Pinky
+                        [5, 9], [9, 13], [13, 17] // Palm
+                    ];
+
+                    // Draw connections (lines)
+                    skeletonCtx.strokeStyle = '#00ff00';
+                    skeletonCtx.lineWidth = 3;
+                    skeletonCtx.shadowColor = '#00ff00';
+                    skeletonCtx.shadowBlur = 10;
+
+                    for (const [start, end] of connections) {
+                        const startPoint = landmarks[start];
+                        const endPoint = landmarks[end];
+                        skeletonCtx.beginPath();
+                        skeletonCtx.moveTo(startPoint.x * w, startPoint.y * h);
+                        skeletonCtx.lineTo(endPoint.x * w, endPoint.y * h);
+                        skeletonCtx.stroke();
+                    }
+
+                    // Draw landmarks (dots)
+                    for (let i = 0; i < landmarks.length; i++) {
+                        const landmark = landmarks[i];
+                        const x = landmark.x * w;
+                        const y = landmark.y * h;
+
+                        // Different colors for fingertips
+                        if ([4, 8, 12, 16, 20].includes(i)) {
+                            skeletonCtx.fillStyle = '#ff00ff'; // Fingertips - magenta
+                            skeletonCtx.shadowColor = '#ff00ff';
+                        } else if (i === 0) {
+                            skeletonCtx.fillStyle = '#ffff00'; // Wrist - yellow
+                            skeletonCtx.shadowColor = '#ffff00';
+                        } else {
+                            skeletonCtx.fillStyle = '#00ffff'; // Other joints - cyan
+                            skeletonCtx.shadowColor = '#00ffff';
+                        }
+
+                        skeletonCtx.beginPath();
+                        skeletonCtx.arc(x, y, i === 0 ? 8 : 5, 0, 2 * Math.PI);
+                        skeletonCtx.fill();
+                    }
+
+                    skeletonCtx.shadowBlur = 0;
+                }
+
+                function detectShakeMotion(wrist) {
+                    const now = Date.now();
+                    const currentY = wrist.y;
+
+                    if (cameraState.previousWristY !== null) {
+                        const deltaY = currentY - cameraState.previousWristY;
+                        const shakeThreshold = 0.03; // Sensitivity
+
+                        // Detect direction change (up-down motion)
+                        if (Math.abs(deltaY) > shakeThreshold) {
+                            const newDirection = deltaY > 0 ? 'down' : 'up';
+
+                            // Count shake when direction changes
+                            if (cameraState.shakeDirection && cameraState.shakeDirection !== newDirection) {
+                                if (now - cameraState.lastShakeTime > cameraState.shakeCooldown) {
+                                    cameraState.lastShakeTime = now;
+                                    onShakeDetected();
+                                }
+                            }
+                            cameraState.shakeDirection = newDirection;
+                        }
+                    }
+
+                    cameraState.previousWristY = currentY;
+                }
+
+                function updateDetectionStatus(detected) {
+                    if (detected) {
+                        detectionStatus.classList.add('detected');
+                        detectionStatus.classList.remove('not-detected');
+                        detectionIcon.textContent = '✋';
+                        detectionText.textContent = state.language === 'ja' ? '認識OK！' : 'Detected!';
+                    } else {
+                        detectionStatus.classList.remove('detected');
+                        detectionStatus.classList.add('not-detected');
+                        detectionIcon.textContent = '🔍';
+                        detectionText.textContent = state.language === 'ja' ? '手を映してね' : 'Show hand';
+                    }
+                }
+
+                function onShakeDetected() {
+                    if (!state.isGameRunning || !state.canInteract) return;
+                    if (state.shakerContents.length === 0 && !state.shakerHasIce) return;
+
+                    cameraState.shakeCount++;
+                    updateShakeUI();
+
+                    // Visual feedback
+                    cameraContainer.classList.add('motion-flash');
+                    setTimeout(() => cameraContainer.classList.remove('motion-flash'), 150);
+
+                    // Animate shaker
+                    dom.shakerAreaEl.classList.add('shake-animation');
+                    setTimeout(() => dom.shakerAreaEl.classList.remove('shake-animation'), 200);
+
+                    // Play shake sound
+                    playSound('shake');
+
+                    // Pulse the counter
+                    shakeCounter.classList.add('shake-pulse');
+                    setTimeout(() => shakeCounter.classList.remove('shake-pulse'), 200);
+
+                    // Check if shake complete
+                    if (cameraState.shakeCount >= cameraState.shakesRequired) {
+                        completeShakeWithCamera();
+                    }
+                }
+
+                function updateShakeUI() {
+                    shakeCounter.textContent = cameraState.shakeCount;
+                    shakeCounter.classList.add('active');
+
+                    const progress = (cameraState.shakeCount / cameraState.shakesRequired) * 100;
+                    shakeProgress.style.width = Math.min(progress, 100) + '%';
+
+                    // Update overlay text based on progress
+                    if (cameraState.shakeCount === 0) {
+                        cameraOverlayText.textContent = state.language === 'ja'
+                            ? '手を上下に振ってシェイク！'
+                            : 'Shake your hand up and down!';
+                    } else if (cameraState.shakeCount < cameraState.shakesRequired) {
+                        const remaining = cameraState.shakesRequired - cameraState.shakeCount;
+                        cameraOverlayText.textContent = state.language === 'ja'
+                            ? `あと${remaining}回！`
+                            : `${remaining} more!`;
+                    }
+                }
+
+                function completeShakeWithCamera() {
+                    // Show completion effect
+                    showFloatingText("🎉 シェイク完了！", "#22c55e", cameraContainer);
+                    cameraOverlayText.textContent = state.language === 'ja' ? '完成！' : 'Done!';
+                    shakeProgress.style.width = '100%';
+
+                    // Reset camera shake count
+                    cameraState.shakeCount = 0;
+
+                    // Trigger the actual cocktail finishing logic
+                    setTimeout(() => {
+                        updateShakeUI();
+                        validateCocktail();
+                    }, 500);
+                }
+
+                // Clean up camera when game ends
+                const originalEndDay = endDay;
+                endDay = function () {
+                    stopCamera();
+                    originalEndDay();
+                };
+
+                // =============================================
+                // ===== NEW FEATURES: MENU & ENCYCLOPEDIAS =====
+                // =============================================
+
+                // --- Menu Functions ---
+                function openMenu() {
+                    document.getElementById('menu-overlay').classList.add('active');
+                }
+                function closeMenu() {
+                    document.getElementById('menu-overlay').classList.remove('active');
+                }
+
+                // --- Settings Functions ---
+                function openSettings() {
+                    closeMenu();
+                    const overlay = document.getElementById('settings-overlay');
+                    const langSelect = document.getElementById('language-select');
+                    // Set current selection based on saved language
+                    const savedLang = localStorage.getItem('bartenderLang') || 'ja';
+                    langSelect.value = savedLang;
+                    overlay.classList.add('active');
+                }
+                function closeSettings() {
+                    document.getElementById('settings-overlay').classList.remove('active');
+                }
+                function saveSettingsAndRestart() {
+                    const langSelect = document.getElementById('language-select');
+                    const selectedLang = langSelect.value;
+                    localStorage.setItem('bartenderLang', selectedLang);
+                    // Show confirmation and reload
+                    alert(selectedLang === 'ja' ? '設定を保存しました。再起動します。' : 'Settings saved. Restarting...');
+                    location.reload();
+                }
+                // Make settings functions globally accessible
+                window.openSettings = openSettings;
+                window.closeSettings = closeSettings;
+                window.saveSettingsAndRestart = saveSettingsAndRestart;
+
+                // --- Interior Shop Functions ---
+                function openInteriorShop() {
+                    closeMenu();
+                    const overlay = document.getElementById('interior-shop-overlay');
+                    const content = document.getElementById('interior-shop-content');
+                    const moneyDisplay = document.getElementById('interior-money');
+                    const lang = translations[state.language];
+
+                    moneyDisplay.textContent = `${lang.interiorMoney}: ¥${state.totalMoney.toLocaleString()}`;
+                    content.innerHTML = '';
+
+                    const categories = [
+                        { key: 'wallpaper', label: lang.wallpaperLabel },
+                        { key: 'lighting', label: lang.lightingLabel },
+                        { key: 'bgm', label: lang.bgmLabel }
+                    ];
+
+                    categories.forEach(cat => {
+                        const section = document.createElement('div');
+                        section.innerHTML = `<h3 class="text-lg font-bold text-white mb-2 font-jp">${cat.label}</h3>`;
+                        const grid = document.createElement('div');
+                        grid.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px;';
+
+                        INTERIOR_ITEMS[cat.key].forEach(item => {
+                            const isOwned = state.ownedInterior[cat.key].includes(item.id);
+                            const isEquipped = state.interior[cat.key] === item.id;
+                            const canAfford = state.totalMoney >= item.price;
+                            const itemName = state.language === 'ja' ? item.name : item.nameEn;
+                            const itemDesc = state.language === 'ja' ? item.description : item.descEn;
+
+                            const card = document.createElement('div');
+                            card.className = 'interior-item';
+                            card.style.cssText = `
+                                background: ${isEquipped ? 'linear-gradient(135deg, #065f46, #059669)' : '#374151'};
+                                border-radius: 10px; padding: 12px; cursor: pointer;
+                                border: 2px solid ${isEquipped ? '#10b981' : isOwned ? '#6b7280' : canAfford ? '#fbbf24' : '#4b5563'};
+                                transition: all 0.2s;
+                            `;
+
+                            let buttonText = '';
+                            if (isEquipped) {
+                                buttonText = `<span class="text-green-300">${lang.interiorEquipped}</span>`;
+                            } else if (isOwned) {
+                                buttonText = `<button class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-jp">使用</button>`;
+                            } else if (item.price === 0) {
+                                buttonText = `<span class="text-gray-400">${lang.interiorOwned}</span>`;
+                            } else {
+                                buttonText = `<button class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm font-jp ${!canAfford ? 'opacity-50' : ''}">${lang.interiorBuy} ¥${item.price.toLocaleString()}</button>`;
+                            }
+
+                            card.innerHTML = `
+                                <div class="font-bold text-white font-jp">${itemName}</div>
+                                <div class="text-xs text-gray-300 font-jp mb-2">${itemDesc}</div>
+                                ${buttonText}
+                            `;
+
+                            if (!isEquipped) {
+                                card.onclick = () => {
+                                    if (isOwned) {
+                                        equipInterior(cat.key, item.id);
+                                    } else if (canAfford && item.price > 0) {
+                                        buyInterior(cat.key, item);
+                                    }
+                                };
+                            }
+
+                            grid.appendChild(card);
+                        });
+
+                        section.appendChild(grid);
+                        content.appendChild(section);
+                    });
+
+                    overlay.classList.add('active');
+                }
+
+                function closeInteriorShop() {
+                    document.getElementById('interior-shop-overlay').classList.remove('active');
+                }
+
+                function buyInterior(category, item) {
+                    if (state.totalMoney >= item.price) {
+                        state.totalMoney -= item.price;
+                        state.ownedInterior[category].push(item.id);
+                        equipInterior(category, item.id);
+                        saveGameData();
+                        openInteriorShop(); // Refresh
+                        playSound('cash');
+                    }
+                }
+
+                function equipInterior(category, itemId) {
+                    state.interior[category] = itemId;
+                    applyInteriorVisuals();
+                    saveGameData();
+                    openInteriorShop(); // Refresh
+                }
+
+                function applyInteriorVisuals() {
+                    const gameContainer = document.getElementById('game-container');
+                    const roomContainer = document.getElementById('room-container');
+
+                    // Apply wallpaper class
+                    ['classic', 'modern', 'fantasy'].forEach(w => {
+                        gameContainer?.classList.remove(`wall-${w}`);
+                        roomContainer?.classList.remove(`wall-${w}`);
+                    });
+                    gameContainer?.classList.add(`wall-${state.interior.wallpaper}`);
+                    roomContainer?.classList.add(`wall-${state.interior.wallpaper}`);
+
+                    // Apply lighting class
+                    ['warm', 'cool', 'neon'].forEach(l => {
+                        gameContainer?.classList.remove(`light-${l}`);
+                        roomContainer?.classList.remove(`light-${l}`);
+                    });
+                    gameContainer?.classList.add(`light-${state.interior.lighting}`);
+                    roomContainer?.classList.add(`light-${state.interior.lighting}`);
+                }
+
+                // --- Save/Load Game Data ---
+                function saveGameData() {
+                    const saveData = {
+                        interior: state.interior,
+                        ownedInterior: state.ownedInterior,
+                        totalMoney: state.totalMoney,
+                        day: state.day,
+                        discoveredCocktails: state.discoveredCocktails,
+                        metCustomers: state.metCustomers,
+                        unlockedTitles: state.unlockedTitles,
+                        ownedIngredients: state.ownedIngredients,
+                        upgrades: state.upgrades
+                    };
+                    localStorage.setItem('bartenderSave', JSON.stringify(saveData));
+                }
+
+                function loadGameData() {
+                    const saved = localStorage.getItem('bartenderSave');
+                    if (saved) {
+                        try {
+                            const data = JSON.parse(saved);
+                            if (data.interior) state.interior = data.interior;
+                            if (data.ownedInterior) state.ownedInterior = data.ownedInterior;
+                            if (data.totalMoney !== undefined) state.totalMoney = data.totalMoney;
+                            if (data.day !== undefined) state.day = data.day;
+                            if (data.discoveredCocktails) state.discoveredCocktails = data.discoveredCocktails;
+                            if (data.metCustomers) state.metCustomers = data.metCustomers;
+                            if (data.unlockedTitles) state.unlockedTitles = data.unlockedTitles;
+                            if (data.ownedIngredients) state.ownedIngredients = data.ownedIngredients;
+                            if (data.upgrades) state.upgrades = data.upgrades;
+                        } catch (e) {
+                            console.error('Failed to load save data:', e);
+                        }
+                    }
+                }
+
+                // Make interior functions globally accessible
+                window.openInteriorShop = openInteriorShop;
+                window.closeInteriorShop = closeInteriorShop;
+
+                // --- Photo Mode Functions ---
+                let photoData = null;
+
+                function openPhotoMode() {
+                    const shakerArea = document.getElementById('shaker-area');
+                    const gameContainer = document.getElementById('game-container');
+
+                    // Capture the shaker area as screenshot
+                    html2canvas(gameContainer, {
+                        backgroundColor: '#1a1a2e',
+                        scale: 2,
+                        logging: false,
+                        useCORS: true
+                    }).then(canvas => {
+                        const photoCanvas = document.getElementById('photo-canvas');
+                        const ctx = photoCanvas.getContext('2d');
+
+                        // Set canvas size
+                        photoCanvas.width = canvas.width;
+                        photoCanvas.height = canvas.height;
+
+                        // Draw captured image
+                        ctx.drawImage(canvas, 0, 0);
+
+                        // Add watermark/branding
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                        ctx.font = '24px "M PLUS Rounded 1c", sans-serif';
+                        ctx.fillText('🍸 Bartender Game', 20, canvas.height - 20);
+
+                        // Store for download
+                        photoData = photoCanvas.toDataURL('image/png');
+
+                        // Show overlay
+                        document.getElementById('photo-mode-overlay').classList.remove('hidden');
+                    });
+                }
+
+                function closePhotoMode() {
+                    document.getElementById('photo-mode-overlay').classList.add('hidden');
+                }
+
+                function downloadPhoto() {
+                    if (!photoData) return;
+                    const link = document.createElement('a');
+                    link.download = `cocktail_${Date.now()}.png`;
+                    link.href = photoData;
+                    link.click();
+                }
+
+                function shareToTwitter() {
+                    const cocktailName = state.currentOrder ? state.currentOrder.name : 'カクテル';
+                    const text = encodeURIComponent(`${cocktailName}を作りました！ #バーテンダーゲーム #カクテル`);
+                    const url = encodeURIComponent(window.location.href);
+                    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
+                }
+
+                function shareToLINE() {
+                    const cocktailName = state.currentOrder ? state.currentOrder.name : 'カクテル';
+                    const text = encodeURIComponent(`${cocktailName}を作りました！ バーテンダーゲーム`);
+                    window.open(`https://social-plugins.line.me/lineit/share?text=${text}`, '_blank');
+                }
+
+                // Make photo functions globally accessible
+                window.openPhotoMode = openPhotoMode;
+                window.closePhotoMode = closePhotoMode;
+                window.downloadPhoto = downloadPhoto;
+                window.shareToTwitter = shareToTwitter;
+                window.shareToLINE = shareToLINE;
+
+                // --- Gesture Shake Functions ---
+                let gestureState = {
+                    isActive: false,
+                    shakeCount: 0,
+                    shakesRequired: 5,
+                    lastAcceleration: { x: 0, y: 0, z: 0 },
+                    shakeThreshold: 15,
+                    lastShakeTime: 0,
+                    shakeCooldown: 300 // ms between shakes
+                };
+
+                async function toggleGestureShake() {
+                    if (gestureState.isActive) {
+                        stopGestureShake();
+                    } else {
+                        await startGestureShake();
+                    }
+                }
+
+                async function startGestureShake() {
+                    // Request permission for iOS 13+
+                    if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+                        try {
+                            const permission = await DeviceMotionEvent.requestPermission();
+                            if (permission !== 'granted') {
+                                alert(state.language === 'ja'
+                                    ? 'モーションセンサーの許可が必要です'
+                                    : 'Motion sensor permission required');
+                                return;
+                            }
+                        } catch (e) {
+                            console.error('DeviceMotion permission error:', e);
+                            alert(state.language === 'ja'
+                                ? 'このブラウザでは使用できません'
+                                : 'Not supported in this browser');
+                            return;
+                        }
+                    }
+
+                    gestureState.isActive = true;
+                    gestureState.shakeCount = 0;
+
+                    // Update button appearance
+                    const btn = document.getElementById('gesture-shake-btn');
+                    btn.classList.remove('bg-pink-500', 'hover:bg-pink-600');
+                    btn.classList.add('bg-green-500', 'hover:bg-green-600', 'animate-pulse');
+                    btn.innerHTML = `📱 振って！ (${gestureState.shakeCount}/${gestureState.shakesRequired})`;
+
+                    // Start listening to device motion
+                    window.addEventListener('devicemotion', handleDeviceMotion);
+
+                    // Show instruction
+                    showFloatingText(state.language === 'ja' ? '📱 スマホを振ろう！' : '📱 Shake your phone!', '#ec4899', document.getElementById('shaker-area'));
+                }
+
+                function stopGestureShake() {
+                    gestureState.isActive = false;
+                    window.removeEventListener('devicemotion', handleDeviceMotion);
+
+                    // Reset button
+                    const btn = document.getElementById('gesture-shake-btn');
+                    btn.classList.remove('bg-green-500', 'hover:bg-green-600', 'animate-pulse');
+                    btn.classList.add('bg-pink-500', 'hover:bg-pink-600');
+                    btn.innerHTML = '📱 ジェスチャー';
+                }
+
+                function handleDeviceMotion(event) {
+                    if (!gestureState.isActive || !state.isGameRunning || !state.canInteract) return;
+
+                    const acceleration = event.accelerationIncludingGravity;
+                    if (!acceleration) return;
+
+                    const now = Date.now();
+                    if (now - gestureState.lastShakeTime < gestureState.shakeCooldown) return;
+
+                    // Calculate acceleration change
+                    const deltaX = Math.abs(acceleration.x - gestureState.lastAcceleration.x);
+                    const deltaY = Math.abs(acceleration.y - gestureState.lastAcceleration.y);
+                    const deltaZ = Math.abs(acceleration.z - gestureState.lastAcceleration.z);
+                    const totalDelta = deltaX + deltaY + deltaZ;
+
+                    // Update last acceleration
+                    gestureState.lastAcceleration = {
+                        x: acceleration.x || 0,
+                        y: acceleration.y || 0,
+                        z: acceleration.z || 0
+                    };
+
+                    // Detect shake
+                    if (totalDelta > gestureState.shakeThreshold) {
+                        gestureState.shakeCount++;
+                        gestureState.lastShakeTime = now;
+
+                        // Update UI
+                        const btn = document.getElementById('gesture-shake-btn');
+                        btn.innerHTML = `📱 振って！ (${gestureState.shakeCount}/${gestureState.shakesRequired})`;
+
+                        // Trigger shaker animation
+                        const shakerArea = document.getElementById('shaker-area');
+                        shakerArea.classList.add('shake-animation');
+                        setTimeout(() => shakerArea.classList.remove('shake-animation'), 200);
+
+                        // Play sound
+                        playSound('shake');
+
+                        // Check completion
+                        if (gestureState.shakeCount >= gestureState.shakesRequired) {
+                            stopGestureShake();
+                            showFloatingText('🎉 シェイク完了！', '#22c55e', shakerArea);
+                            setTimeout(() => validateCocktail(), 500);
+                        }
+                    }
+                }
+
+                // Make gesture functions globally accessible
+                window.toggleGestureShake = toggleGestureShake;
+
+                // --- Cocktail Encyclopedia ---
+                function openCocktailEncyclopedia() {
+                    closeMenu();
+                    const overlay = document.getElementById('cocktail-encyclopedia');
+                    const grid = document.getElementById('cocktail-grid');
+                    const progress = document.getElementById('cocktail-progress');
+                    const currentLangData = translations[state.language];
+                    const cocktails = currentLangData.COCKTAILS;
+
+                    grid.innerHTML = '';
+                    cocktails.forEach(cocktail => {
+                        const isDiscovered = state.discoveredCocktails.includes(cocktail.name);
+                        const item = document.createElement('div');
+                        item.className = `encyclopedia-item ${isDiscovered ? '' : 'locked'}`;
+                        item.innerHTML = `
+                            <div class="encyclopedia-item-image" style="background: ${isDiscovered ? getCocktailColor(cocktail.ingredients) : '#333'}">
+                                ${isDiscovered ? '🍸' : '❓'}
+                            </div>
+                            <div class="encyclopedia-item-name">${isDiscovered ? cocktail.name : '？？？'}</div>
+                        `;
+                        if (isDiscovered) {
+                            item.onclick = () => showCocktailDetail(cocktail);
+                        }
+                        grid.appendChild(item);
+                    });
+
+                    progress.textContent = `発見: ${state.discoveredCocktails.length} / ${cocktails.length}`;
+                    overlay.classList.add('active');
+                }
+                function closeCocktailEncyclopedia() {
+                    document.getElementById('cocktail-encyclopedia').classList.remove('active');
+                }
+                function getCocktailColor(ingredients) {
+                    const currentLangData = translations[state.language];
+                    if (ingredients.length > 0) {
+                        const ing = currentLangData.INGREDIENTS[ingredients[0]];
+                        return ing ? ing.color : '#666';
+                    }
+                    return '#666';
+                }
+                function showCocktailDetail(cocktail) {
+                    const modal = document.getElementById('detail-modal');
+                    const currentLangData = translations[state.language];
+                    document.getElementById('detail-image').style.display = 'none';
+                    document.getElementById('detail-name').textContent = cocktail.name;
+                    const ingredientNames = cocktail.ingredients.map(i => currentLangData.INGREDIENTS[i]?.name || i).join('、');
+                    const glassName = cocktail.glass === 'collins' ? 'ロンググラス' : cocktail.glass === 'rocks' ? 'ロックグラス' : 'カクテルグラス';
+                    document.getElementById('detail-info').innerHTML = `
+                        <p><strong>材料:</strong> ${ingredientNames}</p>
+                        <p><strong>グラス:</strong> ${glassName}</p>
+                        <p><strong>氷:</strong> ${cocktail.needsIce ? '必要' : '不要'}</p>
+                    `;
+                    modal.classList.add('active');
+                }
+
+                // --- Customer Encyclopedia ---
+                function openCustomerEncyclopedia() {
+                    closeMenu();
+                    const overlay = document.getElementById('customer-encyclopedia');
+                    const grid = document.getElementById('customer-grid');
+                    const progress = document.getElementById('customer-progress');
+                    const currentLangData = translations[state.language];
+                    const allCustomers = currentLangData.CUSTOMERS;
+
+                    grid.innerHTML = '';
+                    allCustomers.forEach(customer => {
+                        const isMet = state.metCustomers.includes(customer.name);
+                        const item = document.createElement('div');
+                        item.className = `encyclopedia-item ${isMet ? '' : 'locked'}`;
+                        item.innerHTML = `
+                            <img class="encyclopedia-item-image" src="${isMet ? customer.image : ''}" 
+                                 style="${isMet ? '' : 'background:#333'}" 
+                                 onerror="this.style.background='#333';this.src=''">
+                            <div class="encyclopedia-item-name">${isMet ? customer.name : '？？？'}</div>
+                        `;
+                        if (isMet) {
+                            item.onclick = () => showCustomerDetail(customer);
+                        }
+                        grid.appendChild(item);
+                    });
+
+                    progress.textContent = `出会い: ${state.metCustomers.length} / ${allCustomers.length}`;
+                    overlay.classList.add('active');
+                }
+                function closeCustomerEncyclopedia() {
+                    document.getElementById('customer-encyclopedia').classList.remove('active');
+                }
+                function showCustomerDetail(customer) {
+                    const modal = document.getElementById('detail-modal');
+                    document.getElementById('detail-image').src = customer.image;
+                    document.getElementById('detail-image').style.display = 'block';
+                    document.getElementById('detail-name').textContent = customer.name;
+                    const quote = customer.quotes.order[0] || '';
+                    document.getElementById('detail-info').innerHTML = `
+                        <p>「${quote}」</p>
+                    `;
+                    modal.classList.add('active');
+                }
+                function closeDetailModal() {
+                    document.getElementById('detail-modal').classList.remove('active');
+                }
+
+                // --- Title System ---
+                function openTitleList() {
+                    closeMenu();
+                    const overlay = document.getElementById('title-overlay');
+                    const grid = document.getElementById('title-grid');
+                    const currentDisplay = document.getElementById('title-current');
+
+                    const currentTitleObj = TITLES.find(t => t.id === state.currentTitle);
+                    const titleName = state.language === 'ja' ? (currentTitleObj?.name || '見習いバーテンダー') : (currentTitleObj?.nameEn || 'Apprentice Bartender');
+                    const labelText = state.language === 'ja' ? '現在の称号:' : 'Current Title:';
+                    currentDisplay.textContent = `${labelText} ${titleName}`;
+
+                    grid.innerHTML = '';
+                    TITLES.forEach(title => {
+                        const isUnlocked = state.unlockedTitles?.includes(title.id) || title.id === 'beginner';
+                        const isCurrent = state.currentTitle === title.id;
+                        const displayName = state.language === 'ja' ? title.name : title.nameEn;
+                        const item = document.createElement('div');
+                        item.className = `encyclopedia-item ${isUnlocked ? '' : 'locked'}`;
+                        item.style.border = isCurrent ? '2px solid #ec4899' : '';
+                        item.innerHTML = `
+                            <div class="encyclopedia-item-image" style="font-size:3rem">
+                                ${isUnlocked ? title.icon : '🔒'}
+                            </div>
+                            <div class="encyclopedia-item-name">${isUnlocked ? displayName : '？？？'}</div>
+                        `;
+                        grid.appendChild(item);
+                    });
+
+                    overlay.classList.add('active');
+                }
+                function closeTitleList() {
+                    document.getElementById('title-overlay').classList.remove('active');
+                }
+                function checkTitles() {
+                    if (!state.unlockedTitles) state.unlockedTitles = ['beginner'];
+                    let newTitle = null;
+                    TITLES.forEach(title => {
+                        if (!state.unlockedTitles.includes(title.id) && title.condition()) {
+                            state.unlockedTitles.push(title.id);
+                            newTitle = title;
+                            state.currentTitle = title.id;
+                        }
+                    });
+                    if (newTitle) {
+                        showTitleCelebration(newTitle);
+                    }
+                    updateTitleDisplay();
+                }
+                function showTitleCelebration(title) {
+                    const displayName = state.language === 'ja' ? title.name : title.nameEn;
+                    document.getElementById('celebration-title-name').textContent = title.icon + ' ' + displayName;
+                    document.getElementById('title-celebration').classList.add('active');
+                }
+                function closeTitleCelebration() {
+                    document.getElementById('title-celebration').classList.remove('active');
+                }
+                function updateTitleDisplay() {
+                    const titleEl = document.getElementById('title-display');
+                    if (titleEl) {
+                        const currentTitleObj = TITLES.find(t => t.id === state.currentTitle);
+                        const displayName = state.language === 'ja' ? (currentTitleObj?.name || '見習いバーテンダー') : (currentTitleObj?.nameEn || 'Apprentice Bartender');
+                        titleEl.textContent = currentTitleObj ? currentTitleObj.icon + ' ' + displayName : '🌱 ' + (state.language === 'ja' ? '見習いバーテンダー' : 'Apprentice Bartender');
+                    }
+                }
+
+                // --- Market System ---
+                function openMarket() {
+                    const overlay = document.getElementById('market-overlay');
+                    const grid = document.getElementById('market-grid');
+                    const moneyDisplay = document.getElementById('market-money');
+                    const currentLangData = translations[state.language];
+                    const ingredients = currentLangData.INGREDIENTS;
+
+                    moneyDisplay.textContent = state.totalMoney;
+                    grid.innerHTML = '';
+
+                    Object.keys(ingredients).forEach(key => {
+                        const ing = ingredients[key];
+                        const price = INGREDIENT_PRICES[key] || 100;
+                        const isOwned = state.ownedIngredients.includes(key);
+                        const canAfford = state.totalMoney >= price;
+
+                        const item = document.createElement('div');
+                        item.className = `market-item ${isOwned ? 'owned' : canAfford ? 'affordable' : 'too-expensive'}`;
+                        const ownedText = state.language === 'ja' ? '✓ 所持' : '✓ Owned';
+                        item.innerHTML = `
+                            <div class="market-item-color" style="background: ${ing.color}"></div>
+                            <div class="market-item-name">${ing.name}</div>
+                            ${isOwned ? `<div class="market-item-owned">${ownedText}</div>` : `<div class="market-item-price">¥${price}</div>`}
+                        `;
+                        if (!isOwned && canAfford) {
+                            item.onclick = () => buyIngredient(key, price);
+                        }
+                        grid.appendChild(item);
+                    });
+
+                    overlay.classList.add('active');
+                }
+                function closeMarket() {
+                    document.getElementById('market-overlay').classList.remove('active');
+                }
+                function buyIngredient(key, price) {
+                    if (state.totalMoney >= price && !state.ownedIngredients.includes(key)) {
+                        state.totalMoney -= price;
+                        state.ownedIngredients.push(key);
+                        playSound('cash');
+                        openMarket(); // Refresh
+                        saveGameData();
+                    }
+                }
+
+                // --- Save/Load System ---
+                function saveGameData() {
+                    const saveData = {
+                        totalMoney: state.totalMoney,
+                        day: state.day,
+                        ownedIngredients: state.ownedIngredients,
+                        discoveredCocktails: state.discoveredCocktails,
+                        metCustomers: state.metCustomers,
+                        currentTitle: state.currentTitle,
+                        unlockedTitles: state.unlockedTitles || ['beginner'],
+                        totalTalks: state.totalTalks,
+                        upgrades: state.upgrades
+                    };
+                    localStorage.setItem('bartenderSaveData', JSON.stringify(saveData));
+                }
+                function loadGameData() {
+                    const saved = localStorage.getItem('bartenderSaveData');
+                    if (saved) {
+                        try {
+                            const data = JSON.parse(saved);
+                            state.totalMoney = data.totalMoney || 0;
+                            state.day = data.day || 1;
+                            state.ownedIngredients = data.ownedIngredients || [...STARTER_INGREDIENTS];
+                            state.discoveredCocktails = data.discoveredCocktails || [];
+                            state.metCustomers = data.metCustomers || [];
+                            state.currentTitle = data.currentTitle || 'beginner';
+                            state.unlockedTitles = data.unlockedTitles || ['beginner'];
+                            state.totalTalks = data.totalTalks || 0;
+                            if (data.upgrades) state.upgrades = data.upgrades;
+                        } catch (e) { console.error('Load error:', e); }
+                    }
+                }
+
+                // --- Record Functions (called during gameplay) ---
+                function recordCocktailDiscovery(cocktailName) {
+                    if (!state.discoveredCocktails.includes(cocktailName)) {
+                        state.discoveredCocktails.push(cocktailName);
+                        saveGameData();
+                    }
+                }
+                function recordCustomerMet(customerName) {
+                    if (!state.metCustomers.includes(customerName)) {
+                        state.metCustomers.push(customerName);
+                        saveGameData();
+                    }
+                }
+                function recordTalk() {
+                    state.totalTalks++;
+                    saveGameData();
+                }
+
+                // --- Menu Button Visibility ---
+                function showMenuButton() {
+                    document.getElementById('menu-button').classList.add('visible');
+                }
+                function hideMenuButton() {
+                    document.getElementById('menu-button').classList.remove('visible');
+                }
+
+                // --- Bind Menu Button ---
+                document.getElementById('menu-button').addEventListener('click', openMenu);
+
+                // --- Make functions globally accessible ---
+                window.openCocktailEncyclopedia = openCocktailEncyclopedia;
+                window.closeCocktailEncyclopedia = closeCocktailEncyclopedia;
+                window.openCustomerEncyclopedia = openCustomerEncyclopedia;
+                window.closeCustomerEncyclopedia = closeCustomerEncyclopedia;
+                window.openTitleList = openTitleList;
+                window.closeTitleList = closeTitleList;
+                window.closeMenu = closeMenu;
+                window.openMarket = openMarket;
+                window.closeMarket = closeMarket;
+                window.closeDetailModal = closeDetailModal;
+                window.closeTitleCelebration = closeTitleCelebration;
+
+                // Load saved data on init
+                loadGameData();
+
+                // ===== PHASE 2: WEATHER, DRUNK, ANIMATIONS =====
+
+                // --- Weather System ---
+                function setRandomWeather() {
+                    const weathers = ['sunny', 'sunny', 'sunny', 'rainy', 'snowy']; // 60% sunny
+                    state.currentWeather = weathers[Math.floor(Math.random() * weathers.length)];
+                    updateWeatherDisplay();
+                    createWeatherEffects();
+                }
+
+                function updateWeatherDisplay() {
+                    const indicator = document.getElementById('weather-indicator');
+                    if (!indicator) return;
+                    const weatherData = {
+                        sunny: { icon: '☀️', ja: '晴れ', en: 'Sunny' },
+                        rainy: { icon: '🌧️', ja: '雨', en: 'Rainy' },
+                        snowy: { icon: '❄️', ja: '雪', en: 'Snowy' }
+                    };
+                    const w = weatherData[state.currentWeather] || weatherData.sunny;
+                    const name = state.language === 'ja' ? w.ja : w.en;
+                    indicator.textContent = `${w.icon} ${name}`;
+                }
+
+                function createWeatherEffects() {
+                    const overlay = document.getElementById('weather-overlay');
+                    if (!overlay) return;
+                    overlay.innerHTML = '';
+                    overlay.className = '';
+
+                    if (state.currentWeather === 'rainy') {
+                        overlay.classList.add('weather-rain');
+                        for (let i = 0; i < 50; i++) {
+                            const drop = document.createElement('div');
+                            drop.className = 'rain-drop';
+                            drop.style.left = Math.random() * 100 + '%';
+                            drop.style.animationDuration = (0.5 + Math.random() * 0.5) + 's';
+                            drop.style.animationDelay = Math.random() * 2 + 's';
+                            overlay.appendChild(drop);
+                        }
+                    } else if (state.currentWeather === 'snowy') {
+                        overlay.classList.add('weather-snow');
+                        for (let i = 0; i < 30; i++) {
+                            const flake = document.createElement('div');
+                            flake.className = 'snow-flake';
+                            flake.style.left = Math.random() * 100 + '%';
+                            flake.style.animationDuration = (3 + Math.random() * 4) + 's';
+                            flake.style.animationDelay = Math.random() * 5 + 's';
+                            flake.style.width = (4 + Math.random() * 6) + 'px';
+                            flake.style.height = flake.style.width;
+                            overlay.appendChild(flake);
+                        }
+                    }
+                }
+
+                function getWeatherTipMultiplier() {
+                    if (state.currentWeather === 'rainy') return 1.5;
+                    return 1;
+                }
+
+                // --- Seasonal Events ---
+                function checkSeasonalEvent() {
+                    const banner = document.getElementById('event-banner');
+                    const container = document.getElementById('game-container');
+                    if (!banner || !container) return;
+
+                    state.currentEvent = null;
+                    banner.classList.remove('active');
+                    container.classList.remove('event-summer', 'event-christmas');
+
+                    if (state.day === 4) {
+                        state.currentEvent = 'summer';
+                        banner.textContent = state.language === 'ja' ? '🎆 夏祭り開催中！' : '🎆 Summer Festival!';
+                        banner.classList.add('active');
+                        container.classList.add('event-summer');
+                    } else if (state.day === 6) {
+                        state.currentEvent = 'christmas';
+                        banner.textContent = state.language === 'ja' ? '🎄 クリスマスイベント！' : '🎄 Christmas Event!';
+                        banner.classList.add('active');
+                        container.classList.add('event-christmas');
+                    }
+                }
+
+                function getEventMultiplier() {
+                    if (state.currentEvent === 'christmas') return 2;
+                    return 1;
+                }
+
+                // --- Drunk System ---
+                function addDrunkLevel(alcoholAmount) {
+                    state.customerDrunkLevel += alcoholAmount * 2; // Alcohol adds to drunk level
+                    updateDrunkMeter();
+                    updateDrunkVisuals();
+                }
+
+                function updateDrunkMeter() {
+                    const fill = document.getElementById('drunk-meter-fill');
+                    if (!fill) return;
+                    fill.style.width = Math.min(state.customerDrunkLevel, 100) + '%';
+                }
+
+                function updateDrunkVisuals() {
+                    const dialogue = document.getElementById('customer-dialogue');
+                    const customer = document.getElementById('customer');
+                    if (!dialogue || !customer) return;
+
+                    dialogue.classList.remove('drunk-text');
+                    customer.classList.remove('customer-passed-out', 'drunk-heavy');
+
+                    if (state.customerDrunkLevel >= 100) {
+                        customer.classList.add('customer-passed-out');
+                    } else if (state.customerDrunkLevel >= 60) {
+                        dialogue.classList.add('drunk-text');
+                        customer.parentElement.classList.add('drunk-heavy');
+                    } else if (state.customerDrunkLevel >= 30) {
+                        dialogue.classList.add('drunk-text');
+                    }
+                }
+
+                function slurText(text) {
+                    if (state.customerDrunkLevel < 30) return text;
+
+                    // Light drunk: some character replacements
+                    let result = text;
+                    if (state.customerDrunkLevel >= 30) {
+                        result = result.replace(/す/g, 'しゅ').replace(/さ/g, 'しゃ');
+                    }
+                    if (state.customerDrunkLevel >= 60) {
+                        result = result.replace(/[。！？]/g, '～').replace(/です/g, 'でしゅ');
+                        result = result.replace(/ます/g, 'ましゅ');
+                    }
+                    if (state.customerDrunkLevel >= 80) {
+                        result = 'ふぁぁ…' + result + '…ひっく';
+                    }
+                    return result;
+                }
+
+                function isCustomerPassedOut() {
+                    return state.customerDrunkLevel >= 100;
+                }
+
+                function resetDrunkLevel() {
+                    state.customerDrunkLevel = 0;
+                    updateDrunkMeter();
+                    updateDrunkVisuals();
+                }
+
+                // --- Sparkle Animation ---
+                function createSparkles(targetElement) {
+                    if (!targetElement) return;
+
+                    const container = document.createElement('div');
+                    container.className = 'sparkle-container';
+                    targetElement.appendChild(container);
+
+                    for (let i = 0; i < 12; i++) {
+                        const sparkle = document.createElement('div');
+                        sparkle.className = 'sparkle';
+                        const angle = (i / 12) * Math.PI * 2;
+                        const distance = 30 + Math.random() * 30;
+                        sparkle.style.setProperty('--tx', Math.cos(angle) * distance + 'px');
+                        sparkle.style.setProperty('--ty', Math.sin(angle) * distance + 'px');
+                        sparkle.style.left = '50%';
+                        sparkle.style.top = '50%';
+                        sparkle.style.animationDelay = (i * 0.05) + 's';
+                        container.appendChild(sparkle);
+                    }
+
+                    // Remove after animation
+                    setTimeout(() => container.remove(), 1500);
+                }
+
+                // --- Liquid Wave Animation ---
+                function addLiquidWaveEffect() {
+                    const contents = document.getElementById('shaker-contents');
+                    if (!contents || !contents.querySelector('.shaker-liquid-wave')) {
+                        const wave = document.createElement('div');
+                        wave.className = 'shaker-liquid-wave';
+                        if (contents) contents.appendChild(wave);
+                    }
+                }
+
+                function removeLiquidWaveEffect() {
+                    const wave = document.querySelector('.shaker-liquid-wave');
+                    if (wave) wave.remove();
                 }
 
                 initialSetup();
