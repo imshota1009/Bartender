@@ -1,0 +1,15 @@
+[Unit]
+Description=Bartender Guild Server (Support Backend)
+After=network.target
+
+[Service]
+Type=simple
+User=bartender
+WorkingDirectory=/var/www/bartender-game/guild_server
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+Environment=PORT=3000
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target

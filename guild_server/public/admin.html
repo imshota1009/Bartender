@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bar Manager - Inquiry Control</title>
+    <!-- Modern Sans-serif -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Noto+Sans+JP:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            /* Theme: Modern Bar Lounge / Dark Corporate */
+            --bg-color: #121212;
+            --sidebar-bg: #1e1e1e;
+            --card-bg: #1e1e1e;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --accent-gold: #d4af37;
+            /* Elegant Gold */
+            --accent-gold-hover: #b59025;
+            --accent-danger: #ef4444;
+            --accent-success: #10b981;
+
+            --border-color: #333;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            /* Added JP font */
+            margin: 0;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 250px;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+        }
+
+        .brand {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--accent-gold);
+            margin-bottom: 30px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .nav-section {
+            font-size: 0.75rem;
+            color: #555;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .nav-item {
+            padding: 12px 16px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s;
+            margin-bottom: 5px;
+            font-size: 0.95rem;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background-color: rgba(212, 175, 55, 0.1);
+            color: var(--accent-gold);
+        }
+
+        /* Language Toggle */
+        .lang-toggle {
+            margin-top: auto;
+            margin-bottom: 30px;
+            display: flex;
+            background: #2a2a2a;
+            border-radius: 6px;
+            padding: 4px;
+        }
+
+        .lang-opt {
+            flex: 1;
+            text-align: center;
+            padding: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            border-radius: 4px;
+            color: #666;
+            transition: all 0.2s;
+        }
+
+        .lang-opt.active {
+            background: var(--accent-gold);
+            color: #121212;
+            font-weight: bold;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 250px;
+            flex-grow: 1;
+            padding: 40px 60px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 300;
+            margin: 0;
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 20px;
+        }
+
+        .stat-card {
+            background: #252525;
+            padding: 15px 25px;
+            border-radius: 8px;
+            text-align: center;
+            min-width: 100px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #888;
+            text-transform: uppercase;
+        }
+
+        /* Report List */
+        .report-list {
+            display: grid;
+            gap: 15px;
+        }
+
+        .report-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            transition: border-color 0.2s;
+        }
+
+        .report-card:hover {
+            border-color: #555;
+        }
+
+        .report-info {
+            flex-grow: 1;
+        }
+
+        .report-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-new {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+        }
+
+        .status-resolved {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+        }
+
+        .type-badge {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid #444;
+            color: #ccc;
+        }
+
+        .report-date {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .report-message {
+            font-size: 1rem;
+            color: #ddd;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            margin-bottom: 8px;
+        }
+
+        .report-sender {
+            font-size: 0.85rem;
+            color: var(--accent-gold);
+        }
+
+        .report-content-wrapper {
+            display: flex;
+            align-items: flex-start;
+            flex-grow: 1;
+        }
+
+        .sender-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            margin-right: 15px;
+            object-fit: cover;
+            border: 2px solid var(--accent-gold);
+            background: #000;
+        }
+
+        /* Actions */
+        .report-actions {
+            display: flex;
+            gap: 10px;
+            margin-left: 20px;
+        }
+
+        .btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: #2a2a2a;
+            color: #fff;
+        }
+
+        .btn-resolve:hover {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--accent-success);
+            border-color: var(--accent-success);
+        }
+
+        .btn-delete:hover {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--accent-danger);
+            border-color: var(--accent-danger);
+        }
+
+        /* Toast */
+        #toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #333;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 6px;
+            transform: translateY(100px);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            border-left: 4px solid var(--accent-gold);
+            z-index: 9999;
+        }
+
+        #toast.show {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="sidebar">
+        <div class="brand">Bar Manager</div>
+        <div class="nav-section" data-i18n="nav_status_title">Status</div>
+        <div class="nav-item active" onclick="filterReports('all')" data-i18n="nav_all">All Inquiries</div>
+        <div class="nav-item" onclick="filterReports('new')" data-i18n="nav_new">Unread / New</div>
+        <div class="nav-item" onclick="filterReports('resolved')" data-i18n="nav_resolved">Resolved Archive</div>
+
+        <div class="nav-section" data-i18n="nav_cat_title">Category</div>
+        <div class="nav-item" onclick="filterReports('bug')" data-i18n="nav_cat_bug">Bug Reports</div>
+        <div class="nav-item" onclick="filterReports('feature')" data-i18n="nav_cat_feature">Feature Requests</div>
+        <div class="nav-item" onclick="filterReports('other')" data-i18n="nav_cat_other">Other Inquiries</div>
+
+        <div class="lang-toggle">
+            <div class="lang-opt" onclick="setLanguage('en')" id="lang-en">EN</div>
+            <div class="lang-opt" onclick="setLanguage('ja')" id="lang-ja">JP</div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <header class="header">
+            <h1 data-i18n="header_title">Inquiry Management</h1>
+            <div class="stats-bar">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-count">0</div>
+                    <div class="stat-label" data-i18n="stat_total">Total</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="new-count" style="color: #60a5fa;">0</div>
+                    <div class="stat-label" data-i18n="stat_new">New</div>
+                </div>
+            </div>
+        </header>
+
+        <div id="loading" style="color: #666; text-align: center; margin-top: 50px;" data-i18n="loading">Loading
+            System...</div>
+        <div id="report-list" class="report-list">
+            <!-- Injected -->
+        </div>
+    </main>
+
+    <div id="toast">Action Completed</div>
+
+    <script>
+        // --- Translations ---
+        const translations = {
+            en: {
+                // UI
+                nav_all: "All Inquiries",
+                nav_new: "Unread / New",
+                nav_resolved: "Resolved Archive",
+                nav_status_title: "Status",
+                nav_cat_title: "Category",
+                nav_cat_bug: "Bug Reports",
+                nav_cat_feature: "Feature Requests",
+                nav_cat_other: "Other Inquiries",
+                header_title: "Inquiry Management",
+                stat_total: "Total",
+                stat_new: "New",
+                loading: "Loading System...",
+                no_records: "No records found.",
+
+                // Dynamic
+                status_new: "NEW",
+                status_resolved: "RESOLVED",
+                btn_solve: "✓ Solve",
+                btn_reopen: "↩ Reopen",
+                btn_delete: "🗑 Delete",
+                type_bug: "BUG",
+                type_feature: "FEATURE",
+                type_other: "OTHER",
+
+                // Toast / Alerts
+                confirm_delete: "Are you sure you want to permanently delete this report?",
+                toast_resolved: "Marked as Resolved",
+                toast_reopened: "Reopened Report",
+                toast_deleted: "Report Deleted",
+                toast_error: "Connection Error"
+            },
+            ja: {
+                // UI
+                nav_all: "すべてのお問い合わせ",
+                nav_new: "未読・新規",
+                nav_resolved: "解決済みアーカイブ",
+                nav_status_title: "ステータス",
+                nav_cat_title: "カテゴリー",
+                nav_cat_bug: "不具合報告",
+                nav_cat_feature: "機能リクエスト",
+                nav_cat_other: "その他のお問い合わせ",
+                header_title: "お問い合わせ管理",
+                stat_total: "総件数",
+                stat_new: "新規",
+                loading: "システム読み込み中...",
+                no_records: "データが見つかりません。",
+
+                // Dynamic
+                status_new: "未対応",
+                status_resolved: "解決済",
+                btn_solve: "✓ 解決にする",
+                btn_reopen: "↩ 未解決に戻す",
+                btn_delete: "🗑 削除",
+                type_bug: "不具合",
+                type_feature: "ご要望",
+                type_other: "その他",
+
+                // Toast / Alerts
+                confirm_delete: "本当にこのレポートを完全に削除しますか？",
+                toast_resolved: "解決済みにしました",
+                toast_reopened: "未解決に戻しました",
+                toast_deleted: "削除しました",
+                toast_error: "接続エラー"
+            }
+        };
+
+        let currentLang = 'ja'; // Default to Japanese as per user request context
+        let allReports = [];
+        let currentFilter = 'all';
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            localStorage.setItem('admin_lang', lang);
+
+            // Toggle UI
+            document.getElementById('lang-en').classList.remove('active');
+            document.getElementById('lang-ja').classList.remove('active');
+            document.getElementById(`lang-${lang}`).classList.add('active');
+
+            // Update Static Text
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (translations[lang][key]) {
+                    el.textContent = translations[lang][key];
+                }
+            });
+
+            // Re-render list to update dynamic text
+            renderReports();
+        }
+
+        async function fetchReports() {
+            try {
+                const res = await fetch('/api/reports');
+                allReports = await res.json();
+                renderReports();
+                updateStats();
+                document.getElementById('loading').style.display = 'none';
+            } catch (e) {
+                console.error(e);
+                showToast(translations[currentLang].toast_error, true);
+            }
+        }
+
+        function renderReports() {
+            const list = document.getElementById('report-list');
+            list.innerHTML = '';
+
+            const t = translations[currentLang];
+
+            // Sort: Newest first
+            let filtered = allReports.sort((a, b) => b.id - a.id);
+
+            // Filter logic
+            if (currentFilter === 'new') {
+                filtered = filtered.filter(r => r.status !== 'resolved');
+            } else if (currentFilter === 'resolved') {
+                filtered = filtered.filter(r => r.status === 'resolved');
+            } else if (currentFilter === 'bug') {
+                filtered = filtered.filter(r => r.type === 'bug');
+            } else if (currentFilter === 'feature') {
+                filtered = filtered.filter(r => r.type === 'feature');
+            } else if (currentFilter === 'other') {
+                filtered = filtered.filter(r => r.type === 'other');
+            }
+
+            if (filtered.length === 0) {
+                list.innerHTML = `<div style="text-align: center; color: #555; padding: 40px;">${t.no_records}</div>`;
+                return;
+            }
+
+            filtered.forEach(r => {
+                const isResolved = r.status === 'resolved';
+
+                const statusBadge = isResolved
+                    ? `<span class="status-badge status-resolved">${t.status_resolved}</span>`
+                    : `<span class="status-badge status-new">${t.status_new}</span>`;
+
+                const date = new Date(r.timestamp).toLocaleString(currentLang === 'ja' ? 'ja-JP' : 'en-US', {
+                    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+                });
+
+                // Map type to translation
+                let typeLabel = t.type_other;
+                if (r.type === 'bug') typeLabel = t.type_bug;
+                if (r.type === 'feature') typeLabel = t.type_feature;
+
+                const avatarHtml = r.senderImage
+                    ? `<img src="${r.senderImage}" class="sender-avatar" alt="Avatar">`
+                    : `<div class="sender-avatar" style="background:#333; display:flex; align-items:center; justify-content:center;">?</div>`;
+
+                const card = document.createElement('div');
+                card.className = 'report-card';
+                card.innerHTML = `
+                    <div class="report-content-wrapper">
+                        ${avatarHtml}
+                        <div class="report-info">
+                            <div class="report-header">
+                                ${statusBadge}
+                                <span class="type-badge">${typeLabel}</span>
+                                <span class="report-date">${date}</span>
+                            </div>
+                            <div class="report-message">${escapeHtml(r.message)}</div>
+                            <div class="report-sender">User: ${escapeHtml(r.sender)}</div>
+                        </div>
+                    </div>
+                    <div class="report-actions">
+                        <button class="btn btn-resolve" onclick="toggleStatus(${r.id}, '${r.status}')">
+                            ${isResolved ? t.btn_reopen : t.btn_solve}
+                        </button>
+                        <button class="btn btn-delete" onclick="deleteReport(${r.id})">
+                            ${t.btn_delete}
+                        </button>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        async function toggleStatus(id, currentStatus) {
+            const newStatus = currentStatus === 'resolved' ? 'received' : 'resolved';
+            const t = translations[currentLang];
+            try {
+                const res = await fetch(`/api/reports/${id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                if (res.ok) {
+                    // Update local state and re-render
+                    const r = allReports.find(r => r.id === id);
+                    if (r) r.status = newStatus;
+                    renderReports();
+                    updateStats();
+                    showToast(newStatus === 'resolved' ? t.toast_resolved : t.toast_reopened);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function deleteReport(id) {
+            const t = translations[currentLang];
+            if (!confirm(t.confirm_delete)) return;
+
+            try {
+                const res = await fetch(`/api/reports/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    allReports = allReports.filter(r => r.id !== id);
+                    renderReports();
+                    updateStats();
+                    showToast(t.toast_deleted);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function updateStats() {
+            // Stats numbers are language independent
+            document.getElementById('total-count').textContent = allReports.length;
+            const newCount = allReports.filter(r => r.status !== 'resolved').length;
+            document.getElementById('new-count').textContent = newCount;
+        }
+
+        function filterReports(type) {
+            currentFilter = type;
+            // Update active sidebar state
+            const items = document.querySelectorAll('.nav-item');
+            items.forEach(el => el.classList.remove('active'));
+
+            // Map type to index
+            // 0: All, 1: New, 2: Resolved, 3: Bug, 4: Feature, 5: Other
+            if (type === 'all') items[0].classList.add('active');
+            if (type === 'new') items[1].classList.add('active');
+            if (type === 'resolved') items[2].classList.add('active');
+            if (type === 'bug') items[3].classList.add('active');
+            if (type === 'feature') items[4].classList.add('active');
+            if (type === 'other') items[5].classList.add('active');
+
+            renderReports();
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
+        function escapeHtml(text) {
+            if (!text) return "";
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        // Init Language
+        const savedLang = localStorage.getItem('admin_lang') || 'ja';
+        setLanguage(savedLang);
+
+        // Fetch Data
+        fetchReports();
+    </script>
+</body>
+
+</html>
