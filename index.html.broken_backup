@@ -1,0 +1,2685 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>バーテンダーゲーム</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <!-- MediaPipe Hands for skeleton detection -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Playfair+Display:wght@700&family=M+PLUS+Rounded+1c:wght@700&display=swap"
+        rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=Cinzel:wght@400;700&display=swap"
+        rel="stylesheet">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111;
+            background-image: radial-gradient(circle at center, #333 0%, #111 70%);
+            overflow: hidden;
+            overscroll-behavior: none;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .font-title {
+            font-family: 'Playfair Display', serif;
+        }
+
+        .font-jp {
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+        }
+
+        .game-view {
+            width: 100%;
+            max-width: 800px;
+            height: 100vh;
+            /* Fallback */
+            height: 100dvh;
+            max-height: 900px;
+            background: #262626;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0, 0, 0, 0.5);
+            border: 4px solid #4a5568;
+            /* Ensure bottom doesn't get cut off on mobile browsers with bars */
+            padding-bottom: env(safe-area-inset-bottom);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        @media (min-width: 768px) {
+            .game-view {
+                height: 95vh;
+                max-height: 900px;
+                border: 4px solid #4a5568;
+                border-radius: 1rem;
+            }
+        }
+
+        #bar-counter {
+            background-color: #6d4c41;
+            background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.05) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.05) 50%, rgba(255, 255, 255, 0.05) 75%, transparent 75%, transparent);
+            background-size: 30px 30px;
+            border-top: 5px solid #8d6e63;
+        }
+
+        .ingredient-bottle {
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+            position: relative;
+            height: 90px;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 4px;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+            box-shadow: inset 0 -10px 20px -5px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 0.7rem;
+            text-align: center;
+            line-height: 1.1;
+        }
+
+        .ingredient-bottle:hover {
+            transform: scale(1.05) translateY(-5px);
+            filter: brightness(1.2);
+        }
+
+        .ingredient-bottle.selected {
+            transform: scale(1.1) translateY(-10px);
+            filter: brightness(1.5);
+            box-shadow: 0 0 15px 5px var(--glow-color, #fff);
+        }
+
+        .shake-animation {
+            animation: shake 0.5s cubic-bezier(.36, .07, .19, .97) both;
+        }
+
+        @keyframes shake {
+
+            10%,
+            90% {
+                transform: translate3d(-1px, 0, 0) rotate(-1deg);
+            }
+
+            20%,
+            80% {
+                transform: translate3d(2px, 0, 0) rotate(2deg);
+            }
+
+            30%,
+            50%,
+            70% {
+                transform: translate3d(-4px, 0, 0) rotate(-4deg);
+            }
+
+            40%,
+            60% {
+                transform: translate3d(4px, 0, 0) rotate(4deg);
+            }
+        }
+
+        /* Support Modal - Parchment Style */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(2px);
+        }
+
+        .modern-modal {
+            background: #ffffff;
+            width: 90%;
+            max-width: 500px;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            position: relative;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            color: #334155;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        .modern-modal h2 {
+            text-align: center;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 1rem;
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            color: #1e293b;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .modern-modal .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #94a3b8;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .modern-modal .close-btn:hover {
+            color: #475569;
+        }
+
+        .modern-modal form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .modern-modal label {
+            font-weight: 500;
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: #475569;
+        }
+
+        .modern-modal select,
+        .modern-modal textarea {
+            width: 100%;
+            padding: 0.75rem;
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 1rem;
+            color: #1e293b;
+            transition: border-color 0.2s;
+        }
+
+        .modern-modal select:focus,
+        .modern-modal textarea:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .modern-modal textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .modern-modal .submit-btn {
+            background: #6366f1;
+            /* Indigo */
+            color: #fff;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            border-radius: 8px;
+            width: 100%;
+        }
+
+        .modern-modal .submit-btn:hover {
+            background: #4f46e5;
+        }
+
+        .modern-modal .submit-btn:active {
+            transform: translateY(1px);
+        }
+
+        .modern-modal .submit-btn:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        /* Success Animation keyframes */
+        @keyframes flyAway {
+            0% {
+                transform: scale(1) translate(0, 0);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(0.2) translate(200px, -300px);
+                opacity: 0;
+            }
+        }
+
+        .error-msg {
+            color: #ef4444;
+            text-align: center;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            background: #fee2e2;
+            padding: 0.5rem;
+            border-radius: 6px;
+        }
+
+        .success-anim {
+            text-align: center;
+            padding: 3rem 1rem;
+        }
+
+        .success-anim h2 {
+            border: none;
+            color: #10b981;
+            font-size: 1.5rem;
+        }
+
+        .success-anim p {
+            color: #64748b;
+        }
+
+        #support-button {
+            position: fixed;
+            top: 80px;
+            /* Moved down to avoid overlap with Help button */
+            right: 20px;
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            color: #64748b;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 90;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s;
+        }
+
+        #support-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+            color: #334155;
+            border-color: #cbd5e1;
+        }
+
+        #customer {
+            transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out, filter 0.3s;
+            height: 120px;
+            width: 120px;
+            object-fit: contain;
+        }
+
+        #customer.slide-in {
+            transform: translateX(0) scale(1);
+            opacity: 1;
+        }
+
+        #customer.slide-out {
+            transform: translateX(100px) scale(0.8);
+            opacity: 0;
+        }
+
+        #customer.angry {
+            filter: sepia(0.8) saturate(3) hue-rotate(-50deg) brightness(0.8);
+        }
+
+        /* Time of Day Backgrounds */
+        #bg-window {
+            transition: background 2s ease;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .time-morning {
+            background: linear-gradient(to bottom, #87CEEB, #E0F7FA);
+        }
+
+        .time-day {
+            background: linear-gradient(to bottom, #4FC3F7, #FFF59D);
+        }
+
+        /* .time-evening unused in current logic but kept for safety */
+        .time-evening {
+            background: linear-gradient(to bottom, #FF9800, #F57C00);
+        }
+
+        .time-night {
+            background: linear-gradient(to bottom, #1a237e, #000000);
+        }
+
+        #customer-dialogue {
+            position: absolute;
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(255, 255, 255, 0.98);
+            color: #333;
+            padding: 10px 18px;
+            border-radius: 16px;
+            min-width: 200px;
+            max-width: 300px;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            pointer-events: none;
+            z-index: 30;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 0 3px rgba(251, 191, 36, 0.5);
+            font-size: 0.9rem;
+            line-height: 1.4;
+            font-weight: 500;
+        }
+
+        #customer-dialogue.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        #customer-dialogue::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 12px;
+            border-style: solid;
+            border-color: rgba(255, 255, 255, 0.98) transparent transparent transparent;
+            filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.2));
+        }
+
+        #game-overlay {
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+        }
+
+        .boss-mode::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle, transparent 40%, rgba(153, 27, 27, 0.4) 100%);
+            box-shadow: inset 0 0 50px rgba(153, 27, 27, 0.8);
+            pointer-events: none;
+            z-index: 5;
+            animation: boss-pulse 2s infinite alternate;
+        }
+
+        @keyframes boss-pulse {
+            from {
+                opacity: 0.5;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .timer-danger {
+            animation: pulse-danger 1s infinite;
+        }
+
+        @keyframes pulse-danger {
+
+            0%,
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
+            }
+
+            50% {
+                transform: scale(1.1);
+                box-shadow: 0 0 10px 10px rgba(220, 38, 38, 0);
+            }
+        }
+
+        .floating-text {
+            position: absolute;
+            font-size: 1.5rem;
+            font-weight: bold;
+            animation: float-up 1.5s ease-out forwards;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        @keyframes float-up {
+            from {
+                transform: translateY(0);
+                opacity: 1;
+            }
+
+            to {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes fill-glass {
+            from {
+                height: 0%;
+            }
+
+            to {
+                height: var(--fill-height, 80%);
+            }
+        }
+
+        .animate-fill {
+            animation: fill-glass 0.5s ease-out forwards;
+        }
+
+        .button-pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+            }
+
+            70% {
+                transform: scale(1.05);
+                box-shadow: 0 0 10px 15px rgba(59, 130, 246, 0);
+            }
+        }
+
+        .ice-cube {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            border-radius: 4px;
+        }
+
+        #happy-hour-banner {
+            text-shadow: 0 0 10px #fde047, 0 0 20px #fde047;
+            animation: happy-hour-glow 1.5s infinite alternate;
+        }
+
+        @keyframes happy-hour-glow {
+            from {
+                opacity: 0.8;
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1.05);
+            }
+        }
+
+        #combo-display {
+            transition: transform 0.2s, opacity 0.2s;
+            text-shadow: 0 0 5px #f97316, 0 0 10px #f97316;
+        }
+
+        .garnish-button {
+            transition: transform 0.2s;
+        }
+
+        .garnish-button:hover {
+            transform: scale(1.2);
+        }
+
+        .upgrade-button:disabled {
+            background-color: #4b5563;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        #recipe-display {
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        /* Language Switch */
+        .lang-switch {
+            cursor: pointer;
+            width: 80px;
+            height: 34px;
+            background-color: #4a5568;
+            border-radius: 17px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            font-weight: bold;
+            font-size: 12px;
+            color: white;
+            padding: 0 5px;
+        }
+
+        .lang-switch-toggle {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s ease;
+        }
+
+        .lang-switch.en .lang-switch-toggle {
+            transform: translateX(44px);
+        }
+
+        /* Story Overlay */
+        #story-overlay {
+            position: absolute;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.95);
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1s ease-in-out;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        #story-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .story-title {
+            font-size: 3rem;
+            font-family: 'Playfair Display', serif;
+            color: #fbbf24;
+            margin-bottom: 2rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 1s ease 0.5s;
+        }
+
+        .story-text {
+            font-size: 1.2rem;
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            line-height: 2;
+            color: #e5e7eb;
+            max-width: 600px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 1s ease 1s;
+        }
+
+        .story-continue {
+            margin-top: 3rem;
+            opacity: 0;
+            transition: opacity 1s ease 2s;
+            animation: pulse 2s infinite;
+            cursor: pointer;
+            color: #9ca3af;
+            font-size: 0.9rem;
+        }
+
+        #story-overlay.active .story-title,
+        #story-overlay.active .story-text,
+        #story-overlay.active .story-continue {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Boss Mode Styles */
+        .boss-mode #game-container {
+            box-shadow: 0 0 50px rgba(220, 38, 38, 0.5);
+            border-color: #7f1d1d;
+        }
+
+        .boss-mode #bar-counter {
+            filter: sepia(0.2) contrast(1.1);
+        }
+
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Real-time Backgrounds */
+        #bg-window {
+            /* Basic Window Shape */
+            background-size: cover;
+            background-position: center;
+        }
+
+        .time-morning {
+            background: linear-gradient(to bottom, #7dd3fc, #fde047);
+        }
+
+        /* Sky to Sun */
+        .time-day {
+            background: linear-gradient(to bottom, #38bdf8, #bae6fd);
+        }
+
+        /* Bright Blue */
+        .time-evening {
+            background: linear-gradient(to bottom, #c084fc, #f97316);
+        }
+
+        /* Purple to Orange */
+        .time-night {
+            background: linear-gradient(to bottom, #1e3a8a, #312e81);
+        }
+
+        /* Dark Blue */
+        .time-midnight {
+            background: linear-gradient(to bottom, #0f172a, #000000);
+        }
+
+        /* Deep Dark */
+
+        /* Camera Shake Feature Styles */
+        #camera-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 160px;
+            height: 120px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 3px solid #fbbf24;
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+            z-index: 100;
+            background: #000;
+            display: none;
+        }
+
+        #camera-container.active {
+            display: block;
+            animation: camera-glow 1s infinite alternate;
+        }
+
+        @keyframes camera-glow {
+            from {
+                box-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+            }
+
+            to {
+                box-shadow: 0 0 40px rgba(251, 191, 36, 0.9);
+            }
+        }
+
+        #camera-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+            /* Mirror effect */
+        }
+
+        #camera-canvas {
+            display: none;
+        }
+
+        #shake-counter {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3rem;
+            font-weight: bold;
+            color: #fbbf24;
+            text-shadow: 0 0 10px #000, 0 0 20px #fbbf24;
+            pointer-events: none;
+            z-index: 101;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.2s;
+        }
+
+        #shake-counter.active {
+            opacity: 1;
+        }
+
+        #shake-counter .shake-pulse {
+            animation: pulse-red 0.5s ease-in-out;
+        }
+
+        .animate-spin-slow {
+            animation: spin 3s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .jukebox-track {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: #1f2937;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .jukebox-track:hover {
+            background: #374151;
+            transform: translateX(4px);
+        }
+
+        .jukebox-track.active {
+            border-color: #6366f1;
+            background: #312e81;
+        }
+
+        .jukebox-track .icon {
+            font-size: 1.5rem;
+            margin-right: 12px;
+        }
+
+        .jukebox-track .info {
+            flex-grow: 1;
+        }
+
+        .jukebox-track .title {
+            font-weight: bold;
+            color: #e5e7eb;
+            font-family: 'Noto Serif JP', serif;
+        }
+
+        /* Photo Mode Styles - Hide UI */
+        body.photo-mode .no-capture {
+            display: none !important;
+        }
+
+        body.photo-mode #control-panel,
+        body.photo-mode footer,
+        body.photo-mode #help-button,
+        body.photo-mode #settings-btn,
+        body.photo-mode #language-switch,
+        body.photo-mode #daily-earnings-display {
+            display: none !important;
+        }
+
+        /* Mystery Mode Styles */
+        body.mystery-mode {
+            filter: grayscale(0.8) contrast(1.2) brightness(0.7);
+            background-image: radial-gradient(circle at center, #000 0%, #1a0505 100%);
+        }
+
+        body.mystery-mode #game-container {
+            border-color: #4a0404;
+            box-shadow: 0 0 50px rgba(74, 4, 4, 0.5);
+        }
+
+        body.mystery-mode .ingredient-bottle {
+            filter: grayscale(1) !important;
+        }
+
+        body.mystery-mode #customer-dialogue {
+            font-family: 'Courier New', monospace;
+            color: #ff0000;
+            text-shadow: 2px 2px 0px #000;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid #ff0000;
+        }
+
+        @keyframes shake-pulse {
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+
+            50% {
+                transform: translate(-50%, -50%) scale(1.5);
+            }
+
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        #camera-mode-btn {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #000;
+            font-weight: bold;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            font-size: 0.75rem;
+        }
+
+        #camera-mode-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.7);
+        }
+
+        #camera-mode-btn.active {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            animation: btn-active-glow 1.5s infinite alternate;
+        }
+
+        @keyframes btn-active-glow {
+            from {
+                box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+            }
+
+            to {
+                box-shadow: 0 0 25px rgba(34, 197, 94, 0.9);
+            }
+        }
+
+        #shake-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #22c55e, #fbbf24);
+            width: 0%;
+            transition: width 0.2s ease-out;
+            border-radius: 0 0 12px 12px;
+        }
+
+        #camera-overlay-text {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #fff;
+            font-size: 0.65rem;
+            text-shadow: 0 0 5px #000;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .motion-flash {
+            animation: motion-flash 0.15s ease-out;
+        }
+
+        @keyframes motion-flash {
+            0% {
+                filter: brightness(1);
+            }
+
+            50% {
+                filter: brightness(1.5);
+            }
+
+            100% {
+                filter: brightness(1);
+            }
+        }
+
+        /* Skeleton Canvas for Hand Tracking */
+        #skeleton-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        /* Detection Status Indicator */
+        #detection-status {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            z-index: 10;
+            transition: all 0.3s;
+        }
+
+        #detection-status.detected {
+            background: rgba(34, 197, 94, 0.9);
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+        }
+
+        #detection-status.not-detected {
+            background: rgba(239, 68, 68, 0.8);
+        }
+
+        #detection-icon {
+            font-size: 1rem;
+        }
+
+        #detection-text {
+            color: #fff;
+            font-weight: bold;
+        }
+
+        /* Hand detected animation */
+        @keyframes hand-pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
+        #detection-status.detected #detection-icon {
+            animation: hand-pulse 1s infinite;
+        }
+
+        /* Help/Rules Overlay Styles */
+        #help-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border: 3px solid #fff;
+            color: #fff;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 90;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.5);
+            transition: all 0.3s;
+            display: none;
+        }
+
+        #help-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 25px rgba(99, 102, 241, 0.7);
+        }
+
+        #help-button.visible {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #help-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 200;
+            display: none;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        #help-overlay.active {
+            display: block;
+        }
+
+        .help-content {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 30px;
+            background: linear-gradient(135deg, #1e293b, #334155);
+            border-radius: 20px;
+            border: 2px solid #6366f1;
+            box-shadow: 0 0 40px rgba(99, 102, 241, 0.3);
+        }
+
+        .help-title {
+            font-size: 2rem;
+            font-weight: bold;
+            text-align: center;
+            color: #fbbf24;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+        }
+
+        .help-section {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .help-section-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #60a5fa;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .help-section-content {
+            color: #e5e7eb;
+            line-height: 1.8;
+            font-size: 0.95rem;
+        }
+
+        .help-section-content ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .help-section-content li {
+            padding: 5px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .help-section-content li::before {
+            content: '?';
+            position: absolute;
+            left: 0;
+            color: #fbbf24;
+        }
+
+        .help-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .help-step-number {
+            width: 28px;
+            height: 28px;
+            min-width: 28px;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .help-close-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin-top: 20px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .help-close-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 20px rgba(99, 102, 241, 0.5);
+        }
+
+        .help-tip {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #000;
+            padding: 12px 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            font-weight: 500;
+        }
+
+        .help-tip strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        /* ===== NEW FEATURES STYLES ===== */
+
+        /* Menu Button */
+        #menu-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: 3px solid #fff;
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            z-index: 90;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.5);
+            transition: all 0.3s;
+            display: none;
+        }
+
+        #menu-button:hover {
+            transform: scale(1.1);
+        }
+
+        #menu-button.visible {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Help/Rules Overlay Styles */
+        #help-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #help-overlay.active {
+            display: flex;
+        }
+
+        .help-content {
+            background: #1f2937;
+            padding: 40px;
+            border-radius: 20px;
+            max-width: 800px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 2px solid #4b5563;
+            text-align: left;
+            position: relative;
+        }
+
+        .help-title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #fbbf24;
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #374151;
+            padding-bottom: 10px;
+        }
+
+        .help-section {
+            margin-bottom: 25px;
+        }
+
+        .help-section-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #60a5fa;
+            margin-bottom: 10px;
+        }
+
+        .help-section-content {
+            color: #d1d5db;
+            line-height: 1.6;
+            padding-left: 10px;
+        }
+
+        .help-step {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .help-step-number {
+            background: #fbbf24;
+            color: #000;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .help-tip {
+            background: rgba(251, 191, 36, 0.1);
+            border-left: 4px solid #fbbf24;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+        }
+
+        .help-close-btn {
+            display: block;
+            width: 100%;
+            margin-top: 30px;
+            padding: 15px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            transition: transform 0.2s;
+        }
+
+        .help-close-btn:hover {
+            transform: scale(1.02);
+        }
+
+        /* Menu Overlay */
+        #menu-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 200;
+            display: none;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        #menu-overlay.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .menu-btn {
+            width: 280px;
+            padding: 20px;
+            border-radius: 16px;
+            border: none;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .menu-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .menu-btn-cocktail {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #000;
+        }
+
+        .menu-btn-customer {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: #fff;
+        }
+
+        .menu-btn-market {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff;
+        }
+
+        .menu-btn-title {
+            background: linear-gradient(135deg, #ec4899, #db2777);
+            color: #fff;
+        }
+
+        .menu-btn-close {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+            color: #fff;
+            margin-top: 20px;
+        }
+
+        /* Encyclopedia Overlay (shared) */
+        .encyclopedia-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.97);
+            z-index: 210;
+            display: none;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .encyclopedia-overlay.active {
+            display: block;
+        }
+
+        .encyclopedia-content {
+            max-width: 700px;
+            margin: 0 auto;
+            padding-bottom: 100px;
+        }
+
+        .encyclopedia-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Interior Customization Styles */
+        /* Wallpaper Styles */
+        .wall-classic {
+            background: linear-gradient(180deg, #3d2817 0%, #2a1c0f 100%) !important;
+        }
+
+        .wall-modern {
+            background: linear-gradient(180deg, #374151 0%, #1f2937 100%) !important;
+        }
+
+        .wall-fantasy {
+            background: linear-gradient(180deg, #4c1d95 0%, #312e81 100%) !important;
+        }
+
+        /* Lighting Styles */
+        .light-warm::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: radial-gradient(ellipse at 50% 0%, rgba(255, 183, 77, 0.2) 0%, transparent 60%);
+            z-index: 1;
+        }
+
+        .light-cool::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: radial-gradient(ellipse at 50% 0%, rgba(96, 165, 250, 0.2) 0%, transparent 60%);
+            z-index: 1;
+        }
+
+        .light-neon::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: radial-gradient(ellipse at 50% 0%, rgba(236, 72, 153, 0.15) 0%, transparent 60%),
+                radial-gradient(ellipse at 20% 50%, rgba(34, 211, 238, 0.1) 0%, transparent 40%),
+                radial-gradient(ellipse at 80% 50%, rgba(168, 85, 247, 0.1) 0%, transparent 40%);
+            z-index: 1;
+            animation: neonPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes neonPulse {
+
+            0%,
+            100% {
+                opacity: 0.8;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        .encyclopedia-title {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .encyclopedia-progress {
+            font-size: 0.9rem;
+            color: #9ca3af;
+        }
+
+        .encyclopedia-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+        }
+
+        .encyclopedia-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .encyclopedia-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-3px);
+        }
+
+        .encyclopedia-item.locked {
+            opacity: 0.5;
+        }
+
+        .encyclopedia-item-image {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 8px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+
+        .encyclopedia-item-name {
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .encyclopedia-close {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 220;
+        }
+
+        /* Market Overlay */
+        #market-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.97);
+            z-index: 210;
+            display: none;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        #market-overlay.active {
+            display: block;
+        }
+
+        .market-content {
+            max-width: 700px;
+            margin: 0 auto;
+            padding-bottom: 100px;
+        }
+
+        .market-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .market-title {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #10b981;
+            margin-bottom: 8px;
+        }
+
+        .market-money {
+            font-size: 1.2rem;
+            color: #fbbf24;
+        }
+
+        .market-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px;
+        }
+
+        .market-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .market-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .market-item.owned {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.2);
+        }
+
+        .market-item.affordable:not(.owned):hover {
+            border-color: #fbbf24;
+        }
+
+        .market-item.too-expensive {
+            opacity: 0.5;
+        }
+
+        .market-item-color {
+            width: 50px;
+            height: 50px;
+            margin: 0 auto 8px;
+            border-radius: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .market-item-name {
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .market-item-price {
+            font-size: 0.75rem;
+            color: #fbbf24;
+        }
+
+        .market-item-owned {
+            font-size: 0.7rem;
+            color: #10b981;
+        }
+
+        /* Title Display */
+        #title-display {
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, rgba(236, 72, 153, 0.9), rgba(219, 39, 119, 0.9));
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #fff;
+            z-index: 50;
+            box-shadow: 0 2px 10px rgba(236, 72, 153, 0.4);
+        }
+
+        /* Title Celebration */
+        .title-celebration {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 300;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .title-celebration.active {
+            display: flex;
+            animation: fadeIn 0.5s;
+        }
+
+        .title-celebration-icon {
+            font-size: 5rem;
+            animation: bounce 1s infinite;
+        }
+
+        .title-celebration-text {
+            font-size: 1.5rem;
+            color: #fff;
+            text-align: center;
+        }
+
+        .title-celebration-name {
+            font-size: 2.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* Detail Modal */
+        .detail-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 250;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .detail-modal.active {
+            display: flex;
+        }
+
+        .detail-content {
+            background: linear-gradient(135deg, #1e293b, #334155);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .detail-image {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 15px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .detail-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #fbbf24;
+            margin-bottom: 10px;
+        }
+
+        .detail-info {
+            color: #d1d5db;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .detail-close {
+            margin-top: 20px;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* ===== PHASE 2: WEATHER, DRUNK, ANIMATIONS ===== */
+
+        /* Weather Overlay */
+        #weather-overlay {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 5;
+            overflow: hidden;
+        }
+
+        /* Rain Effect */
+        .weather-rain .rain-drop {
+            position: absolute;
+            width: 2px;
+            height: 20px;
+            background: linear-gradient(to bottom, transparent, rgba(174, 194, 224, 0.5));
+            animation: rain-fall linear infinite;
+        }
+
+        @keyframes rain-fall {
+            0% {
+                transform: translateY(-100vh);
+            }
+
+            100% {
+                transform: translateY(100vh);
+            }
+        }
+
+        /* Snow Effect */
+        .weather-snow .snow-flake {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.8;
+            animation: snow-fall linear infinite;
+        }
+
+        @keyframes snow-fall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+            }
+
+            100% {
+                transform: translateY(100vh) rotate(360deg);
+            }
+        }
+
+        /* Weather Indicator */
+        #weather-indicator {
+            position: absolute;
+            top: 8px;
+            right: 80px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            z-index: 50;
+        }
+
+        /* Drunk Text Effect */
+        .drunk-text {
+            animation: drunk-wobble 0.5s ease-in-out infinite;
+        }
+
+        @keyframes drunk-wobble {
+
+            0%,
+            100% {
+                transform: rotate(-1deg);
+            }
+
+            50% {
+                transform: rotate(1deg);
+            }
+        }
+
+        .drunk-heavy .drunk-text {
+            animation: drunk-heavy-wobble 0.3s ease-in-out infinite;
+            color: #f472b6 !important;
+        }
+
+        @keyframes drunk-heavy-wobble {
+
+            0%,
+            100% {
+                transform: rotate(-3deg) translateX(-2px);
+            }
+
+            50% {
+                transform: rotate(3deg) translateX(2px);
+            }
+        }
+
+        /* Passed Out Effect */
+        .customer-passed-out {
+            filter: grayscale(0.8) brightness(0.6);
+            animation: passed-out 2s ease-in-out infinite;
+        }
+
+        @keyframes passed-out {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(5px);
+            }
+        }
+
+        /* Drunk Meter */
+        #drunk-meter {
+            position: absolute;
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 8px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 4px;
+            overflow: hidden;
+            z-index: 25;
+        }
+
+        #drunk-meter-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #22c55e, #eab308, #ef4444);
+            transition: width 0.3s;
+        }
+
+        /* Liquid Shake Animation */
+        .shaker-liquid-wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 100%;
+            background: inherit;
+            animation: liquid-wave 0.15s ease-in-out infinite alternate;
+        }
+
+        @keyframes liquid-wave {
+            0% {
+                transform: translateY(0) skewX(-5deg);
+                border-radius: 0 0 5px 5px;
+            }
+
+            100% {
+                transform: translateY(-5px) skewX(5deg);
+                border-radius: 5px 5px 0 0;
+            }
+        }
+
+        /* Sparkle Particles */
+        .sparkle-container {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            overflow: visible;
+        }
+
+        .sparkle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: radial-gradient(circle, #fff 0%, #fbbf24 50%, transparent 70%);
+            border-radius: 50%;
+            animation: sparkle-burst 1s ease-out forwards;
+        }
+
+        @keyframes sparkle-burst {
+            0% {
+                opacity: 1;
+                transform: scale(0) translate(0, 0);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.5) translate(var(--tx), var(--ty));
+            }
+
+            100% {
+                opacity: 0;
+                transform: scale(0.5) translate(calc(var(--tx) * 2), calc(var(--ty) * 2));
+            }
+        }
+
+        /* Seasonal Event Banner */
+        #event-banner {
+            position: absolute;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #ec4899, #8b5cf6);
+            padding: 6px 20px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            z-index: 50;
+            box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4);
+            display: none;
+        }
+
+        #event-banner.active {
+            display: block;
+            animation: event-pulse 2s infinite;
+        }
+
+        @keyframes event-pulse {
+
+            0%,
+            100% {
+                transform: translateX(-50%) scale(1);
+            }
+
+            50% {
+                transform: translateX(-50%) scale(1.05);
+            }
+        }
+
+        /* Christmas Theme */
+        .event-christmas #event-banner {
+            background: linear-gradient(135deg, #dc2626, #16a34a);
+        }
+
+        /* Summer Festival Theme */
+        .event-summer #event-banner {
+            background: linear-gradient(135deg, #f97316, #facc15);
+        }
+    </style>
+</head>
+
+<body class="text-white flex items-center justify-center min-h-screen">
+    <audio id="bgm-audio" loop src="jukebox/standard_jazz.mp3"></audio>
+    <!-- Weather Overlay -->
+    <div id="weather-overlay"></div>
+
+    <!-- Game View -->
+    <div id="game-container" class="game-view mx-auto rounded-2xl md:p-6 flex-col relative overflow-hidden hidden">
+        <!-- Scrollable Game Content with Optimized Safe Area Padding -->
+        <div id="game-scroll-wrapper" class="w-full h-full overflow-y-auto flex flex-col p-4 pb-24 md:pb-4"
+            style="padding-bottom: max(6rem, env(safe-area-inset-bottom));">
+            <!-- Title Display -->
+            <div id="title-display" class="font-jp">?? 見習いバーテンダー</div>
+            <!-- Weather Indicator -->
+            <div id="weather-indicator" class="font-jp">?? 晴れ</div>
+            <!-- Event Banner -->
+            <div id="event-banner" class="font-jp">?? イベント開催中！</div>
+            <header class="grid grid-cols-2 items-start mb-1 px-2 relative font-jp shrink-0">
+                <div class="flex flex-col text-left">
+                    <h2 class="text-sm md:text-lg font-bold"><span data-lang-key="dayLabel">Day</span>: <span
+                            id="day-display">1</span></h2>
+                    <h2 class="text-sm md:text-lg font-bold"><span data-lang-key="moneyLabel">所持金</span>: \<span
+                            id="money-display">0</span></h2>
+                    <div id="score-display" class="mt-2 relative">
+                        <h2 class="text-lg md:text-xl font-bold"><span data-lang-key="salesLabel">本日の売上</span>: \<span
+                                id="score">0</span></h2>
+                    </div>
+                </div>
+                <div id="combo-display"
+                    class="absolute left-1/2 -translate-x-1/2 top-0 text-3xl font-bold text-orange-400 opacity-0 transform scale-50">
+                </div>
+                <div class="flex flex-col items-start justify-end gap-2 md:gap-4">
+                    <div class="flex gap-2 md:gap-4 ml-auto items-center">
+                        <button id="jukebox-btn" onclick="openJukebox()"
+                            class="bg-indigo-600 rounded-full p-2 w-10 h-10 flex items-center justify-center text-white hover:bg-indigo-500 shadow-lg transition-transform hover:scale-105 z-20"
+                            title="BGM Select">
+                            ??
+                        </button>
+                        <div id="timer-display"
+                            class="bg-red-600 rounded-full px-3 py-1 md:px-4 md:py-2 transition-all duration-300 flex-shrink-0">
+                            <h2 class="text-lg md:text-2xl font-bold"><span data-lang-key="timeLabel">時間</span>: <span
+                                    id="timer">300</span></h2>
+                        </div>
+                        <!-- Language Switch (Hidden - Japanese Only) -->
+                        <div id="language-switch" class="lang-switch" style="display: none;">
+                            <span>JA</span>
+                            <span>EN</span>
+                            <div class="lang-switch-toggle"></div>
+                        </div>
+                    </div>
+                    <div class="flex items-end justify-end ml-auto">
+                        <div id="recipe-display"
+                            class="bg-gray-900/70 p-2 rounded-lg border border-gray-500 text-right opacity-0 text-xs md:text-sm">
+                        </div>
+                    </div>
+                </div>
+            </header>
+            <main class="flex-grow flex flex-col relative">
+                <div id="happy-hour-banner"
+                    class="absolute -top-4 w-full text-center text-4xl font-bold text-yellow-300 font-jp hidden z-10">
+                </div>
+                <!-- Customer Area - Compact -->
+                <div id="customer-area"
+                    class="h-[200px] md:h-[280px] flex flex-col items-center justify-end mb-1 relative z-0 shrink-0 pt-10">
+                    <!-- Window Background -->
+                    <div id="bg-window"
+                        class="absolute top-4 bottom-0 left-1/2 -translate-x-1/2 w-64 h-full bg-gray-800 rounded-t-full border-4 border-amber-900 border-b-0 opacity-80 z-0 transition-all duration-1000 overflow-hidden box-border pointer-events-none">
+                        <!-- Horizontal Grid for Window Pane Effect -->
+                        <div class="absolute top-1/2 w-full h-2 bg-amber-900/50"></div>
+                        <div class="absolute left-1/2 h-full w-2 bg-amber-900/50 -translate-x-1/2"></div>
+                    </div>
+
+                    <div id="customer-dialogue" class="font-jp z-20"></div>
+                    <img id="customer" class="mb-2 opacity-0 transform -translate-x-12 max-h-[180px] z-20 relative"
+                        src="" alt="Customer">
+                    <div id="order-bubble"
+                        class="bg-gray-200 p-2 md:p-3 rounded-lg shadow-lg text-gray-800 flex flex-col items-center gap-1 md:gap-2 opacity-0 transition-opacity duration-300 absolute bottom-0 right-0 md:static z-20">
+                        <div id="customer-name" class="font-bold font-jp text-xs md:text-sm text-gray-600"></div>
+                        <div class="flex items-center gap-2">
+                            <p class="font-bold font-jp text-xs md:text-base" data-lang-key="orderLabel">注文:</p>
+                            <div id="order-text" class="font-bold text-sm md:text-lg font-jp"></div>
+                            <div id="order-ingredients"
+                                class="flex gap-1 md:gap-2 flex-wrap max-w-[100px] md:max-w-none justify-center"></div>
+                        </div>
+                    </div>
+                    <!-- Drunk Meter -->
+                    <div id="drunk-meter">
+                        <div id="drunk-meter-fill"></div>
+                    </div>
+                </div>
+                <!-- Bar Counter -->
+                <div id="bar-counter"
+                    class="p-2 md:p-4 flex-grow flex items-center justify-between gap-2 md:gap-4 rounded-lg relative mb-4">
+                    <!-- Shaker & Buttons -->
+                    <div class="w-1/3 flex flex-col items-center justify-end h-full gap-2">
+                        <div id="shaker-area"
+                            class="w-16 h-28 md:w-24 md:h-40 bg-gray-400 rounded-t-lg border-4 border-gray-300 relative flex items-end overflow-hidden shadow-inner">
+                            <div id="shaker-ice-cubes" class="absolute inset-0"></div>
+                            <div id="shaker-contents" class="w-full h-full transition-all duration-300"></div>
+                        </div>
+                        <div class="flex flex-col gap-1 w-full max-w-[140px]">
+                            <button id="add-ice-button" data-lang-key="addIce"
+                                class="bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">氷</button>
+                            <button id="glass-button" data-lang-key="glassLabel"
+                                class="bg-purple-500 hover:bg-purple-600 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">グラス</button>
+                            <button id="ingredient-button" data-lang-key="ingredientsLabel"
+                                class="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">材料</button>
+                            <button id="fortune-button" onclick="openFortuneMenu()"
+                                class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">今日の占い</button>
+                            <div class="flex gap-1">
+                                <button id="shake-button" data-lang-key="shake"
+                                    class="w-full bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">シェイク</button>
+                            </div>
+                            <button id="gesture-shake-btn"
+                                class="w-full bg-pink-500 hover:bg-pink-600 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md"
+                                onclick="toggleGestureShake()">
+                                ?? ジェスチャー
+                            </button>
+                            <button id="photo-btn"
+                                class="w-full bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md"
+                                onclick="openPhotoMode()">
+                                ?? 撮影
+                            </button>
+                            <div class="flex gap-1 w-full">
+                                <button id="talk-button" data-lang-key="talk"
+                                    class="bg-yellow-600 hover:bg-yellow-700 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md flex-1">話す</button>
+                                <button id="matchmake-button"
+                                    class="bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md hidden flex-1"
+                                    onclick="openMatchmaking()">紹介する</button>
+                            </div>
+                            <button id="reset-button" data-lang-key="reset"
+                                class="bg-red-700 hover:bg-red-800 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">リセット</button>
+                        </div>
+                    </div>
+                    <!-- Glass & Result -->
+                    <div class="w-2/3 flex flex-col items-center justify-center">
+                        <div id="cocktail-glass" class="w-24 h-32 md:w-32 md:h-40 relative">
+                            <svg viewBox="0 0 100 120" class="w-full h-full filter drop-shadow-lg">
+                                <!-- Paths injected by JS -->
+                            </svg>
+                            <div id="liquid-mask" class="absolute inset-0 w-full h-full pointer-events-none">
+                                <div id="final-cocktail"
+                                    class="absolute left-0 right-0 mx-auto w-full h-0 bg-transparent"></div>
+                            </div>
+
+                        </div>
+                        <div id="result-text" class="text-xl md:text-2xl font-bold mt-2 h-8 font-jp text-center"></div>
+                    </div>
+                </div>
+            </main>
+            <!-- Footer Removed (Ingredients moved to overlay) -->
+        </div>
+    </div>
+
+    <!-- Overlays (Fixed relative to game-container) -->
+    <div id="garnish-container"
+        class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/80 p-6 rounded-lg text-white font-jp shadow-lg z-40 hidden flex-col items-center gap-4">
+    </div>
+    <div id="glass-selection-overlay"
+        class="absolute inset-0 bg-black/90 z-50 flex flex-col items-center justify-center hidden">
+        <h2 class="text-3xl font-bold text-white mb-8 font-jp" data-lang-key="glassLabel">グラス選択:</h2>
+        <div class="grid grid-cols-3 gap-4 md:gap-8 w-full max-w-lg px-4">
+            <div class="glass-option cursor-pointer bg-gray-800/80 p-4 rounded-xl hover:bg-gray-700 active:scale-95 transition-all flex flex-col items-center gap-2"
+                onclick="selectGlass('collins')">
+                <div
+                    class="w-12 h-20 md:w-16 md:h-24 border-2 border-white/50 rounded-sm bg-white/10 pointer-events-none">
+                </div>
+                <span class="text-white font-jp text-sm md:text-base pointer-events-none"
+                    data-lang-key="glassCollins">ロング</span>
+            </div>
+            <div class="glass-option cursor-pointer bg-gray-800/80 p-4 rounded-xl hover:bg-gray-700 active:scale-95 transition-all flex flex-col items-center gap-2"
+                onclick="selectGlass('rocks')">
+                <div
+                    class="w-12 h-10 md:w-16 md:h-12 border-2 border-white/50 rounded-sm bg-white/10 mt-10 md:mt-12 pointer-events-none">
+                </div>
+                <span class="text-white font-jp text-sm md:text-base pointer-events-none"
+                    data-lang-key="glassRocks">ロック</span>
+            </div>
+            <div class="glass-option cursor-pointer bg-gray-800/80 p-4 rounded-xl hover:bg-gray-700 active:scale-95 transition-all flex flex-col items-center gap-2"
+                onclick="selectGlass('cocktail')">
+                <div class="w-12 h-12 md:w-16 md:h-16 border-2 border-white/50 rounded-b-full bg-white/10 mt-8 pointer-events-none"
+                    style="clip-path: polygon(0 0, 100% 0, 50% 100%);"></div>
+                <span class="text-white font-jp text-sm md:text-base pointer-events-none"
+                    data-lang-key="glassCocktail">カクテル</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Photo Mode Overlay -->
+    <div id="photo-mode-overlay"
+        class="fixed inset-0 bg-black/95 z-[300] flex flex-col items-center justify-center hidden">
+        <div class="text-center">
+            <h2 class="text-2xl font-bold text-white mb-4 font-jp" data-lang-key="photoTitle">?? フォトモード</h2>
+            <div id="photo-preview" class="bg-gray-800 rounded-lg p-4 mb-4 inline-block">
+                <canvas id="photo-canvas" style="max-width: 90vw; max-height: 50vh;"></canvas>
+            </div>
+            <div class="flex flex-wrap gap-3 justify-center">
+                <button onclick="downloadPhoto()"
+                    class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg font-jp text-lg">
+                    ?? 保存
+                </button>
+                <button onclick="shareToTwitter()"
+                    class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg font-jp text-lg">
+                    ?? シェア
+                </button>
+                <button onclick="shareToLINE()"
+                    class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg font-jp text-lg">
+                    LINE
+                </button>
+                <button onclick="closePhotoMode()"
+                    class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg font-jp text-lg"
+                    data-lang-key="menuClose">
+                    ? 閉じる
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ingredient Selection Overlay -->
+    <div id="ingredient-selection-overlay"
+        class="absolute inset-0 bg-black/95 z-50 flex flex-col items-center justify-start pt-10 pb-4 px-4 hidden">
+        <h2 class="text-3xl font-bold text-white mb-6 font-jp" data-lang-key="ingredientsLabel">材料選択</h2>
+        <div id="ingredient-grid"
+            class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4 w-full max-w-4xl overflow-y-auto custom-scrollbar p-2 pb-20">
+            <!-- Javascript will populate this -->
+        </div>
+        <button id="close-ingredient-overlay"
+            class="mt-6 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-8 rounded-lg font-jp">閉じる</button>
+    </div>
+
+    <!-- Room View -->
+    <div id="room-container" class="game-view mx-auto rounded-2xl p-6 md:p-8 flex-col relative hidden bg-gray-800">
+        <header class="text-center pb-4 border-b-2 border-white/10 mb-6">
+            <h1 class="font-title text-5xl" data-lang-key="dayEndTitle">Day End</h1>
+            <p class="font-jp text-lg text-gray-300"><span data-lang-key="dayLabel">Day</span> <span
+                    id="room-day-display">1</span> - <span data-lang-key="dayEndSubtitle">営業終了</span></p>
+        </header>
+
+        <main class="flex-grow flex flex-col justify-between">
+            <div class="bg-gray-900/50 rounded-lg p-6 text-center mb-6">
+                <p class="font-jp text-xl text-gray-400" data-lang-key="dailyEarningsLabel">本日の売上</p>
+                <p class="font-bold text-4xl text-yellow-300 my-2">\<span id="daily-earnings-display">0</span></p>
+                <hr class="border-gray-600 my-4">
+                <p class="font-jp text-xl text-gray-400" data-lang-key="totalAssetsLabel">総資産</p>
+                <p class="font-bold text-4xl">\<span id="room-money-display">0</span></p>
+            </div>
+
+            <div id="upgrades-section"
+                class="bg-gray-900/50 rounded-lg p-6 max-h-[300px] overflow-y-auto custom-scrollbar">
+                <h2 class="font-jp text-2xl font-bold text-center mb-4" data-lang-key="upgradesTitle">アップグレード</h2>
+                <div class="space-y-3">
+                </div>
+                <div class="space-y-3">
+                </div>
+            </div>
+
+            <!-- Secrets Section Removed -->
+        </main>
+        <footer class="text-center pt-6 pb-24 md:pb-6 flex flex-col gap-4 items-center" style="padding-bottom: 200px;">
+            <button onclick="openMarket()"
+                class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg text-xl shadow-lg transition-transform transform font-jp">??
+                材料を仕入れる</button>
+            <button id="next-day-button" data-lang-key="nextDayButton"
+                class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-xl shadow-lg transition-transform transform font-jp button-pulse">次の日へ</button>
+        </footer>
+    </div>
+
+    <!-- Help Button (Fixed) -->
+    <button id="help-button" class="font-jp">?</button>
+
+    <!-- Help/Rules Overlay -->
+    <div id="help-overlay">
+        <div class="help-content font-jp">
+            <h1 class="help-title" data-lang-key="helpTitle">?? 遊び方ガイド</h1>
+
+            <div class="help-section">
+                <div class="help-section-title" data-lang-key="helpBasicsTitle">?? ゲームの目的</div>
+                <div class="help-section-content" data-lang-key="helpBasicsText">
+                    お客さんの注文通りにカクテルを作って、お金を稼ごう！<br>
+                    7日間営業して、伝説のバーテンダーを目指そう！
+                </div>
+            </div>
+
+            <div class="help-section">
+                <div class="help-section-title" data-lang-key="helpMakingTitle">?? カクテルの作り方</div>
+                <div class="help-section-content">
+                    <div class="help-step">
+                        <div class="help-step-number">1</div>
+                        <div data-lang-key="helpStep1">お客さんの注文を確認（右上にレシピが表示される）</div>
+                    </div>
+                    <div class="help-step">
+                        <div class="help-step-number">2</div>
+                        <div data-lang-key="helpStep2"><strong>「材料」ボタン</strong>をタップして、必要な材料を選ぶ</div>
+                    </div>
+                    <div class="help-step">
+                        <div class="help-step-number">3</div>
+                        <div data-lang-key="helpStep3">レシピに氷が書いてあったら<strong>「氷を入れる」ボタン</strong>をタップ</div>
+                    </div>
+                    <div class="help-step">
+                        <div class="help-step-number">4</div>
+                        <div data-lang-key="helpStep4"><strong>グラスをタップ</strong>して、正しいグラスを選ぶ</div>
+                    </div>
+                    <div class="help-step">
+                        <div class="help-step-number">5</div>
+                        <div data-lang-key="helpStep5"><strong>「シェイク」ボタン</strong>でカクテル完成！</div>
+                    </div>
+                </div>
+            </div>
+
+
+
+            <div class="help-section">
+                <div class="help-section-title" data-lang-key="helpButtonsTitle">?? ボタンの説明</div>
+                <div class="help-section-content" data-lang-key="helpButtonsText">
+                    <ul>
+                        <li><strong>材料</strong> - カクテルの材料を選ぶ</li>
+                        <li><strong>氷を入れる</strong> - 氷を追加する</li>
+                        <li><strong>グラス</strong> - グラスの種類を選ぶ</li>
+                        <li><strong>シェイク</strong> - カクテルを完成させる</li>
+                        <li><strong>話す</strong> - お客さんと話す（ボーナスポイント！）</li>
+                        <li><strong>リセット</strong> - 作り直す</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="help-section">
+                <div class="help-section-title" data-lang-key="helpTipsTitle">? コツ</div>
+                <div class="help-section-content" data-lang-key="helpTipsText">
+                    <ul>
+                        <li>レシピ通りに作ると<strong>連続ボーナス</strong>がもらえる！</li>
+                        <li>お客さんと<strong>話す</strong>とチップがもらえる</li>
+                        <li>1日の終わりに<strong>アップグレード</strong>を買おう</li>
+                        <li>時間内にたくさん作れば高得点！</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="help-tip" data-lang-key="helpHint">
+                <strong>?? ヒント</strong>
+                いつでもこの画面を見たいときは、右上の「？」ボタンをタップしてね！
+            </div>
+
+            <button id="help-close-btn" class="help-close-btn" data-lang-key="helpCloseBtn">わかった！ゲームに戻る</button>
+        </div>
+    </div>
+
+    <!-- Save Slot Selection Screen -->
+    <div id="game-overlay"
+        class="absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-500 z-30 bg-black/90">
+
+        <!-- Part 1: Initial Start Screen -->
+        <div id="title-screen-content" class="flex flex-col items-center justify-center">
+            <h1 class="font-title text-6xl md:text-8xl mb-8 text-amber-500 animate-pulse">Bartender</h1>
+            <button id="initial-start-btn" onclick="showSaveSlots()" data-lang-key="gameStartBtn"
+                class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-6 px-12 rounded-lg text-3xl shadow-[0_0_30px_rgba(37,99,235,0.5)] transition-all transform hover:scale-110 active:scale-95 font-jp button-pulse">
+                開始
+            </button>
+            <button id="help-start-btn" onclick="openHelp()"
+                class="mt-8 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg text-lg shadow-lg transition-transform transform font-jp">
+                ?? 遊び方を見る
+            </button>
+        </div>
+
+        <!-- Part 2: Slot Selection (Hidden initially) -->
+        <div id="slot-selection-content" class="hidden flex flex-col items-center justify-center w-full">
+            <h2 class="font-title text-4xl md:text-5xl mb-8 text-amber-500">Select Slot</h2>
+            <div id="save-slots-container"
+                class="flex flex-wrap gap-4 justify-center items-center w-full max-w-5xl px-4">
+                <!-- Slots injected by JS -->
+            </div>
+            <button onclick="hideSaveSlots()" class="mt-8 text-gray-400 hover:text-white font-jp underline">戻る</button>
+        </div>
+    </div>
+
+    <!-- Character Selection Modal -->
+    <div id="character-select-modal"
+        class="fixed inset-0 bg-black/95 z-50 hidden flex flex-col items-center justify-center">
+        <h2 class="text-3xl font-bold text-white mb-6 font-jp">アイコンを選んでください</h2>
+        <div id="character-grid"
+            class="grid grid-cols-4 md:grid-cols-5 gap-4 max-w-4xl p-4 overflow-y-auto max-h-[70vh] custom-scrollbar">
+            <!-- Characters injected by JS -->
+        </div>
+        <button onclick="document.getElementById('character-select-modal').classList.add('hidden')"
+            class="mt-8 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-8 rounded-lg font-jp">キャンセル</button>
+    </div>
+
+    <style>
+        .save-slot-card {
+            background: linear-gradient(135deg, #1f2937, #111827);
+            border: 2px solid #374151;
+            border-radius: 16px;
+            width: 280px;
+            height: 380px;
+            /* Increased height for better layout */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .save-slot-card:hover {
+            transform: translateY(-5px);
+            border-color: #6366f1;
+            box-shadow: 0 10px 15px rgba(99, 102, 241, 0.2);
+        }
+
+        .slot-empty-text {
+            color: #6b7280;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            font-family: 'Noto Serif JP', serif;
+        }
+
+        .slot-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 3px solid #fbbf24;
+            object-fit: cover;
+            margin-bottom: 15px;
+            background: #000;
+        }
+
+        .slot-info {
+            text-align: center;
+            color: #d1d5db;
+            margin-bottom: 20px;
+        }
+
+        .slot-day {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .slot-money {
+            color: #fbbf24;
+            font-size: 1.1rem;
+        }
+
+        .delete-slot-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: #ef4444;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2rem;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+
+        .delete-slot-btn:hover {
+            opacity: 1;
+        }
+
+        .char-select-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 12px;
+            border: 2px solid transparent;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .char-select-btn img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .char-select-btn:hover {
+            transform: scale(1.1);
+            border-color: #fbbf24;
+        }
+    </style>
+
+    <!-- Ending Overlay -->
+    <div id="ending-overlay"
+        class="absolute inset-0 bg-black/95 z-50 flex flex-col items-center justify-center hidden text-center p-8">
+        <h1 id="ending-title" class="font-title text-5xl md:text-7xl mb-6 text-yellow-400">THE END</h1>
+        <p id="ending-rank" class="font-jp text-2xl md:text-3xl text-white mb-4">Rank: ???</p>
+        <p class="font-jp text-xl text-gray-400 mb-8">Total Assets: \<span id="ending-money">0</span></p>
+        <p id="ending-message" class="font-jp text-lg text-white/80 max-w-2xl leading-relaxed mb-8">...</p>
+        <button onclick="location.reload()"
+            class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg text-xl shadow-lg transition-transform transform font-jp button-pulse">Title
+            Screen</button>
+    </div>
+
+    <!-- Camera Container for Real Shake -->
+
+
+    <!-- Story Overlay -->
+    <div id="story-overlay">
+        <h1 id="story-title" class="story-title">Chapter 1</h1>
+        <p id="story-text" class="story-text">物語の始まり...</p>
+        <p class="story-continue font-jp">Click to start</p>
+    </div>
+
+    <!-- Menu Button -->
+    <button id="menu-button" class="font-jp">?</button>
+
+    <!-- Menu Overlay -->
+    <div id="menu-overlay">
+        <h2 class="text-3xl font-bold text-white mb-8 font-jp" data-lang-key="menuTitle">?? メニュー</h2>
+        <button class="menu-btn menu-btn-cocktail font-jp" onclick="openCocktailEncyclopedia()"
+            data-lang-key="menuCocktails">
+            ?? カクテル図鑑
+        </button>
+        <button class="menu-btn menu-btn-customer font-jp" onclick="openCustomerEncyclopedia()"
+            data-lang-key="menuCustomers">
+            ?? お客さん図鑑
+        </button>
+        <button class="menu-btn menu-btn-title font-jp" onclick="openTitleList()" data-lang-key="menuTitles">
+            ?? 称号一覧
+        </button>
+        <button class="menu-btn menu-btn-interior font-jp" onclick="openInteriorShop()" data-lang-key="menuInterior">
+            ?? 内装変更
+        </button>
+        <button class="menu-btn menu-btn-settings font-jp" onclick="openSettings()" data-lang-key="menuSettings">
+            ?? 設定
+        </button>
+        <button class="menu-btn menu-btn-save font-jp text-green-400 border-green-500/50" onclick="saveGameManually()"
+            data-lang-key="menuSave">
+            ?? セーブ
+        </button>
+        <button class="menu-btn menu-btn-close font-jp" onclick="closeMenu()" data-lang-key="menuClose">
+            ? 閉じる
+        </button>
+    </div>
+
+    <!-- Interior Shop Overlay -->
+    <div id="interior-shop-overlay" class="encyclopedia-overlay">
+        <div class="encyclopedia-content" style="max-width: 600px;">
+            <div class="encyclopedia-header">
+                <h2 class="encyclopedia-title text-amber-400 font-jp" data-lang-key="interiorTitle">?? 内装カスタマイズ</h2>
+                <p class="text-white/60 font-jp" id="interior-money">所持金: \0</p>
+            </div>
+            <div id="interior-shop-content" style="padding: 15px; display: flex; flex-direction: column; gap: 20px;">
+                <!-- Categories added dynamically -->
+            </div>
+            <button class="encyclopedia-close font-jp" onclick="closeInteriorShop()" data-lang-key="menuClose">?
+                閉じる</button>
+        </div>
+    </div>
+
+    <!-- Settings Overlay -->
+    <div id="settings-overlay" class="encyclopedia-overlay">
+        <div class="encyclopedia-content" style="max-width: 400px;">
+            <div class="encyclopedia-header">
+                <h2 class="encyclopedia-title text-amber-400 font-jp" data-lang-key="settingsTitle">?? 設定</h2>
+            </div>
+            <div style="padding: 20px;">
+                <div style="margin-bottom: 20px;">
+                    <label class="font-jp text-white text-lg block mb-2" data-lang-key="languageLabel">?? 言語 /
+                        Language</label>
+                    <select id="language-select" class="font-jp"
+                        style="width: 100%; padding: 10px; border-radius: 8px; font-size: 16px; background: #333; color: white; border: 2px solid #555;">
+                        <option value="ja">???? 日本語</option>
+                        <option value="en">???? English</option>
+                    </select>
+                    <p class="text-gray-400 text-sm mt-2 font-jp" data-lang-key="languageNote">※ 言語変更は再起動後に反映されます</p>
+                </div>
+                <button onclick="saveSettingsAndRestart()"
+                    class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg font-jp text-lg mt-4"
+                    data-lang-key="saveAndRestart">
+                    ?? 保存して再起動
+                </button>
+            </div>
+            <button class="encyclopedia-close font-jp" onclick="closeSettings()" data-lang-key="menuClose">?
+                閉じる</button>
+        </div>
+    </div>
+
+    <!-- Cocktail Encyclopedia Overlay -->
+    <div id="cocktail-encyclopedia" class="encyclopedia-overlay">
+        <div class="encyclopedia-content">
+            <div class="encyclopedia-header">
+                <h2 class="encyclopedia-title text-amber-400 font-jp">?? カクテル図鑑</h2>
+                <p id="cocktail-progress" class="encyclopedia-progress">発見: 0 / 0</p>
+            </div>
+            <div id="cocktail-grid" class="encyclopedia-grid">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+        <button class="encyclopedia-close font-jp" onclick="closeCocktailEncyclopedia()">閉じる</button>
+    </div>
+
+    <!-- Customer Encyclopedia Overlay -->
+    <div id="customer-encyclopedia" class="encyclopedia-overlay">
+        <div class="encyclopedia-content">
+            <div class="encyclopedia-header">
+                <h2 class="encyclopedia-title text-purple-400 font-jp">?? お客さん図鑑</h2>
+                <p id="customer-progress" class="encyclopedia-progress">出会い: 0 / 0</p>
+            </div>
+            <div id="customer-grid" class="encyclopedia-grid">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+        <button class="encyclopedia-close font-jp" onclick="closeCustomerEncyclopedia()">閉じる</button>
+    </div>
+
+    <!-- Title List Overlay -->
+    <div id="title-overlay" class="encyclopedia-overlay">
+        <div class="encyclopedia-content">
+            <div class="encyclopedia-header">
+                <h2 class="encyclopedia-title text-pink-400 font-jp">?? 称号一覧</h2>
+                <p id="title-current" class="encyclopedia-progress">現在の称号: 見習いバーテンダー</p>
+            </div>
+            <div id="title-grid" class="encyclopedia-grid">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+        <button class="encyclopedia-close font-jp" onclick="closeTitleList()">閉じる</button>
+    </div>
+
+    <!-- Market Overlay -->
+    <div id="market-overlay">
+        <div class="market-content font-jp">
+            <div class="market-header">
+                <h2 class="market-title">?? 材料市場</h2>
+                <p class="market-money">所持金: \<span id="market-money">0</span></p>
+            </div>
+            <div id="market-grid" class="market-grid">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+        <button class="encyclopedia-close font-jp" onclick="closeMarket()">閉じる</button>
+    </div>
+
+    <!-- Detail Modal -->
+    <div id="detail-modal" class="detail-modal">
+        <div class="detail-content font-jp">
+            <img id="detail-image" class="detail-image" src="" alt="">
+            <h3 id="detail-name" class="detail-name"></h3>
+            <p id="detail-info" class="detail-info"></p>
+            <button class="detail-close" onclick="closeDetailModal()">閉じる</button>
+        </div>
+    </div>
+
+    <!-- Title Celebration -->
+    <div id="title-celebration" class="title-celebration" onclick="closeTitleCelebration()">
+        <div class="title-celebration-icon">??</div>
+        <p class="title-celebration-text font-jp">称号を獲得しました！</p>
+        <p id="celebration-title-name" class="title-celebration-name font-jp"></p>
+        <p class="text-white/60 font-jp mt-4">タップして続ける</p>
+    </div>
+
+    <!-- Photo Mode Overlay -->
+    <div id="photo-mode-overlay" class="fixed inset-0 bg-black/80 hidden z-50 flex items-center justify-center">
+        <div class="bg-white p-6 rounded-lg max-w-lg w-full text-center relative shadow-2xl border-4 border-amber-500">
+            <h2 class="text-2xl font-bold mb-4 font-jp text-gray-800">?? 撮影完了！</h2>
+            <div class="border-2 border-gray-300 mb-4 p-2 bg-gray-100 rounded">
+                <canvas id="photo-canvas" class="w-full h-auto rounded shadow-inner"></canvas>
+            </div>
+            <div class="flex gap-4 justify-center">
+                <button onclick="downloadPhoto()"
+                    class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded font-jp flex items-center gap-2">
+                    ?? 保存
+                </button>
+                <button onclick="shareToTwitter()"
+                    class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded font-jp flex items-center gap-2">
+                    ?? Tweet
+                </button>
+                <button onclick="closePhotoMode()"
+                    class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded font-jp">
+                    閉じる
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

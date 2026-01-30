@@ -1709,11 +1709,113 @@
         .event-summer #event-banner {
             background: linear-gradient(135deg, #f97316, #facc15);
         }
+
+        /* Inquiry Modal Styles */
+        .inquiry-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .inquiry-modal {
+            background: #2a2a2a;
+            border: 2px solid #555;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 500px;
+            padding: 24px;
+            color: white;
+            position: relative;
+        }
+
+        .inquiry-modal h2 {
+            color: #d4af37;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .inquiry-form-group {
+            margin-bottom: 16px;
+        }
+
+        .inquiry-form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ccc;
+        }
+
+        .inquiry-form-group select,
+        .inquiry-form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            background: #1a1a1a;
+            border: 1px solid #444;
+            color: white;
+        }
+
+        .inquiry-form-group textarea {
+            height: 120px;
+            resize: none;
+        }
+
+        .inquiry-submit-btn {
+            width: 100%;
+            padding: 12px;
+            background: #d4af37;
+            color: black;
+            font-weight: bold;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .inquiry-submit-btn:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+
+        /* Save Slot Styles */
+        .save-slot {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .save-slot:hover {
+            border-color: #f59e0b;
+            background: rgba(31, 41, 55, 0.95);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .save-slot.empty {
+            border-style: dashed;
+            opacity: 0.6;
+        }
+
+        .save-slot.active {
+            border-color: #f59e0b;
+            background: rgba(67, 56, 202, 0.4);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
+        }
+
+        /* Avatar Card */
+        .avatar-card {
+            transition: all 0.3s ease;
+        }
+
+        .avatar-card:hover {
+            transform: scale(1.05);
+            border-color: #f59e0b;
+        }
     </style>
 </head>
 
 <body class="text-white flex items-center justify-center min-h-screen">
-    <audio id="bgm-audio" loop src="background.mp3"></audio>
+    <audio id="bgm-audio" loop></audio>
     <!-- Weather Overlay -->
     <div id="weather-overlay"></div>
 
@@ -2060,15 +2162,48 @@
         </div>
     </div>
 
-    <!-- Initial Start Screen -->
+    <!-- Save Slot Selection Screen -->
     <div id="game-overlay"
-        class="absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-500 z-30">
-        <h1 class="font-title text-6xl md:text-8xl mb-4">Bartender</h1>
-        <button id="start-button" data-lang-key="startButton"
-            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg text-2xl shadow-lg transition-transform transform font-jp button-pulse">ゲーム開始</button>
-        <button id="help-start-btn" data-lang-key="helpViewBtn"
-            class="mt-4 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg text-lg shadow-lg transition-transform transform font-jp">📖
-            遊び方を見る</button>
+        class="absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-500 z-30 bg-black/90">
+
+        <!-- Part 1: Initial Start Screen -->
+        <div id="title-screen-content" class="flex flex-col items-center justify-center">
+            <h1 class="font-title text-6xl md:text-8xl mb-8 text-blue-500 animate-pulse">Bartender</h1>
+            <button id="initial-start-btn" onclick="showSaveSlots()" data-lang-key="gameStartBtn"
+                class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-6 px-12 rounded-full text-3xl shadow-[0_0_30px_rgba(37,99,235,0.5)] transition-all hover:scale-105 active:scale-95 font-jp">開始</button>
+            <button id="help-start-btn" data-lang-key="helpViewBtn"
+                class="mt-6 text-blue-400 hover:text-blue-300 font-jp text-lg border-b border-blue-500/30">📖
+                遊び方を見る</button>
+        </div>
+
+        <!-- Part 2: Slot Selection -->
+        <div id="slot-selection-content" class="hidden w-full max-w-4xl p-6">
+            <h2 class="text-3xl font-bold text-amber-500 mb-8 text-center font-jp">セーブスロットを選択</h2>
+            <div id="save-slots-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Injected by JS -->
+            </div>
+            <button onclick="hideSaveSlots()"
+                class="mt-8 text-gray-400 hover:text-white w-full text-center font-jp">戻る</button>
+        </div>
+
+        <!-- Part 3: Character Selection -->
+        <div id="character-selection-content" class="hidden w-full max-w-2xl p-6">
+            <h2 class="text-3xl font-bold text-amber-500 mb-8 text-center font-jp">アバターを選択</h2>
+            <div class="grid grid-cols-2 gap-8">
+                <div class="flex flex-col items-center gap-4 cursor-pointer hover:scale-105 transition-transform"
+                    onclick="selectCharacter('images/avatar/man.png')">
+                    <img src="images/avatar/man.png"
+                        class="w-48 h-48 rounded-full border-4 border-amber-500/30 bg-black/40">
+                    <span class="text-xl font-bold text-white font-jp">男性バーテンダー</span>
+                </div>
+                <div class="flex flex-col items-center gap-4 cursor-pointer hover:scale-105 transition-transform"
+                    onclick="selectCharacter('images/avatar/woman.png')">
+                    <img src="images/avatar/woman.png"
+                        class="w-48 h-48 rounded-full border-4 border-amber-500/30 bg-black/40">
+                    <span class="text-xl font-bold text-white font-jp">女性バーテンダー</span>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Ending Overlay -->
@@ -2119,6 +2254,10 @@
         <button class="menu-btn menu-btn-save font-jp text-green-400 border-green-500/50" onclick="saveGameManually()"
             data-lang-key="menuSave">
             💾 セーブ
+        </button>
+        <button class="menu-btn menu-btn-inquiry font-jp text-blue-400 border-blue-500/50" onclick="openInquiry()"
+            data-lang-key="menuInquiry">
+            📮 お問い合わせ
         </button>
         <button class="menu-btn menu-btn-close font-jp" onclick="closeMenu()" data-lang-key="menuClose">
             ✖ 閉じる
@@ -2224,6 +2363,28 @@
         <button class="encyclopedia-close font-jp" onclick="closeMarket()">閉じる</button>
     </div>
 
+    <!-- Inquiry Overlay -->
+    <div id="inquiry-overlay" class="inquiry-overlay hidden">
+        <div class="inquiry-modal font-jp">
+            <button class="absolute top-2 right-4 text-2xl text-gray-400" onclick="closeInquiry()">&times;</button>
+            <h2>📜 ギルドへの直訴状</h2>
+            <div class="inquiry-form-group">
+                <label>報告の種類:</label>
+                <select id="inquiry-type">
+                    <option value="bug">🐛 不具合の報告</option>
+                    <option value="feature">✨ ご意見・ご要望</option>
+                    <option value="other">💌 その他のお問い合わせ</option>
+                </select>
+            </div>
+            <div class="inquiry-form-group">
+                <label>内容:</label>
+                <textarea id="inquiry-message" placeholder="ここに詳細を記してください..."></textarea>
+            </div>
+            <button id="inquiry-submit-btn" class="inquiry-submit-btn" onclick="submitInquiry()">📮 送信する</button>
+            <p id="inquiry-status" class="mt-4 text-center hidden"></p>
+        </div>
+    </div>
+
     <!-- Detail Modal -->
     <div id="detail-modal" class="detail-modal">
         <div class="detail-content font-jp">
@@ -2283,7 +2444,9 @@
                         glassLabel: "グラス選択:", glassShort: "ショート", glassRocks: "ロック", glassCollins: "ロング", glassCocktail: "カクテル",
                         dayEndTitle: "Day End", dayEndSubtitle: "営業終了", dailyEarningsLabel: "本日の売上", totalAssetsLabel: "総資産",
                         upgradesTitle: "アップグレード", nextDayButton: "次の日へ", startButton: "ゲーム開始",
+                        gameStartBtn: "開始",
                         purchased: "購入済", recipe: "レシピ", ice: "氷", garnishPrompt: "仕上げは？",
+                        helpTitle: "📖 遊び方",
                         resultSuccess: "成功！ 😋", resultFail: "失敗... 😖", resultSecret: "シークレット！ 🍸",
                         reasonRecipe: "（レシピ）", reasonIce: "（氷）", reasonGlass: "（グラス）",
                         bossIncoming: "【特別客 来店】",
@@ -2305,6 +2468,8 @@
                         interiorEquipped: "✓ 使用中",
                         interiorOwned: "所持",
                         interiorBuy: "購入",
+                        okawari: "おかわり！",
+                        okawariMsg: "もう一杯、同じのを頼むよ！",
                         // Settings
                         settingsTitle: "⚙️ 設定",
                         languageLabel: "🌐 言語 / Language",
@@ -2314,7 +2479,7 @@
                         // Help
                         helpTitle: "📖 遊び方",
                         helpViewBtn: "📖 遊び方を見る",
-                        helpClose: "✖ 閉じる &amp; ゲーム開始",
+                        helpClose: "✖ 閉じる & ゲーム開始",
                         helpBasicsTitle: "🎮 基本ルール",
                         helpBasicsText: "お客さんが注文したカクテルを作って、たくさん稼ごう！",
                         helpMakingTitle: "🍸 カクテルの作り方",
@@ -2401,7 +2566,7 @@
                             // --- NOON ---
                             { time: "noon", name: "ハゲた商人", image: 'images/noon/bald_merchant.png', quotes: { order: ["儲かりそうな黄金色の酒を。"], success: ["これは金運が上がりそうだ！"], fail: ["安酒の味がするな。"], wrongGlass: ["中身はいいが、器が安っぽいな。"], chat: { any: ["金こそが力だ。", "いい商談があったんだ。"], day: ["昼飯時の商談はうまくいく。", "市場の相場を見てきた。"] } } },
                             { time: "noon", name: "そばかすの町娘", image: 'images/noon/freckle_girl.png', quotes: { order: ["さっぱりしたのがいいな。"], success: ["スッキリして美味しい！"], fail: ["なんか変な味…"], wrongGlass: ["あれ？このグラスじゃない気がする…"], chat: { any: ["最近、新しい服を買ったの。", "隣の家の犬が可愛いのよ。"], day: ["お買い物に行ってきたの。", "お天気よくて最高！"] } } },
-                            { time: "noon", name: "学者", image: 'images/noon/scholar_man.png', quotes: { order: ["知性を刺激する一杯を所望する。"], success: ["ふむ、論理的な味わいだ。"], fail: ["非科学的な味だ。"], wrongGlass: ["ふむ、容器の選択に誤謬があるようだ。"], chat: { any: ["この世界の理を解明したい。", "古い文献を探している。"], day: ["図書館の帰りでね。", "昼下がりの読書は至福だ。"] } } },
+                            { time: "noon", name: "学者", image: 'images/noon/scholar_man.png', quotes: { order: ["知性を刺激する一杯を所望する。"], success: ["ふむ、論理的な味わいだ。"], fail: ["非科学的な味だ。"], wrongGlass: ["ふむ、論理的な味わいだ。"], chat: { any: ["この世界の理を解明したい。", "古い文献を探している。"], day: ["図書館の帰りでね。", "昼下がりの読書は至福だ。"] } } },
                             { time: "noon", name: "貴婦人", image: 'images/noon/pink_lady.png', quotes: { order: ["わたくしに相応しい上品なものを。"], success: ["オホホ、悪くなくてよ。"], fail: ["なんて下品な味！"], wrongGlass: ["あら、グラスの趣味が悪くてよ。"], chat: { any: ["今度の舞踏会、楽しみですわ。", "このドレス、特注品なのよ。"], day: ["お茶会も飽きましたわ。", "日差しが肌によくないわ。"] } } },
                             { time: "noon", name: "町娘", image: 'images/noon/town_girl.png', quotes: { order: ["可愛い色のカクテルお願い！"], success: ["映える～！最高！"], fail: ["可愛くないしマズい…"], wrongGlass: ["このグラスじゃ映えないよ～"], chat: { any: ["あの兵士さん、カッコいいよね。", "流行りのスイーツ食べた？"], day: ["ランチの後のデザート代わり。", "友達と待ち合わせなの。"] } } },
                             { time: "noon", name: "商人の妻", image: 'images/noon/merchant_wife.png', quotes: { order: ["夫には内緒で…強いのを。"], success: ["あら、酔っちゃいそう。"], fail: ["夫の稼ぎの方がマシね。"], wrongGlass: ["あら、もっといいグラスはないの？"], chat: { any: ["うちの人は働きすぎなの。", "へそくり、貯まってるわよ。"], day: ["昼下がりの情事…なんてね。", "買い物ついでに寄ったの。"] } } },
@@ -2485,6 +2650,8 @@
                         interiorEquipped: "✓ Equipped",
                         interiorOwned: "Owned",
                         interiorBuy: "Buy",
+                        okawari: "Another one!",
+                        okawariMsg: "Give me another one of the same!",
                         // Settings
                         settingsTitle: "⚙️ Settings",
                         languageLabel: "🌐 Language / 言語",
@@ -2639,7 +2806,7 @@
                         { id: 'neon', name: 'ネオン', nameEn: 'Neon', price: 6000, description: 'パーティー向けカラフル', descEn: 'Colorful party lights', customerBonus: ['dancer', 'bard'] }
                     ],
                     bgm: [
-                        { id: 'jazz', name: 'ジャズ', nameEn: 'Jazz', price: 0, description: '落ち着いたジャズ', descEn: 'Relaxing jazz', customerBonus: [] },
+                        { id: 'standard_jazz', name: 'ジャズ', nameEn: 'Jazz', price: 0, description: '落ち着いたジャズ', descEn: 'Standard Jazz', customerBonus: [] },
                         { id: 'medieval', name: '中世風', nameEn: 'Medieval', price: 4000, description: 'リュートの調べ', descEn: 'Lute melodies', customerBonus: ['knight', 'princess'] },
                         { id: 'tavern', name: '酒場風', nameEn: 'Tavern', price: 4000, description: '賑やかな酒場BGM', descEn: 'Lively tavern music', customerBonus: ['sailor', 'mercenary'] }
                     ]
@@ -2675,16 +2842,19 @@
                     interior: {
                         wallpaper: 'classic',
                         lighting: 'warm',
-                        bgm: 'jazz'
+                        bgm: 'standard_jazz'
                     },
                     ownedInterior: {
                         wallpaper: ['classic'],
                         lighting: ['warm'],
-                        bgm: ['jazz']
+                        bgm: ['standard_jazz']
                     },
                     isMysteryMode: false,
                     // === SOCIAL FEATURES ===
-                    hasMatchmade: false
+                    // === SAVE SLOTS & AVATAR ===
+                    currentSaveSlot: 1,
+                    avatar: 'images/night/bartender_man.png',
+                    timer: 300 // Added explicitly to match startDay/updateTimer logic
                 };
 
                 // --- Sound Engine ---
@@ -2775,9 +2945,14 @@
                     showMenuButton();
                     updateTitleDisplay();
 
+                    // Initial BGM setup
+                    if (state.interior.bgm) {
+                        applyBGM(state.interior.bgm);
+                    }
+
                     // === PHASE 2: Weather, Events, Reset Drunk ===
                     setRandomWeather(); // Now async but we don't await strictly
-                    checkMysteryTime(); // New Mystery Mode check
+                    // checkMysteryTime(); // Disabled per user request (was causing red screen at 3 AM)
                     checkSeasonalEvent();
                     resetDrunkLevel();
 
@@ -2878,8 +3053,10 @@
 
                     state.totalMoney += state.score;
 
-                    // === NEW: Save progress, check titles, hide menu button ===
+                    // === NEW: Increment day and Save progress ===
+                    state.day++;
                     saveGameData();
+
                     checkTitles();
                     hideMenuButton();
 
@@ -2936,7 +3113,6 @@
                 }
 
                 function startNextDay() {
-                    state.day++;
                     startDay();
                 }
 
@@ -3194,7 +3370,14 @@
 
                 function updateShakerVisual() { const liquidHeight = (state.shakerContents.length / 5) * 100; const currentIngredients = translations[state.language].INGREDIENTS; const mixedColor = state.shakerContents.length > 0 ? '#' + state.shakerContents.reduce((avg, key) => { let c = currentIngredients[key].color.substring(1); avg[0] += parseInt(c.substring(0, 2), 16); avg[1] += parseInt(c.substring(2, 4), 16); avg[2] += parseInt(c.substring(4, 6), 16); return avg; }, [0, 0, 0]).map(c => Math.round(c / state.shakerContents.length).toString(16).padStart(2, '0')).join('') : 'transparent'; dom.shakerContentsEl.style.background = `linear-gradient(to top, ${mixedColor} 0%, ${mixedColor} ${liquidHeight}%, transparent ${liquidHeight}%)`; dom.shakerIceCubesEl.innerHTML = ''; if (state.shakerHasIce) { for (let i = 0; i < 5; i++) { const ice = document.createElement('div'); ice.className = 'ice-cube'; ice.style.cssText = `width:${Math.random() * 10 + 15}px; height:${Math.random() * 10 + 15}px; left:${Math.random() * 70}%; bottom:${Math.random() * (liquidHeight > 20 ? liquidHeight - 20 : 0)}%; transform:rotate(${Math.random() * 90}deg);`; dom.shakerIceCubesEl.appendChild(ice); } } }
                 function showFloatingText(text, color, element) { const el = document.createElement('div'); el.className = 'floating-text'; el.textContent = text; el.style.color = color; element.appendChild(el); setTimeout(() => el.remove(), 1500); }
-                function showDialogue(lines) { dom.customerDialogueEl.textContent = lines[Math.floor(Math.random() * lines.length)]; dom.customerDialogueEl.classList.add('show'); }
+                function showDialogue(lines) {
+                    if (typeof lines === 'string') {
+                        dom.customerDialogueEl.textContent = lines;
+                    } else if (Array.isArray(lines)) {
+                        dom.customerDialogueEl.textContent = lines[Math.floor(Math.random() * lines.length)];
+                    }
+                    dom.customerDialogueEl.classList.add('show');
+                }
                 function updateScore() { if (state.score < 0) state.score = 0; dom.scoreEl.textContent = state.score.toLocaleString(); }
                 function updateUIDisplays() { dom.dayDisplayEl.textContent = state.day; dom.moneyDisplayEl.textContent = state.totalMoney.toLocaleString(); }
 
@@ -3255,15 +3438,17 @@
                 function scheduleHappyHour() { const delay = Math.random() * 20000 + 15000; state.happyHourTimeout = setTimeout(startHappyHour, delay); }
                 function startHappyHour() { if (!state.isGameRunning) return; state.isHappyHour = true; dom.happyHourBannerEl.classList.remove('hidden'); playSound('happyHour'); }
 
-                function generateOrder(forcedCustomer = null) { // Added forcedCustomer parameter back for boss logic
+                function generateOrder(forcedCustomer = null, isOkawari = false) {
                     state.canInteract = false;
-                    if (state.currentCustomer) {
+                    if (state.currentCustomer && !isOkawari) {
                         dom.customerEl.classList.remove('slide-in', 'angry');
                         dom.customerEl.classList.add('slide-out');
                         dom.orderBubbleEl.style.opacity = '0';
                         dom.customerDialogueEl.classList.remove('show');
-                        dom.recipeDisplayEl.style.opacity = '0';
+                        if (dom.dialogueEl) dom.dialogueEl.classList.add('opacity-0');
                     }
+
+                    const delay = isOkawari ? 0 : 800;
                     setTimeout(() => {
                         state.hasTalked = false; // Reset talk status for new customer
                         if (!state.isGameRunning && !state.bossEncounterActive) return; // Check bossEncounterActive instead of isBossActive
@@ -3287,9 +3472,11 @@
                         if (potentialCustomers.length === 0) potentialCustomers = currentLangData.CUSTOMERS;
 
                         // Special Customers Chance
-                        if (forcedCustomer) { // If a boss is forced
+                        if (forcedCustomer) { // If a boss is forced or Okawari
                             state.currentCustomer = forcedCustomer;
-                            state.bossEncounterActive = true; // Ensure boss mode is active
+                            if (!isOkawari) {
+                                state.bossEncounterActive = true; // Ensure boss mode is active ONLY if not okawari
+                            }
                         } else if (Math.random() < 0.10 && state.timeOfDay === 'night') { // Millionaire (Night only)
                             state.currentCustomer = JSON.parse(JSON.stringify(currentLangData.MILLIONAIRE_CUSTOMER));
                         } else if (Math.random() < 0.05 && state.timeOfDay === 'night') { // Death/Witch (Night only)
@@ -3304,9 +3491,10 @@
 
                         dom.customerDialogueEl.classList.remove('show');
                         dom.customerEl.src = state.currentCustomer.image;
-                        dom.customerNameEl.textContent = state.currentCustomer.name;
-                        dom.customerEl.classList.remove('slide-out');
-                        dom.customerEl.classList.add('slide-in');
+                        if (!isOkawari) {
+                            dom.customerEl.classList.remove('slide-out', 'angry');
+                            dom.customerEl.classList.add('slide-in');
+                        }
                         dom.customerEl.style.opacity = '1'; // Ensure visible
 
                         // Generate Cocktail Order
@@ -3360,15 +3548,20 @@
                             }
 
                             dom.orderBubbleEl.style.opacity = '1';
-                            showDialogue(state.currentCustomer.quotes.order);
+                            showDialogue(isOkawari ? currentLangData.okawariMsg : state.currentCustomer.quotes.order);
                             updateRecipeDisplay();
+                            if (isOkawari) {
+                                showFloatingText(currentLangData.okawari, '#f472b6', dom.customerEl);
+                                playSound('tip');
+                            }
 
+                            state.canInteract = true;
                             // Glass Selection: Default to Collins, user can change it
                             state.selectedGlass = 'collins';
                             updateGlassVisuals('collins');
                             state.canInteract = true;
                         }, 700); // Wait for slide-in animation
-                    }, state.currentCustomer ? 700 : 0); // Wait for slide-out animation (if exiting)
+                    }, delay); // Wait for slide-out animation (if exiting)
                 }
 
                 function updateRecipeDisplay() {
@@ -3436,17 +3629,20 @@
                     }, 800);
                 };
 
-                function proceedToNextCustomer() {
+                function proceedToNextCustomer(wasSuccess = false) {
                     resetShaker();
-                    generateOrder();
+
+                    // Low probability of "Okawari" (20%) - ONLY on success
+                    const isOkawari = wasSuccess && Math.random() < 0.2 && state.currentCustomer && !state.bossEncounterActive;
+                    generateOrder(isOkawari ? state.currentCustomer : null, isOkawari);
                 }
 
-                function proceedAfterCustomer() {
+                function proceedAfterCustomer(wasSuccess = false) {
                     if (state.bossEncounterActive) {
                         state.bossEncounterActive = false;
                         setTimeout(endDay, 1000);
                     } else {
-                        proceedToNextCustomer();
+                        proceedToNextCustomer(wasSuccess);
                     }
                 }
 
@@ -3460,7 +3656,7 @@
                     // Just show success immediately for this phase
                     setTimeout(() => {
                         showFloatingText(`${GARNISHES[garnish] || '👌'} Perfect!`, '#22c55e', dom.cocktailGlassEl);
-                        setTimeout(proceedAfterCustomer, 1500);
+                        setTimeout(() => proceedAfterCustomer(true), 1500);
                     }, 500);
                 }
 
@@ -3576,7 +3772,7 @@
                             setTimeout(() => showFloatingText("New Recipe Discovered!", "#fff", dom.scoreDisplayEl), 1000);
                         }
 
-                        setTimeout(proceedAfterCustomer, 2000);
+                        setTimeout(() => proceedAfterCustomer(true), 2000);
                     } else if (ingredientMatch && iceMatch && !glassMatch) {
                         // === WRONG GLASS SCENARIO ===
                         // Feedback on Wrong Glass (Custom Quote + Gentler Penalty)
@@ -3597,7 +3793,7 @@
                         // Neutral expression if possible, or keep normal
                         // dom.customerEl.classList.add('angry'); // Maybe don't make them angry for just glass?
                         playSound('fail'); // Or maybe a different sound? 'fail' is okay for now.
-                        setTimeout(proceedAfterCustomer, 2000);
+                        setTimeout(() => proceedAfterCustomer(false), 2000);
 
                     } else {
                         // Feedback on failure (Total Fail)
@@ -3617,7 +3813,7 @@
                         dom.resultTextEl.style.color = '#dc2626';
                         if (state.currentCustomer.name !== currentLangData.DEATH_CUSTOMER.name) dom.customerEl.classList.add('angry');
                         playSound('fail');
-                        setTimeout(proceedAfterCustomer, 2000);
+                        setTimeout(() => proceedAfterCustomer(false), 2000);
                     }
                     updateScore();
                     updateComboDisplay();
@@ -3705,9 +3901,8 @@
 
                 // ... (initialSetup) ...
                 function initialSetup() {
-                    // ... (existing definitions) ...
                     const allElementIds = [
-                        'start-button', 'game-overlay', 'game-container', 'room-container', 'room-day-display',
+                        'initial-start-btn', 'game-overlay', 'game-container', 'room-container', 'room-day-display',
                         'room-money-display', 'daily-earnings-display', 'next-day-button', 'upgrades-section',
                         'bgm-audio', 'day-display', 'money-display', 'combo-display', 'timer-display', 'timer',
                         'score-display', 'score', 'happy-hour-banner', 'customer-area', 'customer-dialogue', 'customer',
@@ -3726,7 +3921,8 @@
                     setupSounds();
 
                     // Bind all buttons
-                    dom.startButtonEl.addEventListener('click', () => { startAudio(); startDay(); });
+                    // Note: initial-start-btn has onclick in HTML, no need for addEventListener here
+                    // if it just calls showSaveSlots().
                     dom.nextDayButtonEl.addEventListener('click', startNextDay);
                     dom.addIceButtonEl.addEventListener('click', () => { if (state.canInteract) addIce(); });
 
@@ -3750,6 +3946,11 @@
 
                     // Initialize Ingredients
                     generateIngredients();
+
+                    // Load BGM List and Start
+                    fetchBGMList().then(() => {
+                        console.log('BGM Tracks initialized');
+                    });
 
                     // Set initial language (load from localStorage or default to Japanese)
                     const savedLang = localStorage.getItem('bartenderLang') || 'ja';
@@ -3951,6 +4152,7 @@
 
                 // --- Save/Load Game Data ---
                 function saveGameData() {
+                    const slotKey = `bartenderSave_${state.currentSaveSlot || 1}`;
                     const saveData = {
                         interior: state.interior,
                         ownedInterior: state.ownedInterior,
@@ -3960,13 +4162,16 @@
                         metCustomers: state.metCustomers,
                         unlockedTitles: state.unlockedTitles,
                         ownedIngredients: state.ownedIngredients,
-                        upgrades: state.upgrades
+                        upgrades: state.upgrades,
+                        totalTalks: state.totalTalks,
+                        avatar: state.avatar || 'images/night/bartender_man.png'
                     };
-                    localStorage.setItem('bartenderSave', JSON.stringify(saveData));
+                    localStorage.setItem(slotKey, JSON.stringify(saveData));
                 }
 
-                function loadGameData() {
-                    const saved = localStorage.getItem('bartenderSave');
+                function loadGameData(slotId) {
+                    const slotKey = `bartenderSave_${slotId || 1}`;
+                    const saved = localStorage.getItem(slotKey);
                     if (saved) {
                         try {
                             const data = JSON.parse(saved);
@@ -3979,21 +4184,123 @@
                             if (data.unlockedTitles) state.unlockedTitles = data.unlockedTitles;
                             if (data.ownedIngredients) state.ownedIngredients = data.ownedIngredients;
                             if (data.upgrades) state.upgrades = data.upgrades;
-                            if (data.totalTalks) state.totalTalks = data.totalTalks; // Load total talks
+                            if (data.totalTalks) state.totalTalks = data.totalTalks;
+                            state.avatar = data.avatar || 'images/night/bartender_man.png';
+                            state.currentSaveSlot = slotId || 1;
                         } catch (e) {
                             console.error('Failed to load save data:', e);
                         }
                     }
                 }
 
+                function showSaveSlots() {
+                    document.getElementById('title-screen-content').classList.add('hidden');
+                    document.getElementById('slot-selection-content').classList.remove('hidden');
+                    renderSaveSlots();
+                }
+
+                function hideSaveSlots() {
+                    document.getElementById('title-screen-content').classList.remove('hidden');
+                    document.getElementById('slot-selection-content').classList.add('hidden');
+                }
+
+                function renderSaveSlots() {
+                    const grid = document.getElementById('save-slots-grid');
+                    if (!grid) return;
+                    grid.innerHTML = '';
+
+                    for (let i = 1; i <= 3; i++) {
+                        const key = `bartenderSave_${i}`;
+                        const saved = localStorage.getItem(key);
+                        let data = null;
+                        if (saved) {
+                            try { data = JSON.parse(saved); } catch (e) { }
+                        }
+
+                        const card = document.createElement('div');
+                        card.className = "bg-slate-800/80 p-6 rounded-2xl border-2 border-slate-700 flex flex-col items-center gap-4 relative overflow-hidden";
+
+                        if (data) {
+                            card.innerHTML = `
+                                <button onclick="deleteSave(${i})" class="absolute top-2 right-2 text-red-500 hover:text-red-400 text-xl p-2">🗑️</button>
+                                <img src="${data.avatar || 'images/night/bartender_man.png'}" class="w-24 h-24 rounded-full border-2 border-amber-500/50 bg-black/40">
+                                <div class="text-center">
+                                    <div class="text-amber-400 font-jp font-bold text-xl">Slot ${i}</div>
+                                    <div class="text-white font-jp text-lg">Day ${data.day || 1}</div>
+                                    <div class="text-green-400 font-bold">¥${(data.totalMoney || 0).toLocaleString()}</div>
+                                </div>
+                                <button onclick="loadAndStart(${i})" class="w-full py-3 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg font-jp transition-all hover:scale-105">ロード</button>
+                            `;
+                        } else {
+                            card.innerHTML = `
+                                <div class="w-24 h-24 rounded-full border-2 border-slate-700 border-dashed flex items-center justify-center text-slate-600 text-4xl">?</div>
+                                <div class="text-center">
+                                    <div class="text-slate-500 font-jp font-bold text-xl">Slot ${i}</div>
+                                    <div class="text-slate-600 font-jp">空きスロット</div>
+                                </div>
+                                <button onclick="openCharacterSelection(${i})" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg font-jp transition-all hover:scale-105">冒険を始める</button>
+                            `;
+                        }
+                        grid.appendChild(card);
+                    }
+                }
+
+                function deleteSave(slotId) {
+                    const confirmMsg = state.language === 'ja' ? `スロット ${slotId} のデータを削除しますか？` : `Delete slot ${slotId} data?`;
+                    if (confirm(confirmMsg)) {
+                        localStorage.removeItem(`bartenderSave_${slotId}`);
+                        renderSaveSlots();
+                    }
+                }
+
+                function loadAndStart(slotId) {
+                    loadGameData(slotId);
+                    document.getElementById('game-overlay').classList.add('opacity-0');
+                    setTimeout(() => {
+                        document.getElementById('game-overlay').classList.add('hidden');
+                        startAudio();
+                        startDay();
+                    }, 500);
+                }
+
+                let pendingSlotId = 1;
+                function openCharacterSelection(slotId) {
+                    pendingSlotId = slotId;
+                    document.getElementById('slot-selection-content').classList.add('hidden');
+                    document.getElementById('character-selection-content').classList.remove('hidden');
+                }
+
+                window.selectCharacter = function (avatarPath) {
+                    startNewGame(pendingSlotId, avatarPath);
+                }
+
+                function startNewGame(slotId, avatarPath) {
+                    state.currentSaveSlot = slotId;
+                    state.avatar = avatarPath;
+                    state.totalMoney = 0;
+                    state.day = 1;
+                    state.discoveredCocktails = [];
+                    state.metCustomers = [];
+                    state.unlockedTitles = ['beginner'];
+                    state.ownedIngredients = [...STARTER_INGREDIENTS];
+                    state.upgrades = JSON.parse(JSON.stringify(UPGRADES_DATA));
+                    state.totalTalks = 0;
+
+                    saveGameData();
+
+                    document.getElementById('game-overlay').classList.add('opacity-0');
+                    setTimeout(() => {
+                        document.getElementById('game-overlay').classList.add('hidden');
+                        startAudio();
+                        startDay();
+                    }, 500);
+                }
+
                 function saveGameManually() {
-                    // Restriction: Cannot save during business hours (when game is running)
-                    // We check state.isGameRunning using a more robust check if needed, 
-                    // but isGameRunning is true during the day.
-                    if (state.isGameRunning && state.day > 0 && !document.getElementById('day-end-screen').classList.contains('active')) {
-                        // Check if we are really in "action" mode. 
-                        // Actually, isGameRunning is set to false in endDay().
-                        // So if isGameRunning is true, we are in business hours.
+                    const dayEndScreen = document.getElementById('day-end-screen');
+                    const isDayEnd = dayEndScreen && dayEndScreen.classList.contains('active');
+
+                    if (state.isGameRunning && state.day > 0 && !isDayEnd) {
                         const msg = state.language === 'ja' ? "営業中はセーブできません！" : "Cannot save during business hours!";
                         showFloatingText(msg, '#ef4444', document.getElementById('menu-overlay'));
                         playSound('fail');
@@ -4006,9 +4313,11 @@
                     playSound('success');
                 }
 
-                // Make interior functions globally accessible
-                window.openInteriorShop = openInteriorShop;
-                window.closeInteriorShop = closeInteriorShop;
+                window.showSaveSlots = showSaveSlots;
+                window.hideSaveSlots = hideSaveSlots;
+                window.deleteSave = deleteSave;
+                window.loadAndStart = loadAndStart;
+                window.openCharacterSelection = openCharacterSelection;
                 window.saveGameManually = saveGameManually;
 
                 // --- Photo Mode Functions ---
@@ -4800,12 +5109,29 @@
                 // ===========================================
                 // JUKEBOX FEATURE
                 // ===========================================
-                const BGM_TRACKS = [
-                    { id: 'jazz', name: '🍸 Standard Jazz', src: 'background.mp3', icon: '🎷' },
-                    { id: 'lofi', name: '🌙 Midnight Lo-Fi', src: 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3', icon: '🎧' },
-                    { id: 'piano', name: '☔ Rainy Piano', src: 'https://cdn.pixabay.com/download/audio/2022/03/10/audio_c8c8a73467.mp3?filename=relaxing-piano-music-for-study-and-focus-107040.mp3', icon: '🎹' },
-                    { id: 'cafe', name: '☕ Cafe Ambience', src: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=jazz-cafe-15946.mp3', icon: '🍩' }
-                ];
+                let BGM_TRACKS = [];
+
+                async function fetchBGMList() {
+                    try {
+                        const response = await fetch('http://localhost:3000/api/music');
+                        if (response.ok) {
+                            const tracks = await response.json();
+                            BGM_TRACKS = tracks.map(t => ({
+                                id: t.id,
+                                name: t.name,
+                                src: t.src,
+                                icon: t.icon || '🎵'
+                            }));
+                            console.log('BGM List loaded:', BGM_TRACKS);
+                        }
+                    } catch (e) {
+                        console.error('Failed to fetch BGM list:', e);
+                        // Fallback
+                        BGM_TRACKS = [
+                            { id: 'standard_jazz', name: 'Standard Jazz', src: 'jukebox/standard_jazz.mp3', icon: '🎷' }
+                        ];
+                    }
+                }
 
                 function openJukebox() {
                     const listEl = document.getElementById('jukebox-list');
@@ -4842,6 +5168,20 @@
                 window.openJukebox = openJukebox;
                 window.closeJukebox = closeJukebox;
 
+                function applyBGM(trackId) {
+                    const track = BGM_TRACKS.find(t => t.id === trackId);
+                    if (!track) return;
+
+                    const audioEl = dom.bgmAudioEl;
+                    if (audioEl) {
+                        audioEl.src = track.src;
+                        audioEl.loop = true;
+                        if (!state.isMysteryMode) {
+                            audioEl.play().catch(e => console.log('Playback failed:', e));
+                        }
+                    }
+                }
+
                 function changeBGM(trackId) {
                     const track = BGM_TRACKS.find(t => t.id === trackId);
                     if (!track) return;
@@ -4850,20 +5190,7 @@
                     state.ownedInterior.bgm = [trackId];
                     saveGameData();
 
-                    const audioEl = dom.bgmAudioEl;
-                    if (audioEl) {
-                        const isPlaying = !audioEl.paused;
-                        audioEl.src = track.src;
-                        audioEl.loop = true;
-
-                        // Handle play/pause if needed, or just auto-play if it was playing
-                        if (state.isMysteryMode) {
-                            // Don't play in mystery mode
-                        } else {
-                            audioEl.play().catch(e => console.log('Playback failed:', e));
-                        }
-                    }
-
+                    applyBGM(trackId);
                     openJukebox();
                     showFloatingText(`🎵 BGM: ${track.name}`, '#8b5cf6', dom.gameContainerEl);
                 }
@@ -4960,13 +5287,93 @@
 
                 // (Jukebox logic exists above)
 
+                function openInquiry() {
+                    document.getElementById('inquiry-overlay').classList.remove('hidden');
+                    closeMenu();
+                }
+
+                function closeInquiry() {
+                    document.getElementById('inquiry-overlay').classList.add('hidden');
+                }
+
+                async function submitInquiry() {
+                    const type = document.getElementById('inquiry-type').value;
+                    const message = document.getElementById('inquiry-message').value;
+                    const btn = document.getElementById('inquiry-submit-btn');
+                    const status = document.getElementById('inquiry-status');
+
+                    if (!message) return alert('メッセージを入力してください');
+
+                    btn.disabled = true;
+                    status.classList.remove('hidden');
+                    status.textContent = '🕊️ 伝書鳩を準備中...';
+                    status.className = "mt-4 text-center text-yellow-400";
+
+                    try {
+                        const response = await fetch('http://localhost:3000/api/report', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ type, message, sender: 'Player' })
+                        });
+
+                        if (response.ok) {
+                            status.textContent = '✉️ 送信完了！ 伝書鳩が飛び立ちました。';
+                            status.className = "mt-4 text-center text-green-400";
+                            setTimeout(() => {
+                                closeInquiry();
+                                document.getElementById('inquiry-message').value = '';
+                                btn.disabled = false;
+                                status.classList.add('hidden');
+                            }, 2000);
+                        } else {
+                            throw new Error('Server error');
+                        }
+                    } catch (e) {
+                        status.textContent = '❌ 送信に失敗しました。鳩が道に迷ったようです。';
+                        status.className = "mt-4 text-center text-red-400";
+                        btn.disabled = false;
+                    }
+                }
+
+                window.openInquiry = openInquiry;
+                window.closeInquiry = closeInquiry;
+                window.submitInquiry = submitInquiry;
+
+                // Expose all UI functions
+                window.showSaveSlots = showSaveSlots;
+                window.hideSaveSlots = hideSaveSlots;
+                window.deleteSave = deleteSave;
+                window.loadAndStart = loadAndStart;
+                window.openCharacterSelection = openCharacterSelection;
+                window.selectCharacter = selectCharacter;
+                window.startNewGame = startNewGame;
+                window.openInteriorShop = openInteriorShop;
+                window.closeInteriorShop = closeInteriorShop;
+                window.openCocktailEncyclopedia = openCocktailEncyclopedia;
+                window.closeCocktailEncyclopedia = closeCocktailEncyclopedia;
+                window.openCustomerEncyclopedia = openCustomerEncyclopedia;
+                window.closeCustomerEncyclopedia = closeCustomerEncyclopedia;
+                window.openTitleList = openTitleList;
+                window.closeTitleList = closeTitleList;
+                window.openSettings = openSettings;
+                window.closeSettings = closeSettings;
+                window.saveGameManually = saveGameManually;
+                window.closeTitleCelebration = closeTitleCelebration;
+                window.openMarket = openMarket;
+                window.closeMarket = closeMarket;
+                window.closeDetailModal = closeDetailModal;
+                window.openJukebox = openJukebox;
+                window.closeJukebox = closeJukebox;
+                window.openMatchmaking = openMatchmaking;
+                window.closeMatchmaking = closeMatchmaking;
+
                 initialSetup();
             } catch (e) {
                 alert("Init Error: " + e.message + "\n" + e.stack);
             }
         });
     </script>
-    <!-- Jukebox Overlay -->
+    <!-- Jukebox Overlay (Merged) -->
     <div id="jukebox-overlay" class="fixed inset-0 bg-black/90 hidden z-[60] flex items-center justify-center">
         <div class="bg-gray-900 p-6 rounded-xl max-w-md w-full border-4 border-indigo-500 relative shadow-2xl">
             <button onclick="closeJukebox()"
@@ -4980,21 +5387,6 @@
                 <!-- Tracks injected by JS -->
             </div>
 
-            <div class="mt-6 text-center text-gray-500 text-xs font-jp">
-                Playing: <span id="current-bgm-name" class="text-indigo-400 font-bold">Standard Jazz</span>
-            </div>
-        </div>
-    </div>
-    <!-- Jukebox Overlay -->
-    <div id="jukebox-overlay" class="fixed inset-0 bg-black/90 hidden z-[60] flex items-center justify-center">
-        <div class="bg-gray-900 p-6 rounded-xl max-w-md w-full border-4 border-indigo-500 relative shadow-2xl">
-            <button onclick="closeJukebox()"
-                class="absolute top-2 right-2 text-gray-400 hover:text-white text-2xl">&times;</button>
-            <h2
-                class="text-2xl font-bold mb-6 font-jp text-indigo-300 text-center flex items-center justify-center gap-2">
-                <span class="animate-spin-slow text-3xl">💿</span> Jukebox
-            </h2>
-            <div id="jukebox-list" class="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar"></div>
             <div class="mt-6 text-center text-gray-500 text-xs font-jp">
                 Playing: <span id="current-bgm-name" class="text-indigo-400 font-bold">Standard Jazz</span>
             </div>
