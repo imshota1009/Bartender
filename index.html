@@ -3055,6 +3055,7 @@
 
                     // === NEW: Increment day and Save progress ===
                     state.day++;
+                    showFloatingText("Autosaving...", '#4ade80', dom.gameContainerEl);
                     saveGameData();
 
                     checkTitles();
@@ -3451,6 +3452,7 @@
                     const delay = isOkawari ? 0 : 800;
                     setTimeout(() => {
                         state.hasTalked = false; // Reset talk status for new customer
+                        if (dom.talkButtonEl) dom.talkButtonEl.classList.remove('opacity-50', 'cursor-not-allowed'); // Reset button visual
                         if (!state.isGameRunning && !state.bossEncounterActive) return; // Check bossEncounterActive instead of isBossActive
 
                         const currentLangData = translations[state.language];
@@ -4152,21 +4154,32 @@
 
                 // --- Save/Load Game Data ---
                 function saveGameData() {
-                    const slotKey = `bartenderSave_${state.currentSaveSlot || 1}`;
-                    const saveData = {
-                        interior: state.interior,
-                        ownedInterior: state.ownedInterior,
-                        totalMoney: state.totalMoney,
-                        day: state.day,
-                        discoveredCocktails: state.discoveredCocktails,
-                        metCustomers: state.metCustomers,
-                        unlockedTitles: state.unlockedTitles,
-                        ownedIngredients: state.ownedIngredients,
-                        upgrades: state.upgrades,
-                        totalTalks: state.totalTalks,
-                        avatar: state.avatar || 'images/night/bartender_man.png'
-                    };
-                    localStorage.setItem(slotKey, JSON.stringify(saveData));
+                    try {
+                        if (!state.currentSaveSlot) {
+                            console.warn("Save slot missing, defaulting to slot 1");
+                            state.currentSaveSlot = 1;
+                        }
+                        const slotKey = `bartenderSave_${state.currentSaveSlot}`;
+                        const saveData = {
+                            interior: state.interior,
+                            ownedInterior: state.ownedInterior,
+                            totalMoney: state.totalMoney,
+                            day: state.day,
+                            discoveredCocktails: state.discoveredCocktails,
+                            metCustomers: state.metCustomers,
+                            unlockedTitles: state.unlockedTitles,
+                            ownedIngredients: state.ownedIngredients,
+                            upgrades: state.upgrades,
+                            totalTalks: state.totalTalks,
+                            avatar: state.avatar || 'images/night/bartender_man.png'
+                        };
+                        localStorage.setItem(slotKey, JSON.stringify(saveData));
+                        console.log(`Game saved to slot ${state.currentSaveSlot}`);
+                        // showFloatingText("Autosaved", '#4ade80', dom.gameContainerEl); // Optional feedback
+                    } catch (e) {
+                        console.error("Save failed:", e);
+                        showFloatingText("Save Failed!", '#ef4444', document.body);
+                    }
                 }
 
                 function loadGameData(slotId) {
@@ -4259,7 +4272,8 @@
                     setTimeout(() => {
                         document.getElementById('game-overlay').classList.add('hidden');
                         startAudio();
-                        startDay();
+                        showView('room');
+                        updateRoomUI();
                     }, 500);
                 }
 
