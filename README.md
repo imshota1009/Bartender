@@ -24,8 +24,8 @@
 - 👤 **Unique Customers**  
   Different professions with distinct lines and reactions.  
 
-- 🎵 **BGM & Sound Effects**  
-  Background music, bottle sounds, shaking effects (with ON/OFF toggle).  
+- 🎵 **Jukebox (BGM Selection)**  
+  Change the atmosphere with different BGM tracks like Jazz, Medieval, or Tavern music.  
 
 - 🌃 **Beautiful Design**  
   Moody bar backgrounds and stylish fonts enhance the atmosphere.  
@@ -33,10 +33,13 @@
 - 🏠 **Bar Interior Customization** *(NEW!)*  
   Change wallpapers (Classic/Modern/Fantasy) and lighting (Warm/Cool/Neon) to personalize your bar!
 
-- 📸 **Photo Mode** *(NEW!)*  
+- 🔮 **Fortune Cocktail** *(NEW!)*  
+  Check your daily luck! Get a lucky color and cocktail recommendation based on your zodiac sign.
+
+- 📸 **Photo Mode**  
   Take screenshots of your cocktails and share on Twitter/LINE!
 
-- 📱 **Gesture Shake** *(NEW!)*  
+- 📱 **Gesture Shake**  
   Shake your smartphone to mix cocktails - uses accelerometer for real motion detection!
 
 - 🌦️ **Weather & Events**  

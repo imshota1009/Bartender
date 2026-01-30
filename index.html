@@ -18,6 +18,9 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Playfair+Display:wght@700&family=M+PLUS+Rounded+1c:wght@700&display=swap"
         rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=Cinzel:wght@400;700&display=swap"
+        rel="stylesheet">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <style>
@@ -29,6 +32,25 @@
             overscroll-behavior: none;
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
         }
 
         .font-title {
@@ -51,6 +73,8 @@
             border: 4px solid #4a5568;
             /* Ensure bottom doesn't get cut off on mobile browsers with bars */
             padding-bottom: env(safe-area-inset-bottom);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         @media (min-width: 768px) {
@@ -570,8 +594,95 @@
             opacity: 1;
         }
 
-        #shake-counter.shake-pulse {
-            animation: shake-pulse 0.2s ease-out;
+        #shake-counter .shake-pulse {
+            animation: pulse-red 0.5s ease-in-out;
+        }
+
+        .animate-spin-slow {
+            animation: spin 3s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .jukebox-track {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: #1f2937;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .jukebox-track:hover {
+            background: #374151;
+            transform: translateX(4px);
+        }
+
+        .jukebox-track.active {
+            border-color: #6366f1;
+            background: #312e81;
+        }
+
+        .jukebox-track .icon {
+            font-size: 1.5rem;
+            margin-right: 12px;
+        }
+
+        .jukebox-track .info {
+            flex-grow: 1;
+        }
+
+        .jukebox-track .title {
+            font-weight: bold;
+            color: #e5e7eb;
+            font-family: 'Noto Serif JP', serif;
+        }
+
+        /* Photo Mode Styles - Hide UI */
+        body.photo-mode .no-capture {
+            display: none !important;
+        }
+
+        body.photo-mode #control-panel,
+        body.photo-mode footer,
+        body.photo-mode #help-button,
+        body.photo-mode #settings-btn,
+        body.photo-mode #language-switch,
+        body.photo-mode #daily-earnings-display {
+            display: none !important;
+        }
+
+        /* Mystery Mode Styles */
+        body.mystery-mode {
+            filter: grayscale(0.8) contrast(1.2) brightness(0.7);
+            background-image: radial-gradient(circle at center, #000 0%, #1a0505 100%);
+        }
+
+        body.mystery-mode #game-container {
+            border-color: #4a0404;
+            box-shadow: 0 0 50px rgba(74, 4, 4, 0.5);
+        }
+
+        body.mystery-mode .ingredient-bottle {
+            filter: grayscale(1) !important;
+        }
+
+        body.mystery-mode #customer-dialogue {
+            font-family: 'Courier New', monospace;
+            color: #ff0000;
+            text-shadow: 2px 2px 0px #000;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid #ff0000;
         }
 
         @keyframes shake-pulse {
@@ -1633,10 +1744,15 @@
                 </div>
                 <div class="flex flex-col items-start justify-end gap-2 md:gap-4">
                     <div class="flex gap-2 md:gap-4 ml-auto items-center">
+                        <button id="jukebox-btn" onclick="openJukebox()"
+                            class="bg-indigo-600 rounded-full p-2 w-10 h-10 flex items-center justify-center text-white hover:bg-indigo-500 shadow-lg transition-transform hover:scale-105 z-20"
+                            title="BGM Select">
+                            🎵
+                        </button>
                         <div id="timer-display"
                             class="bg-red-600 rounded-full px-3 py-1 md:px-4 md:py-2 transition-all duration-300 flex-shrink-0">
                             <h2 class="text-lg md:text-2xl font-bold"><span data-lang-key="timeLabel">時間</span>: <span
-                                    id="timer">60</span></h2>
+                                    id="timer">300</span></h2>
                         </div>
                         <!-- Language Switch (Hidden - Japanese Only) -->
                         <div id="language-switch" class="lang-switch" style="display: none;">
@@ -1668,8 +1784,8 @@
                     </div>
 
                     <div id="customer-dialogue" class="font-jp z-20"></div>
-                    <img id="customer" class="mb-2 opacity-0 transform -translate-x-12 max-h-[180px] z-10" src=""
-                        alt="Customer">
+                    <img id="customer" class="mb-2 opacity-0 transform -translate-x-12 max-h-[180px] z-20 relative"
+                        src="" alt="Customer">
                     <div id="order-bubble"
                         class="bg-gray-200 p-2 md:p-3 rounded-lg shadow-lg text-gray-800 flex flex-col items-center gap-1 md:gap-2 opacity-0 transition-opacity duration-300 absolute bottom-0 right-0 md:static z-20">
                         <div id="customer-name" class="font-bold font-jp text-xs md:text-sm text-gray-600"></div>
@@ -1702,12 +1818,12 @@
                                 class="bg-purple-500 hover:bg-purple-600 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">グラス</button>
                             <button id="ingredient-button" data-lang-key="ingredientsLabel"
                                 class="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">材料</button>
+                            <button id="fortune-button" onclick="openFortuneMenu()"
+                                class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">今日の占い</button>
                             <div class="flex gap-1">
                                 <button id="shake-button" data-lang-key="shake"
                                     class="w-full bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">シェイク</button>
                             </div>
-                            <button id="camera-mode-btn" class="w-full font-jp" data-lang-key="cameraMode">📷
-                                カメラモード</button>
                             <button id="gesture-shake-btn"
                                 class="w-full bg-pink-500 hover:bg-pink-600 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md"
                                 onclick="toggleGestureShake()">
@@ -1718,8 +1834,13 @@
                                 onclick="openPhotoMode()">
                                 📸 撮影
                             </button>
-                            <button id="talk-button" data-lang-key="talk"
-                                class="w-full bg-yellow-600 hover:bg-yellow-700 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">話す</button>
+                            <div class="flex gap-1 w-full">
+                                <button id="talk-button" data-lang-key="talk"
+                                    class="bg-yellow-600 hover:bg-yellow-700 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md flex-1">話す</button>
+                                <button id="matchmake-button"
+                                    class="bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md hidden flex-1"
+                                    onclick="openMatchmaking()">紹介する</button>
+                            </div>
                             <button id="reset-button" data-lang-key="reset"
                                 class="bg-red-700 hover:bg-red-800 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md">リセット</button>
                         </div>
@@ -1734,6 +1855,7 @@
                                 <div id="final-cocktail"
                                     class="absolute left-0 right-0 mx-auto w-full h-0 bg-transparent"></div>
                             </div>
+
                         </div>
                         <div id="result-text" class="text-xl md:text-2xl font-bold mt-2 h-8 font-jp text-center"></div>
                     </div>
@@ -1823,8 +1945,7 @@
     </div>
 
     <!-- Room View -->
-    <div id="room-container"
-        class="game-view mx-auto rounded-2xl p-6 md:p-8 flex-col relative overflow-hidden hidden bg-gray-800">
+    <div id="room-container" class="game-view mx-auto rounded-2xl p-6 md:p-8 flex-col relative hidden bg-gray-800">
         <header class="text-center pb-4 border-b-2 border-white/10 mb-6">
             <h1 class="font-title text-5xl" data-lang-key="dayEndTitle">Day End</h1>
             <p class="font-jp text-lg text-gray-300"><span data-lang-key="dayLabel">Day</span> <span
@@ -1851,8 +1972,7 @@
 
             <!-- Secrets Section Removed -->
         </main>
-        <footer class="text-center pt-6 pb-24 md:pb-6 flex flex-col gap-4 items-center"
-            style="padding-bottom: max(6rem, env(safe-area-inset-bottom));">
+        <footer class="text-center pt-6 pb-24 md:pb-6 flex flex-col gap-4 items-center" style="padding-bottom: 200px;">
             <button onclick="openMarket()"
                 class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg text-xl shadow-lg transition-transform transform font-jp">🛒
                 材料を仕入れる</button>
@@ -1870,60 +1990,44 @@
             <h1 class="help-title" data-lang-key="helpTitle">📖 遊び方ガイド</h1>
 
             <div class="help-section">
-                <div class="help-section-title">🎯 ゲームの目的</div>
-                <div class="help-section-content">
+                <div class="help-section-title" data-lang-key="helpBasicsTitle">🎯 ゲームの目的</div>
+                <div class="help-section-content" data-lang-key="helpBasicsText">
                     お客さんの注文通りにカクテルを作って、お金を稼ごう！<br>
                     7日間営業して、伝説のバーテンダーを目指そう！
                 </div>
             </div>
 
             <div class="help-section">
-                <div class="help-section-title">🍸 カクテルの作り方</div>
+                <div class="help-section-title" data-lang-key="helpMakingTitle">🍸 カクテルの作り方</div>
                 <div class="help-section-content">
                     <div class="help-step">
                         <div class="help-step-number">1</div>
-                        <div>お客さんの注文を確認（右上にレシピが表示される）</div>
+                        <div data-lang-key="helpStep1">お客さんの注文を確認（右上にレシピが表示される）</div>
                     </div>
                     <div class="help-step">
                         <div class="help-step-number">2</div>
-                        <div><strong>「材料」ボタン</strong>をタップして、必要な材料を選ぶ</div>
+                        <div data-lang-key="helpStep2"><strong>「材料」ボタン</strong>をタップして、必要な材料を選ぶ</div>
                     </div>
                     <div class="help-step">
                         <div class="help-step-number">3</div>
-                        <div>レシピに氷が書いてあったら<strong>「氷を入れる」ボタン</strong>をタップ</div>
+                        <div data-lang-key="helpStep3">レシピに氷が書いてあったら<strong>「氷を入れる」ボタン</strong>をタップ</div>
                     </div>
                     <div class="help-step">
                         <div class="help-step-number">4</div>
-                        <div><strong>グラスをタップ</strong>して、正しいグラスを選ぶ</div>
+                        <div data-lang-key="helpStep4"><strong>グラスをタップ</strong>して、正しいグラスを選ぶ</div>
                     </div>
                     <div class="help-step">
                         <div class="help-step-number">5</div>
-                        <div><strong>「シェイク」ボタン</strong>でカクテル完成！</div>
+                        <div data-lang-key="helpStep5"><strong>「シェイク」ボタン</strong>でカクテル完成！</div>
                     </div>
                 </div>
             </div>
 
-            <div class="help-section">
-                <div class="help-section-title">📷 カメラモード（実際のコップでシェイク！）</div>
-                <div class="help-section-content">
-                    <div class="help-step">
-                        <div class="help-step-number">1</div>
-                        <div><strong>「📷 カメラモード」ボタン</strong>をタップ</div>
-                    </div>
-                    <div class="help-step">
-                        <div class="help-step-number">2</div>
-                        <div>カメラへのアクセスを許可</div>
-                    </div>
-                    <div class="help-step">
-                        <div class="help-step-number">3</div>
-                        <div>実際のコップを持って、カメラの前で<strong>5回シェイク</strong>！</div>
-                    </div>
-                </div>
-            </div>
+
 
             <div class="help-section">
-                <div class="help-section-title">🔘 ボタンの説明</div>
-                <div class="help-section-content">
+                <div class="help-section-title" data-lang-key="helpButtonsTitle">🔘 ボタンの説明</div>
+                <div class="help-section-content" data-lang-key="helpButtonsText">
                     <ul>
                         <li><strong>材料</strong> - カクテルの材料を選ぶ</li>
                         <li><strong>氷を入れる</strong> - 氷を追加する</li>
@@ -1931,14 +2035,13 @@
                         <li><strong>シェイク</strong> - カクテルを完成させる</li>
                         <li><strong>話す</strong> - お客さんと話す（ボーナスポイント！）</li>
                         <li><strong>リセット</strong> - 作り直す</li>
-                        <li><strong>📷 カメラモード</strong> - カメラでシェイク</li>
                     </ul>
                 </div>
             </div>
 
             <div class="help-section">
-                <div class="help-section-title">⭐ コツ</div>
-                <div class="help-section-content">
+                <div class="help-section-title" data-lang-key="helpTipsTitle">⭐ コツ</div>
+                <div class="help-section-content" data-lang-key="helpTipsText">
                     <ul>
                         <li>レシピ通りに作ると<strong>連続ボーナス</strong>がもらえる！</li>
                         <li>お客さんと<strong>話す</strong>とチップがもらえる</li>
@@ -1948,12 +2051,12 @@
                 </div>
             </div>
 
-            <div class="help-tip">
+            <div class="help-tip" data-lang-key="helpHint">
                 <strong>💡 ヒント</strong>
                 いつでもこの画面を見たいときは、右上の「？」ボタンをタップしてね！
             </div>
 
-            <button id="help-close-btn" class="help-close-btn">わかった！ゲームに戻る</button>
+            <button id="help-close-btn" class="help-close-btn" data-lang-key="helpCloseBtn">わかった！ゲームに戻る</button>
         </div>
     </div>
 
@@ -1963,7 +2066,7 @@
         <h1 class="font-title text-6xl md:text-8xl mb-4">Bartender</h1>
         <button id="start-button" data-lang-key="startButton"
             class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg text-2xl shadow-lg transition-transform transform font-jp button-pulse">ゲーム開始</button>
-        <button id="help-start-btn"
+        <button id="help-start-btn" data-lang-key="helpViewBtn"
             class="mt-4 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg text-lg shadow-lg transition-transform transform font-jp">📖
             遊び方を見る</button>
     </div>
@@ -1981,18 +2084,7 @@
     </div>
 
     <!-- Camera Container for Real Shake -->
-    <div id="camera-container">
-        <video id="camera-video" autoplay playsinline muted></video>
-        <canvas id="camera-canvas"></canvas>
-        <canvas id="skeleton-canvas"></canvas>
-        <div id="detection-status">
-            <span id="detection-icon">🔍</span>
-            <span id="detection-text">認識中...</span>
-        </div>
-        <div id="shake-counter">0</div>
-        <div id="shake-progress"></div>
-        <div id="camera-overlay-text">コップを振ってシェイク！</div>
-    </div>
+
 
     <!-- Story Overlay -->
     <div id="story-overlay">
@@ -2023,6 +2115,10 @@
         </button>
         <button class="menu-btn menu-btn-settings font-jp" onclick="openSettings()" data-lang-key="menuSettings">
             ⚙️ 設定
+        </button>
+        <button class="menu-btn menu-btn-save font-jp text-green-400 border-green-500/50" onclick="saveGameManually()"
+            data-lang-key="menuSave">
+            💾 セーブ
         </button>
         <button class="menu-btn menu-btn-close font-jp" onclick="closeMenu()" data-lang-key="menuClose">
             ✖ 閉じる
@@ -2146,6 +2242,30 @@
         <p class="text-white/60 font-jp mt-4">タップして続ける</p>
     </div>
 
+    <!-- Photo Mode Overlay -->
+    <div id="photo-mode-overlay" class="fixed inset-0 bg-black/80 hidden z-50 flex items-center justify-center">
+        <div class="bg-white p-6 rounded-lg max-w-lg w-full text-center relative shadow-2xl border-4 border-amber-500">
+            <h2 class="text-2xl font-bold mb-4 font-jp text-gray-800">📸 撮影完了！</h2>
+            <div class="border-2 border-gray-300 mb-4 p-2 bg-gray-100 rounded">
+                <canvas id="photo-canvas" class="w-full h-auto rounded shadow-inner"></canvas>
+            </div>
+            <div class="flex gap-4 justify-center">
+                <button onclick="downloadPhoto()"
+                    class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded font-jp flex items-center gap-2">
+                    ⬇️ 保存
+                </button>
+                <button onclick="shareToTwitter()"
+                    class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded font-jp flex items-center gap-2">
+                    🐦 Tweet
+                </button>
+                <button onclick="closePhotoMode()"
+                    class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded font-jp">
+                    閉じる
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // DEBUG: Global Error Handler
         window.onerror = function (msg, url, line, col, error) {
@@ -2189,9 +2309,11 @@
                         settingsTitle: "⚙️ 設定",
                         languageLabel: "🌐 言語 / Language",
                         languageNote: "※ 言語変更は再起動後に反映されます",
+                        menuSave: "💾 セーブ",
                         saveAndRestart: "💾 保存して再起動",
                         // Help
                         helpTitle: "📖 遊び方",
+                        helpViewBtn: "📖 遊び方を見る",
                         helpClose: "✖ 閉じる &amp; ゲーム開始",
                         helpBasicsTitle: "🎮 基本ルール",
                         helpBasicsText: "お客さんが注文したカクテルを作って、たくさん稼ごう！",
@@ -2201,12 +2323,12 @@
                         helpStep3: "レシピに氷が書いてあったら「氷を入れる」ボタンをタップ",
                         helpStep4: "グラスをタップして、正しいグラスを選ぶ",
                         helpStep5: "「シェイク」ボタンでカクテル完成！",
-                        helpCameraTitle: "📷 カメラモード（実際のコップでシェイク！）",
-                        helpCameraStep1: "「📷 カメラモード」ボタンをタップ",
-                        helpCameraStep2: "カメラへのアクセスを許可",
-                        helpCameraStep3: "実際のコップを持って、カメラの前で5回シェイク！",
                         helpButtonsTitle: "🔘 ボタンの説明",
+                        helpButtonsText: "<ul><li><strong>材料</strong> - カクテルの材料を選ぶ</li><li><strong>氷を入れる</strong> - 氷を追加する</li><li><strong>グラス</strong> - グラスの種類を選ぶ</li><li><strong>シェイク</strong> - カクテルを完成させる</li><li><strong>話す</strong> - お客さんと話す（ボーナスポイント！）</li><li><strong>リセット</strong> - 作り直す</li><li><strong>今日の占い</strong> - 毎日の運勢とラッキーカクテルをチェック！</li><li><strong>紹介する</strong> - お客さんをマッチング</li></ul>",
                         helpTipsTitle: "⭐ コツ",
+                        helpTipsText: "<ul><li>レシピ通りに作ると<strong>連続ボーナス</strong>がもらえる！</li><li>お客さんと<strong>話す</strong>とチップがもらえる</li><li>1日の終わりに<strong>アップグレード</strong>を買おう</li><li>時間内にたくさん作れば高得点！</li></ul>",
+                        helpHint: "<strong>💡 ヒント</strong> いつでもこの画面を見たいときは、右上の「？」ボタンをタップしてね！",
+                        helpCloseBtn: "わかった！ゲームに戻る",
                         INGREDIENTS: {
                             vodka: { name: 'ウォッカ', color: '#e0f7fa', glow: '#80deea', alcohol: 40 },
                             gin: { name: 'ジン', color: '#e8f5e9', glow: '#a5d6a7', alcohol: 40 },
@@ -2255,9 +2377,22 @@
                         ],
                         CUSTOMERS: [
                             // --- MORNING ---
-                            { time: "morning", name: "若い農民", image: 'images/morning/young_farmer_man.png', quotes: { order: ["仕事前に精が出るやつを！"], success: ["うめぇ！これで畑仕事も捗る！"], fail: ["うっ…腹が…"], chat: { any: ["今年は雨が少なくて心配だ。", "朝飯前の酒は格別だな！"], morning: ["鶏より早く起きたぜ。", "畑の土の匂いがするだろう？"] } } },
-                            { time: "morning", name: "年配の農婦", image: 'images/morning/old_farmer_woman.png', quotes: { order: ["あったかいミルクとかあるかい？"], success: ["あらあら、美味しいわねぇ。"], fail: ["これ、古くないかい？"], chat: { any: ["腰が痛くてねぇ。", "孫が可愛くて仕方ないのよ。"], morning: ["早起きは三文の得ってね。", "新鮮な野菜を持ってきたわよ。"] } } },
-                            { time: "morning", name: "農民の娘", image: 'images/morning/farmer_girl.png', quotes: { order: ["甘いジュースみたいなのくれる？"], success: ["わぁ！お花畑みたい！"], fail: ["苦い…ぺっ！"], chat: { any: ["将来はお店を持ちたいな。", "お父さんの手伝いは大変。"], morning: ["朝の空気って気持ちいい！", "小鳥さんとお話してきたの。"] } } },
+                            {
+                                time: "morning", name: "若い農民", image: 'images/morning/young_farmer_man.png',
+                                lookingForPartner: true, // Example
+                                worries: { question: "最近、野菜の値段が下がってて…どうすればいい？", choices: [{ text: "新しい野菜を育ててみれば？", outcome: "good" }, { text: "諦めて都会に出よう", outcome: "bad" }, { text: "天候のせいだよ", outcome: "neutral" }] },
+                                quotes: { order: ["仕事前に精が出るやつを！"], success: ["うめぇ！これで畑仕事も捗る！"], fail: ["うっ…腹が…"], chat: { any: ["今年は雨が少なくて心配だ。", "朝飯前の酒は格別だな！"], morning: ["鶏より早く起きたぜ。", "畑の土の匂いがするだろう？"] } }
+                            },
+                            {
+                                time: "morning", name: "年配の農婦", image: 'images/morning/old_farmer_woman.png',
+                                quotes: { order: ["あったかいミルクとかあるかい？"], success: ["あらあら、美味しいわねぇ。"], fail: ["これ、古くないかい？"], chat: { any: ["腰が痛くてねぇ。", "孫が可愛くて仕方ないのよ。"], morning: ["早起きは三文の得ってね。", "新鮮な野菜を持ってきたわよ。"] } }
+                            },
+                            {
+                                time: "morning", name: "農民の娘", image: 'images/morning/farmer_girl.png',
+                                lookingForPartner: true,
+                                worries: { question: "都会に出たいけど、お父さんが反対するの。", choices: [{ text: "夢を追いかけるべきだよ！", outcome: "good" }, { text: "家族を大切にしなよ。", outcome: "neutral" }, { text: "家出しかないね！", outcome: "bad" }] },
+                                quotes: { order: ["甘いジュースみたいなのくれる？"], success: ["わぁ！お花畑みたい！"], fail: ["苦い…ぺっ！"], chat: { any: ["将来はお店を持ちたいな。", "お父さんの手伝いは大変。"], morning: ["朝の空気って気持ちいい！", "小鳥さんとお話してきたの。"] } }
+                            },
                             { time: "morning", name: "村の若者", image: 'images/morning/village_boy.png', quotes: { order: ["なんかカッコイイやつ！"], success: ["おれ、強くなった気がする！"], fail: ["うえぇ…大人の味だ…"], chat: { any: ["冒険者になりたいんだ。", "剣の稽古をしてきたんだぜ。"], morning: ["朝飯食い損ねたんだ。", "今日も特訓だ！"] } } },
                             { time: "morning", name: "麦わら帽子の農夫", image: 'images/morning/straw_farmer.png', quotes: { order: ["喉が渇いた、水代わりの頼む。"], success: ["ふぅ、生き返るわい。"], fail: ["なんだこりゃ、泥水か？"], chat: { any: ["明日は市場に行く日だ。", "カラスが多くて困るわい。"], morning: ["今日も暑くなりそうだ。", "鍬の手入れは欠かせん。"] } } },
                             { time: "morning", name: "花売りの女性", image: 'images/morning/flower_woman.png', quotes: { order: ["お花のように綺麗な一杯を。"], success: ["素敵…香りも素晴らしいわ。"], fail: ["これ、枯れてるわよ。"], chat: { any: ["お花はいかがですか？", "この街は花が似合うわ。"], morning: ["朝露に濡れた花が一番よ。", "今日もいい香りね。"] } } },
@@ -2357,6 +2492,7 @@
                         saveAndRestart: "💾 Save & Restart",
                         // Help
                         helpTitle: "📖 How to Play",
+                        helpViewBtn: "📖 View How to Play",
                         helpClose: "✖ Close & Start Game",
                         helpBasicsTitle: "🎮 Basic Rules",
                         helpBasicsText: "Make the cocktails your customers order and earn money!",
@@ -2371,7 +2507,11 @@
                         helpCameraStep2: "Allow camera access",
                         helpCameraStep3: "Hold a real glass and shake in front of the camera 5 times!",
                         helpButtonsTitle: "🔘 Button Guide",
+                        helpButtonsText: "<ul><li><strong>Ingredients</strong> - Select cocktail ingredients</li><li><strong>Add Ice</strong> - Add ice to the shaker</li><li><strong>Glass</strong> - Choose the glass type</li><li><strong>Shake</strong> - Complete the cocktail</li><li><strong>Talk</strong> - Chat with customers (Bonus points!)</li><li><strong>Reset</strong> - Start over</li><li><strong>📷 Camera Mode</strong> - Shake with camera</li></ul>",
                         helpTipsTitle: "⭐ Tips",
+                        helpTipsText: "<ul><li>Follow the recipe to get <strong>combo bonuses</strong>!</li><li><strong>Talk</strong> to customers for tips</li><li>Buy <strong>upgrades</strong> at the end of each day</li><li>Make as many cocktails as you can for high scores!</li></ul>",
+                        helpHint: "<strong>💡 Hint</strong> Tap the '?' button in the top right to see this screen anytime!",
+                        helpCloseBtn: "Got it! Back to Game",
                         INGREDIENTS: {
                             vodka: { name: 'Vodka', color: '#e0f7fa', glow: '#80deea' },
                             gin: { name: 'Gin', color: '#e8f5e9', glow: '#a5d6a7' },
@@ -2507,7 +2647,7 @@
 
                 // --- Game State ---
                 let state = {
-                    score: 0, timeLeft: 90, timerInterval: null,
+                    score: 0, timeLeft: 300, timerInterval: null,
                     shakerContents: [], shakerHasIce: false, isGameRunning: false,
                     canInteract: true, combo: 0, isHappyHour: false,
                     happyHourTimeout: null, garnishTimeout: null,
@@ -2541,7 +2681,10 @@
                         wallpaper: ['classic'],
                         lighting: ['warm'],
                         bgm: ['jazz']
-                    }
+                    },
+                    isMysteryMode: false,
+                    // === SOCIAL FEATURES ===
+                    hasMatchmade: false
                 };
 
                 // --- Sound Engine ---
@@ -2562,7 +2705,7 @@
                     document.querySelectorAll('[data-lang-key]').forEach(el => {
                         const key = el.dataset.langKey;
                         if (translations[lang][key]) {
-                            el.textContent = translations[lang][key];
+                            el.innerHTML = translations[lang][key];
                         }
                     });
 
@@ -2621,7 +2764,7 @@
                 }
 
                 function startDay() {
-                    Object.assign(state, { score: 0, timer: 90, isGameRunning: false, canInteract: false, combo: 0, isHappyHour: false, currentCustomer: null, currentOrder: null, isBossActive: false, hasTalked: false, timeOfDay: 'morning' });
+                    Object.assign(state, { score: 0, timer: 300, isGameRunning: false, canInteract: false, combo: 0, isHappyHour: false, currentCustomer: null, currentOrder: null, isBossActive: false, hasTalked: false, timeOfDay: 'morning' });
                     dom.gameContainerEl.classList.remove('boss-mode');
 
                     showView('game');
@@ -2633,7 +2776,8 @@
                     updateTitleDisplay();
 
                     // === PHASE 2: Weather, Events, Reset Drunk ===
-                    setRandomWeather();
+                    setRandomWeather(); // Now async but we don't await strictly
+                    checkMysteryTime(); // New Mystery Mode check
                     checkSeasonalEvent();
                     resetDrunkLevel();
 
@@ -2821,7 +2965,15 @@
                 function talk() {
                     if (!state.isGameRunning || !state.canInteract || !state.currentCustomer || state.hasTalked) return;
                     state.hasTalked = true;
+                    if (dom.talkButtonEl) dom.talkButtonEl.classList.add('opacity-50', 'cursor-not-allowed');
 
+                    // Check for serious counseling opportunity (30% chance or specific customer trait)
+                    if (state.currentCustomer.worries && (Math.random() < 0.3 || state.currentCustomer.alwaysWorry)) {
+                        startCounseling();
+                        return;
+                    }
+
+                    // Normal Talk
                     // Time-based Chat Logic
                     let chats = [];
                     const rawChat = state.currentCustomer.quotes.chat;
@@ -2829,27 +2981,198 @@
                     if (Array.isArray(rawChat)) {
                         chats = rawChat;
                     } else if (typeof rawChat === 'object') {
-                        const phase = state.timeOfDay; // Use game time instead of getRealTimePhase
-                        // Combine general 'any' chats with specific time phase chats
+                        const phase = state.timeOfDay;
                         if (rawChat.any) chats = chats.concat(rawChat.any);
                         if (rawChat[phase]) chats = chats.concat(rawChat[phase]);
-
-                        // Fallback if empty (shouldn't happen if data is good)
                         if (chats.length === 0) chats = ["..."];
                     } else {
                         chats = ["..."];
                     }
 
                     showDialogue(chats);
+
                     // Bonus for talking
-                    state.score += 50;
+                    let points = 50 * (state.isHappyHour ? 2 : 1);
+                    state.score += points;
                     updateScore();
-                    showFloatingText("+¥50 (Talk)", "#60a5fa", dom.customerEl.parentElement);
+                    showFloatingText(`+¥${points} (Talk)`, "#60a5fa", dom.customerEl.parentElement);
                     playSound('pop', '8n');
 
-                    // === NEW: Record talk for title system ===
+                    // Record talk
                     recordTalk();
+
+                    // Check Matchmaking
+                    if (state.currentCustomer.lookingForPartner && !state.hasMatchmade) {
+                        const btn = document.getElementById('matchmake-button');
+                        if (btn) btn.classList.remove('hidden');
+                    }
                 }
+
+                // === COUNSELING MODE ===
+                function startCounseling() {
+                    const worryData = state.currentCustomer.worries;
+                    if (!worryData) return;
+
+                    const overlay = document.getElementById('counseling-overlay');
+                    const img = document.getElementById('counseling-customer-img');
+                    const question = document.getElementById('counseling-question');
+                    const choicesDiv = document.getElementById('counseling-choices');
+
+                    if (img) img.src = state.currentCustomer.image;
+                    if (question) question.textContent = `「${worryData.question}」`;
+
+                    if (choicesDiv) {
+                        choicesDiv.innerHTML = '';
+                        worryData.choices.forEach(choice => {
+                            const btn = document.createElement('button');
+                            btn.className = "w-full bg-slate-700 hover:bg-slate-600 text-white p-3 rounded-lg font-jp text-left border border-slate-500 hover:border-pink-400 transition-colors";
+                            btn.textContent = choice.text;
+                            btn.onclick = () => resolveCounseling(choice);
+                            choicesDiv.appendChild(btn);
+                        });
+                    }
+
+                    if (overlay) overlay.classList.remove('hidden');
+                }
+
+                function resolveCounseling(choice) {
+                    document.getElementById('counseling-overlay').classList.add('hidden');
+                    const outcome = choice.outcome; // 'good', 'bad', 'neutral'
+
+                    let points = 0;
+                    let color = '#fff';
+                    let response = "";
+
+                    if (outcome === 'good') {
+                        points = 150;
+                        color = '#f472b6'; // pink
+                        response = "ありがとう！心が軽くなったよ！";
+                        playSound('success');
+                        createHearts(dom.customerEl);
+                    } else if (outcome === 'bad') {
+                        points = -20;
+                        color = '#94a3b8';
+                        response = "そうかなぁ…余計に落ち込んできた。";
+                        playSound('fail');
+                    } else {
+                        points = 50;
+                        color = '#60a5fa';
+                        response = "なるほど、一理あるね。";
+                        playSound('pop');
+                    }
+
+                    if (state.isHappyHour) points *= 2;
+                    state.score += points;
+                    updateScore();
+                    showFloatingText(`${points > 0 ? '+' : ''}${points}`, color, dom.scoreDisplayEl);
+                    showDialogue([response]);
+
+                    // Check Matchmaking opportunity even after counseling
+                    if (state.currentCustomer.lookingForPartner && !state.hasMatchmade) {
+                        const btn = document.getElementById('matchmake-button');
+                        if (btn) btn.classList.remove('hidden');
+                    }
+                }
+
+                function createHearts(targetEl) {
+                    if (!targetEl) return;
+                    for (let i = 0; i < 8; i++) {
+                        const heart = document.createElement('div');
+                        heart.textContent = '💖';
+                        heart.style.position = 'absolute';
+                        const rect = targetEl.getBoundingClientRect();
+                        // Position relative to parent container usually, but let's try fixed or simple offset
+                        // Simpler: append to parent of customerEl
+                        heart.style.left = (targetEl.offsetLeft + targetEl.offsetWidth / 2) + 'px';
+                        heart.style.top = (targetEl.offsetTop + targetEl.offsetHeight / 2) + 'px';
+                        heart.style.fontSize = '24px';
+                        heart.style.pointerEvents = 'none';
+                        heart.style.zIndex = '100';
+                        heart.animate([
+                            { transform: 'translate(0,0) scale(0)', opacity: 1 },
+                            { transform: `translate(${Math.random() * 100 - 50}px, -100px) scale(1.5)`, opacity: 0 }
+                        ], {
+                            duration: 1000 + Math.random() * 500,
+                            easing: 'ease-out'
+                        });
+                        targetEl.parentElement.appendChild(heart);
+                        setTimeout(() => heart.remove(), 1500);
+                    }
+                }
+
+                // === MATCHMAKING SYSTEM ===
+                function openMatchmaking() {
+                    if (!state.isGameRunning || !state.canInteract) return;
+                    const overlay = document.getElementById('matchmaking-overlay');
+                    const list = document.getElementById('matchmaking-list');
+                    if (!list) return;
+
+                    list.innerHTML = '';
+
+                    // Filter valid candidates (met customers excluding current one and special chars)
+                    const candidates = state.metCustomers.filter(name =>
+                        name !== state.currentCustomer.name &&
+                        !['???', 'Death', 'Millionaire', 'Boss'].some(x => name.includes(x))
+                    );
+
+                    if (candidates.length === 0) {
+                        list.innerHTML = '<div class="text-white font-jp text-center p-4">まだ紹介できる人がいないようだ…</div>';
+                    } else {
+                        candidates.forEach(name => {
+                            // Find image URL from CUSTOMERS data
+                            const langData = translations[state.language];
+                            const customerData = [...langData.CUSTOMERS].find(c => c.name === name);
+                            const img = customerData ? customerData.image : 'images/icon.png'; // Fallback
+
+                            const btn = document.createElement('div');
+                            btn.className = "flex items-center gap-3 bg-slate-800 p-2 rounded cursor-pointer hover:bg-slate-700 border border-slate-600 shrink-0";
+                            btn.innerHTML = `
+                                <img src="${img}" class="w-10 h-10 rounded-full bg-slate-900 object-cover">
+                                <span class="text-white font-jp font-bold">${name}</span>
+                             `;
+                            btn.onclick = () => resolveMatchmaking(name);
+                            list.appendChild(btn);
+                        });
+                    }
+
+                    if (overlay) overlay.classList.remove('hidden');
+                }
+
+                function closeMatchmaking() {
+                    const overlay = document.getElementById('matchmaking-overlay');
+                    if (overlay) overlay.classList.add('hidden');
+                }
+
+                function resolveMatchmaking(partnerName) {
+                    closeMatchmaking();
+                    state.hasMatchmade = true;
+                    const btn = document.getElementById('matchmake-button');
+                    if (btn) btn.classList.add('hidden');
+
+                    // Compatibility Logic (Simple Mockup)
+                    // In future, use compatibility tags. For now, 50% chance.
+                    const isSuccess = Math.random() > 0.5;
+
+                    if (isSuccess) {
+                        showDialogue([`えっ、${partnerName}さん？ 気になってたんだ！紹介して！`]);
+                        createHearts(dom.customerEl);
+                        state.score += 300;
+                        updateScore();
+                        showFloatingText("+300 Match!", "#ec4899", dom.scoreDisplayEl);
+                        playSound('success');
+                    } else {
+                        showDialogue([`うーん、${partnerName}さんはちょっとタイプじゃないかな…`]);
+                        state.score += 50;
+                        updateScore();
+                        showFloatingText("+50", "#94a3b8", dom.scoreDisplayEl);
+                    }
+                }
+
+                window.openMatchmaking = openMatchmaking;
+                window.closeMatchmaking = closeMatchmaking;
+                window.startCounseling = startCounseling;
+                window.resolveCounseling = resolveCounseling;
+                window.resolveMatchmaking = resolveMatchmaking;
                 // Removed unused shake function
 
                 function resetShaker() { state.shakerContents = []; state.shakerHasIce = false; updateShakerVisual(); dom.finalCocktailEl.classList.remove('animate-fill'); dom.finalCocktailEl.style.height = '0%'; dom.resultTextEl.textContent = ''; }
@@ -3001,6 +3324,18 @@
                             state.currentOrder = { ...randomCocktail, isConstraint: false };
                         }
 
+                        // === MYSTERY MODE OVERRIDE ===
+                        if (state.isMysteryMode) {
+                            state.currentCustomer.name = "???";
+                            // Scramble quotes
+                            state.currentCustomer.quotes = {
+                                order: ["..."],
+                                success: ["...フフ..."],
+                                fail: ["...チッ..."],
+                                chat: ["..."]
+                            };
+                        }
+
                         setTimeout(() => {
                             dom.orderTextEl.textContent = state.currentOrder.isConstraint
                                 ? state.currentOrder.text
@@ -3130,6 +3465,7 @@
                 }
 
                 function validateCocktail() {
+
                     const currentLangData = translations[state.language];
                     dom.finalCocktailEl.style.background = dom.shakerContentsEl.style.background;
                     dom.finalCocktailEl.style.setProperty('--fill-height', '80%');
@@ -3400,8 +3736,7 @@
                     // Force hide old shelf logic if any
                     if (dom.ingredientShelfEl) dom.ingredientShelfEl.style.display = 'none';
 
-                    // Camera Mode Button
-                    document.getElementById('camera-mode-btn').addEventListener('click', toggleCameraMode);
+
 
                     // Help Button Logic
                     const helpButton = document.getElementById('help-button');
@@ -3433,342 +3768,7 @@
                     applyInteriorVisuals();
                 }
 
-                // ========================================
-                // CAMERA SHAKE FEATURE - Hand Tracking with MediaPipe
-                // ========================================
 
-                let cameraState = {
-                    isActive: false,
-                    stream: null,
-                    hands: null,
-                    camera: null,
-                    shakeCount: 0,
-                    shakesRequired: 5,
-                    lastShakeTime: 0,
-                    shakeCooldown: 200,
-                    previousWristY: null,
-                    handDetected: false,
-                    shakeDirection: null
-                };
-
-                const cameraVideo = document.getElementById('camera-video');
-                const cameraCanvas = document.getElementById('camera-canvas');
-                const skeletonCanvas = document.getElementById('skeleton-canvas');
-                const cameraContainer = document.getElementById('camera-container');
-                const shakeCounter = document.getElementById('shake-counter');
-                const shakeProgress = document.getElementById('shake-progress');
-                const cameraModeBtn = document.getElementById('camera-mode-btn');
-                const cameraOverlayText = document.getElementById('camera-overlay-text');
-                const detectionStatus = document.getElementById('detection-status');
-                const detectionIcon = document.getElementById('detection-icon');
-                const detectionText = document.getElementById('detection-text');
-                let skeletonCtx = null;
-
-                async function toggleCameraMode() {
-                    if (cameraState.isActive) {
-                        stopCamera();
-                    } else {
-                        await startCamera();
-                    }
-                }
-
-                async function startCamera() {
-                    try {
-                        // Request camera access
-                        cameraState.stream = await navigator.mediaDevices.getUserMedia({
-                            video: {
-                                facingMode: 'user',
-                                width: { ideal: 640 },
-                                height: { ideal: 480 }
-                            },
-                            audio: false
-                        });
-
-                        cameraVideo.srcObject = cameraState.stream;
-                        await cameraVideo.play();
-
-                        // Setup skeleton canvas
-                        skeletonCanvas.width = cameraVideo.videoWidth || 320;
-                        skeletonCanvas.height = cameraVideo.videoHeight || 240;
-                        skeletonCtx = skeletonCanvas.getContext('2d');
-
-                        // Initialize MediaPipe Hands
-                        cameraState.hands = new Hands({
-                            locateFile: (file) => {
-                                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
-                            }
-                        });
-
-                        cameraState.hands.setOptions({
-                            maxNumHands: 2,
-                            modelComplexity: 1,
-                            minDetectionConfidence: 0.5,
-                            minTrackingConfidence: 0.5
-                        });
-
-                        cameraState.hands.onResults(onHandResults);
-
-                        // Start camera loop
-                        cameraState.camera = new Camera(cameraVideo, {
-                            onFrame: async () => {
-                                if (cameraState.isActive && cameraState.hands) {
-                                    await cameraState.hands.send({ image: cameraVideo });
-                                }
-                            },
-                            width: 640,
-                            height: 480
-                        });
-                        cameraState.camera.start();
-
-                        cameraState.isActive = true;
-                        cameraState.shakeCount = 0;
-                        cameraContainer.classList.add('active');
-                        cameraModeBtn.classList.add('active');
-                        cameraModeBtn.innerHTML = '📷 カメラON';
-                        updateShakeUI();
-
-                        // Show guidance
-                        showFloatingText("📷 手認識モード開始！", "#fbbf24", dom.gameContainerEl);
-
-                    } catch (error) {
-                        console.error('Camera error:', error);
-                        let errorMsg = state.language === 'ja'
-                            ? 'カメラにアクセスできませんでした'
-                            : 'Could not access camera';
-                        alert(errorMsg);
-                    }
-                }
-
-                function stopCamera() {
-                    if (cameraState.camera) {
-                        cameraState.camera.stop();
-                        cameraState.camera = null;
-                    }
-                    if (cameraState.stream) {
-                        cameraState.stream.getTracks().forEach(track => track.stop());
-                        cameraState.stream = null;
-                    }
-                    if (cameraState.hands) {
-                        cameraState.hands.close();
-                        cameraState.hands = null;
-                    }
-
-                    cameraState.isActive = false;
-                    cameraState.previousWristY = null;
-                    cameraState.shakeCount = 0;
-                    cameraState.handDetected = false;
-
-                    cameraContainer.classList.remove('active');
-                    cameraModeBtn.classList.remove('active');
-                    cameraModeBtn.innerHTML = '📷 カメラモード';
-                    shakeCounter.classList.remove('active');
-                    detectionStatus.classList.remove('detected', 'not-detected');
-                }
-
-                function onHandResults(results) {
-                    if (!skeletonCtx) return;
-
-                    // Clear skeleton canvas
-                    skeletonCtx.save();
-                    skeletonCtx.clearRect(0, 0, skeletonCanvas.width, skeletonCanvas.height);
-
-                    // Mirror the canvas for selfie view
-                    skeletonCtx.translate(skeletonCanvas.width, 0);
-                    skeletonCtx.scale(-1, 1);
-
-                    if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                        // Hand detected!
-                        if (!cameraState.handDetected) {
-                            cameraState.handDetected = true;
-                            updateDetectionStatus(true);
-                        }
-
-                        for (const landmarks of results.multiHandLandmarks) {
-                            // Draw hand skeleton
-                            drawHandSkeleton(landmarks);
-
-                            // Detect shake motion using wrist position
-                            const wrist = landmarks[0]; // Wrist landmark
-                            detectShakeMotion(wrist);
-                        }
-                    } else {
-                        // No hand detected
-                        if (cameraState.handDetected) {
-                            cameraState.handDetected = false;
-                            updateDetectionStatus(false);
-                        }
-                        cameraState.previousWristY = null;
-                        cameraState.shakeDirection = null;
-                    }
-
-                    skeletonCtx.restore();
-                }
-
-                function drawHandSkeleton(landmarks) {
-                    const w = skeletonCanvas.width;
-                    const h = skeletonCanvas.height;
-
-                    // Hand connections
-                    const connections = [
-                        [0, 1], [1, 2], [2, 3], [3, 4], // Thumb
-                        [0, 5], [5, 6], [6, 7], [7, 8], // Index
-                        [0, 9], [9, 10], [10, 11], [11, 12], // Middle
-                        [0, 13], [13, 14], [14, 15], [15, 16], // Ring
-                        [0, 17], [17, 18], [18, 19], [19, 20], // Pinky
-                        [5, 9], [9, 13], [13, 17] // Palm
-                    ];
-
-                    // Draw connections (lines)
-                    skeletonCtx.strokeStyle = '#00ff00';
-                    skeletonCtx.lineWidth = 3;
-                    skeletonCtx.shadowColor = '#00ff00';
-                    skeletonCtx.shadowBlur = 10;
-
-                    for (const [start, end] of connections) {
-                        const startPoint = landmarks[start];
-                        const endPoint = landmarks[end];
-                        skeletonCtx.beginPath();
-                        skeletonCtx.moveTo(startPoint.x * w, startPoint.y * h);
-                        skeletonCtx.lineTo(endPoint.x * w, endPoint.y * h);
-                        skeletonCtx.stroke();
-                    }
-
-                    // Draw landmarks (dots)
-                    for (let i = 0; i < landmarks.length; i++) {
-                        const landmark = landmarks[i];
-                        const x = landmark.x * w;
-                        const y = landmark.y * h;
-
-                        // Different colors for fingertips
-                        if ([4, 8, 12, 16, 20].includes(i)) {
-                            skeletonCtx.fillStyle = '#ff00ff'; // Fingertips - magenta
-                            skeletonCtx.shadowColor = '#ff00ff';
-                        } else if (i === 0) {
-                            skeletonCtx.fillStyle = '#ffff00'; // Wrist - yellow
-                            skeletonCtx.shadowColor = '#ffff00';
-                        } else {
-                            skeletonCtx.fillStyle = '#00ffff'; // Other joints - cyan
-                            skeletonCtx.shadowColor = '#00ffff';
-                        }
-
-                        skeletonCtx.beginPath();
-                        skeletonCtx.arc(x, y, i === 0 ? 8 : 5, 0, 2 * Math.PI);
-                        skeletonCtx.fill();
-                    }
-
-                    skeletonCtx.shadowBlur = 0;
-                }
-
-                function detectShakeMotion(wrist) {
-                    const now = Date.now();
-                    const currentY = wrist.y;
-
-                    if (cameraState.previousWristY !== null) {
-                        const deltaY = currentY - cameraState.previousWristY;
-                        const shakeThreshold = 0.03; // Sensitivity
-
-                        // Detect direction change (up-down motion)
-                        if (Math.abs(deltaY) > shakeThreshold) {
-                            const newDirection = deltaY > 0 ? 'down' : 'up';
-
-                            // Count shake when direction changes
-                            if (cameraState.shakeDirection && cameraState.shakeDirection !== newDirection) {
-                                if (now - cameraState.lastShakeTime > cameraState.shakeCooldown) {
-                                    cameraState.lastShakeTime = now;
-                                    onShakeDetected();
-                                }
-                            }
-                            cameraState.shakeDirection = newDirection;
-                        }
-                    }
-
-                    cameraState.previousWristY = currentY;
-                }
-
-                function updateDetectionStatus(detected) {
-                    if (detected) {
-                        detectionStatus.classList.add('detected');
-                        detectionStatus.classList.remove('not-detected');
-                        detectionIcon.textContent = '✋';
-                        detectionText.textContent = state.language === 'ja' ? '認識OK！' : 'Detected!';
-                    } else {
-                        detectionStatus.classList.remove('detected');
-                        detectionStatus.classList.add('not-detected');
-                        detectionIcon.textContent = '🔍';
-                        detectionText.textContent = state.language === 'ja' ? '手を映してね' : 'Show hand';
-                    }
-                }
-
-                function onShakeDetected() {
-                    if (!state.isGameRunning || !state.canInteract) return;
-                    if (state.shakerContents.length === 0 && !state.shakerHasIce) return;
-
-                    cameraState.shakeCount++;
-                    updateShakeUI();
-
-                    // Visual feedback
-                    cameraContainer.classList.add('motion-flash');
-                    setTimeout(() => cameraContainer.classList.remove('motion-flash'), 150);
-
-                    // Animate shaker
-                    dom.shakerAreaEl.classList.add('shake-animation');
-                    setTimeout(() => dom.shakerAreaEl.classList.remove('shake-animation'), 200);
-
-                    // Play shake sound
-                    playSound('shake');
-
-                    // Pulse the counter
-                    shakeCounter.classList.add('shake-pulse');
-                    setTimeout(() => shakeCounter.classList.remove('shake-pulse'), 200);
-
-                    // Check if shake complete
-                    if (cameraState.shakeCount >= cameraState.shakesRequired) {
-                        completeShakeWithCamera();
-                    }
-                }
-
-                function updateShakeUI() {
-                    shakeCounter.textContent = cameraState.shakeCount;
-                    shakeCounter.classList.add('active');
-
-                    const progress = (cameraState.shakeCount / cameraState.shakesRequired) * 100;
-                    shakeProgress.style.width = Math.min(progress, 100) + '%';
-
-                    // Update overlay text based on progress
-                    if (cameraState.shakeCount === 0) {
-                        cameraOverlayText.textContent = state.language === 'ja'
-                            ? '手を上下に振ってシェイク！'
-                            : 'Shake your hand up and down!';
-                    } else if (cameraState.shakeCount < cameraState.shakesRequired) {
-                        const remaining = cameraState.shakesRequired - cameraState.shakeCount;
-                        cameraOverlayText.textContent = state.language === 'ja'
-                            ? `あと${remaining}回！`
-                            : `${remaining} more!`;
-                    }
-                }
-
-                function completeShakeWithCamera() {
-                    // Show completion effect
-                    showFloatingText("🎉 シェイク完了！", "#22c55e", cameraContainer);
-                    cameraOverlayText.textContent = state.language === 'ja' ? '完成！' : 'Done!';
-                    shakeProgress.style.width = '100%';
-
-                    // Reset camera shake count
-                    cameraState.shakeCount = 0;
-
-                    // Trigger the actual cocktail finishing logic
-                    setTimeout(() => {
-                        updateShakeUI();
-                        validateCocktail();
-                    }, 500);
-                }
-
-                // Clean up camera when game ends
-                const originalEndDay = endDay;
-                endDay = function () {
-                    stopCamera();
-                    originalEndDay();
-                };
 
                 // =============================================
                 // ===== NEW FEATURES: MENU & ENCYCLOPEDIAS =====
@@ -3957,15 +3957,24 @@
                             if (data.unlockedTitles) state.unlockedTitles = data.unlockedTitles;
                             if (data.ownedIngredients) state.ownedIngredients = data.ownedIngredients;
                             if (data.upgrades) state.upgrades = data.upgrades;
+                            if (data.totalTalks) state.totalTalks = data.totalTalks; // Load total talks
                         } catch (e) {
                             console.error('Failed to load save data:', e);
                         }
                     }
                 }
 
+                function saveGameManually() {
+                    saveGameData();
+                    const msg = state.language === 'ja' ? "セーブしました！" : "Game Saved!";
+                    showFloatingText(msg, '#4ade80', document.getElementById('menu-overlay'));
+                    playSound('success');
+                }
+
                 // Make interior functions globally accessible
                 window.openInteriorShop = openInteriorShop;
                 window.closeInteriorShop = closeInteriorShop;
+                window.saveGameManually = saveGameManually;
 
                 // --- Photo Mode Functions ---
                 let photoData = null;
@@ -4448,9 +4457,60 @@
                 // ===== PHASE 2: WEATHER, DRUNK, ANIMATIONS =====
 
                 // --- Weather System ---
-                function setRandomWeather() {
-                    const weathers = ['sunny', 'sunny', 'sunny', 'rainy', 'snowy']; // 60% sunny
-                    state.currentWeather = weathers[Math.floor(Math.random() * weathers.length)];
+                // --- Weather System (Real API Integration) ---
+                async function fetchRealWeather() {
+                    try {
+                        // Default to Tokyo if geolocation fails
+                        let lat = 35.6895;
+                        let lon = 139.6917;
+
+                        // Try to get user location
+                        try {
+                            const position = await new Promise((resolve, reject) => {
+                                navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 3000 });
+                            });
+                            lat = position.coords.latitude;
+                            lon = position.coords.longitude;
+                        } catch (e) {
+                            console.log("Location access denied or timeout, using default (Tokyo).");
+                        }
+
+                        const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+                        const data = await response.json();
+                        const code = data.current_weather.weathercode;
+
+                        // Map WMO codes to game weather
+                        // 0-3: Sunny/Cloudy, 45-48: Fog, 51-67: Rain, 71-77: Snow, 80-82: Rain Showers, 85-86: Snow Showers, 95-99: Thunderstorm
+                        if (code >= 71 && code <= 77 || code === 85 || code === 86) {
+                            return 'snowy';
+                        } else if (code >= 51 || code >= 80 || code >= 95) {
+                            return 'rainy';
+                        } else {
+                            return 'sunny';
+                        }
+                    } catch (e) {
+                        console.error("Weather API failed:", e);
+                        return null; // Fallback to random
+                    }
+                }
+
+                async function setRandomWeather() {
+                    // 1. Try Real Weather first
+                    const realWeather = await fetchRealWeather();
+
+                    if (realWeather) {
+                        state.currentWeather = realWeather;
+                        // Notification for Real Weather
+                        const msg = state.language === 'ja'
+                            ? `現在の天気(${state.currentWeather === 'sunny' ? '晴れ' : state.currentWeather === 'rainy' ? '雨' : '雪'})を反映しました`
+                            : `Synced with local weather: ${state.currentWeather}`;
+                        showFloatingText(msg, '#60a5fa', dom.gameContainerEl);
+                    } else {
+                        // 2. Fallback to Random
+                        const weathers = ['sunny', 'sunny', 'sunny', 'rainy', 'snowy'];
+                        state.currentWeather = weathers[Math.floor(Math.random() * weathers.length)];
+                    }
+
                     updateWeatherDisplay();
                     createWeatherEffects();
                 }
@@ -4591,6 +4651,26 @@
                     updateDrunkVisuals();
                 }
 
+                function checkMysteryTime() {
+                    const hour = new Date().getHours();
+                    // Mystery Hour: 0:00 to 3:59
+                    const isMystery = (hour >= 0 && hour < 4);
+
+                    state.isMysteryMode = isMystery;
+                    const body = document.body;
+
+                    if (isMystery) {
+                        body.classList.add('mystery-mode');
+                        if (dom.bgmAudioEl) dom.bgmAudioEl.pause(); // Stop BGM
+                        showFloatingText(state.language === 'ja' ? "丑三つ時..." : "The Witching Hour...", "#ff0000", dom.gameContainerEl);
+                    } else {
+                        body.classList.remove('mystery-mode');
+                        // BGM will be handled by regular logic
+                    }
+                }
+
+
+
                 // --- Sparkle Animation ---
                 function createSparkles(targetElement) {
                     if (!targetElement) return;
@@ -4631,12 +4711,316 @@
                     if (wave) wave.remove();
                 }
 
+                // ===========================================
+                // GESTURE & PHOTO FEATURES (Restored)
+                // ===========================================
+                // (Gesture logic exists around line 3800)
+
+                // --- Photo Mode Functions ---
+                window.openPhotoMode = function () {
+                    document.body.classList.add('photo-mode');
+                    setTimeout(() => {
+                        html2canvas(document.getElementById('game-container'), {
+                            backgroundColor: null,
+                            scale: 2
+                        }).then(canvas => {
+                            document.body.classList.remove('photo-mode');
+                            const photoCanvas = document.getElementById('photo-canvas');
+                            const ctx = photoCanvas.getContext('2d');
+                            photoCanvas.width = canvas.width;
+                            photoCanvas.height = canvas.height;
+                            ctx.drawImage(canvas, 0, 0);
+
+                            // Watermark
+                            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                            ctx.font = '24px "Noto Serif JP", serif';
+                            ctx.fillText('🍸 Bartender Game', 20, canvas.height - 20);
+
+                            document.getElementById('photo-mode-overlay').classList.remove('hidden');
+                        }).catch(err => {
+                            document.body.classList.remove('photo-mode');
+                            console.error(err);
+                            alert('Photo capture failed');
+                        });
+                    }, 200);
+                };
+
+                window.closePhotoMode = function () {
+                    document.getElementById('photo-mode-overlay').classList.add('hidden');
+                };
+
+                window.downloadPhoto = function () {
+                    const canvas = document.getElementById('photo-canvas');
+                    const link = document.createElement('a');
+                    link.download = `bartender-${Date.now()}.png`;
+                    link.href = canvas.toDataURL();
+                    link.click();
+                };
+
+                window.shareToTwitter = function () {
+                    const text = encodeURIComponent("バーテンダーゲームでカクテルを作りました！ 🍸 #BartenderGame");
+                    window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
+                };
+
+                // ===========================================
+                // JUKEBOX FEATURE
+                // ===========================================
+                const BGM_TRACKS = [
+                    { id: 'jazz', name: '🍸 Standard Jazz', src: 'background.mp3', icon: '🎷' },
+                    { id: 'lofi', name: '🌙 Midnight Lo-Fi', src: 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3', icon: '🎧' },
+                    { id: 'piano', name: '☔ Rainy Piano', src: 'https://cdn.pixabay.com/download/audio/2022/03/10/audio_c8c8a73467.mp3?filename=relaxing-piano-music-for-study-and-focus-107040.mp3', icon: '🎹' },
+                    { id: 'cafe', name: '☕ Cafe Ambience', src: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=jazz-cafe-15946.mp3', icon: '🍩' }
+                ];
+
+                function openJukebox() {
+                    const listEl = document.getElementById('jukebox-list');
+                    if (!listEl) return;
+                    listEl.innerHTML = '';
+
+                    const currentId = state.interior.bgm || 'jazz';
+
+                    BGM_TRACKS.forEach(track => {
+                        const div = document.createElement('div');
+                        div.className = `jukebox-track ${track.id === currentId ? 'active' : ''}`;
+                        div.onclick = () => changeBGM(track.id);
+                        div.innerHTML = `
+                            <span class="icon">${track.icon}</span>
+                            <div class="info">
+                                <div class="title">${track.name}</div>
+                            </div>
+                            ${track.id === currentId ? '<span class="text-indigo-400 text-xl">▶</span>' : ''}
+                        `;
+                        listEl.appendChild(div);
+                    });
+
+                    const currentTrack = BGM_TRACKS.find(t => t.id === currentId);
+                    const nameEl = document.getElementById('current-bgm-name');
+                    if (nameEl) nameEl.textContent = currentTrack ? currentTrack.name : 'Unknown';
+
+                    document.getElementById('jukebox-overlay').classList.remove('hidden');
+                }
+
+                function closeJukebox() {
+                    document.getElementById('jukebox-overlay').classList.add('hidden');
+                }
+
+                window.openJukebox = openJukebox;
+                window.closeJukebox = closeJukebox;
+
+                function changeBGM(trackId) {
+                    const track = BGM_TRACKS.find(t => t.id === trackId);
+                    if (!track) return;
+
+                    state.interior.bgm = trackId;
+                    state.ownedInterior.bgm = [trackId];
+                    saveGameData();
+
+                    const audioEl = dom.bgmAudioEl;
+                    if (audioEl) {
+                        const isPlaying = !audioEl.paused;
+                        audioEl.src = track.src;
+                        audioEl.loop = true;
+
+                        // Handle play/pause if needed, or just auto-play if it was playing
+                        if (state.isMysteryMode) {
+                            // Don't play in mystery mode
+                        } else {
+                            audioEl.play().catch(e => console.log('Playback failed:', e));
+                        }
+                    }
+
+                    openJukebox();
+                    showFloatingText(`🎵 BGM: ${track.name}`, '#8b5cf6', dom.gameContainerEl);
+                }
+
+                // ===========================================
+                // FORTUNE COCKTAIL FEATURE
+                // ===========================================
+                const CONSTELLATIONS = [
+                    { id: 'aries', name: '牡羊座', icon: '♈', date: '3/21-4/19' },
+                    { id: 'taurus', name: '牡牛座', icon: '♉', date: '4/20-5/20' },
+                    { id: 'gemini', name: '双子座', icon: '♊', date: '5/21-6/21' },
+                    { id: 'cancer', name: '蟹座', icon: '♋', date: '6/22-7/22' },
+                    { id: 'leo', name: '獅子座', icon: '♌', date: '7/23-8/22' },
+                    { id: 'virgo', name: '乙女座', icon: '♍', date: '8/23-9/22' },
+                    { id: 'libra', name: '天秤座', icon: '♎', date: '9/23-10/23' },
+                    { id: 'scorpio', name: '蠍座', icon: '♏', date: '10/24-11/22' },
+                    { id: 'sagittarius', name: '射手座', icon: '♐', date: '11/23-12/21' },
+                    { id: 'capricorn', name: '山羊座', icon: '♑', date: '12/22-1/19' },
+                    { id: 'aquarius', name: '水瓶座', icon: '♒', date: '1/20-2/18' },
+                    { id: 'pisces', name: '魚座', icon: '♓', date: '2/19-3/20' }
+                ];
+
+                function openFortuneMenu() {
+                    const grid = document.getElementById('fortune-grid');
+                    if (grid) {
+                        grid.innerHTML = '';
+                        CONSTELLATIONS.forEach(sign => {
+                            const el = document.createElement('div');
+                            el.className = 'bg-indigo-900/80 p-4 rounded-xl flex flex-col items-center gap-2 cursor-pointer hover:bg-indigo-800 hover:scale-105 transition-all border border-indigo-500/30';
+                            el.onclick = () => showFortuneResult(sign);
+                            el.innerHTML = `
+                                <div class="text-4xl text-indigo-200">${sign.icon}</div>
+                                <div class="font-bold text-white font-jp text-sm">${sign.name}</div>
+                                <div class="text-xs text-indigo-400">${sign.date}</div>
+                            `;
+                            grid.appendChild(el);
+                        });
+                        document.getElementById('fortune-overlay').classList.remove('hidden');
+                    }
+                }
+
+                function closeFortuneMenu() {
+                    document.getElementById('fortune-overlay').classList.add('hidden');
+                }
+
+                function showFortuneResult(sign) {
+                    closeFortuneMenu();
+
+                    // Simple random logic for demo
+                    const cocktails = translations[state.language].COCKTAILS;
+                    const luckyCocktail = cocktails[Math.floor(Math.random() * cocktails.length)];
+                    const luckStars = Math.floor(Math.random() * 5) + 1; // 1-5
+                    const colors = ['赤', '青', '緑', '黄', '紫', '白', '黒', '金', '銀', 'オレンジ', 'ピンク'];
+                    const luckyColor = colors[Math.floor(Math.random() * colors.length)];
+
+                    const starsStr = '⭐'.repeat(luckStars);
+
+                    // Populate Result Overlay
+                    const resultOverlay = document.getElementById('fortune-result-overlay');
+                    const content = document.getElementById('fortune-result-content');
+
+                    content.innerHTML = `
+                        <div class="text-6xl mb-4 animate-bounce">${sign.icon}</div>
+                        <h2 class="text-2xl font-bold font-jp text-indigo-300 mb-2">${sign.name}の今日の運勢</h2>
+                        <div class="text-3xl text-yellow-400 mb-4">${starsStr}</div>
+                        
+                        <div class="bg-indigo-950/50 p-4 rounded-lg w-full mb-4">
+                            <p class="text-sm text-gray-400 font-jp mb-1">ラッキーカクテル</p>
+                            <p class="text-xl font-bold text-pink-300 font-jp">🍸 ${luckyCocktail.name}</p>
+                        </div>
+                        
+                        <div class="bg-indigo-950/50 p-4 rounded-lg w-full">
+                            <p class="text-sm text-gray-400 font-jp mb-1">ラッキーカラー</p>
+                            <p class="text-xl font-bold text-${getColorClass(luckyColor)}-400 font-jp">${luckyColor}</p>
+                        </div>
+                    `;
+
+                    resultOverlay.classList.remove('hidden');
+                }
+
+                function getColorClass(colorName) {
+                    // Simple mapping for Tailwind classes
+                    const map = { '赤': 'red', '青': 'blue', '緑': 'green', '黄': 'yellow', '紫': 'purple', '白': 'gray', '黒': 'gray', '金': 'yellow', '銀': 'slate', 'オレンジ': 'orange', 'ピンク': 'pink' };
+                    return map[colorName] || 'white';
+                }
+
+                function closeFortuneResult() {
+                    document.getElementById('fortune-result-overlay').classList.add('hidden');
+                }
+
+                window.openFortuneMenu = openFortuneMenu;
+                window.closeFortuneMenu = closeFortuneMenu;
+                window.closeFortuneResult = closeFortuneResult;
+
+                // (Jukebox logic exists above)
+
                 initialSetup();
             } catch (e) {
                 alert("Init Error: " + e.message + "\n" + e.stack);
             }
         });
     </script>
+    <!-- Jukebox Overlay -->
+    <div id="jukebox-overlay" class="fixed inset-0 bg-black/90 hidden z-[60] flex items-center justify-center">
+        <div class="bg-gray-900 p-6 rounded-xl max-w-md w-full border-4 border-indigo-500 relative shadow-2xl">
+            <button onclick="closeJukebox()"
+                class="absolute top-2 right-2 text-gray-400 hover:text-white text-2xl">&times;</button>
+            <h2
+                class="text-2xl font-bold mb-6 font-jp text-indigo-300 text-center flex items-center justify-center gap-2">
+                <span class="animate-spin-slow text-3xl">💿</span> Jukebox
+            </h2>
+
+            <div id="jukebox-list" class="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                <!-- Tracks injected by JS -->
+            </div>
+
+            <div class="mt-6 text-center text-gray-500 text-xs font-jp">
+                Playing: <span id="current-bgm-name" class="text-indigo-400 font-bold">Standard Jazz</span>
+            </div>
+        </div>
+    </div>
+    <!-- Jukebox Overlay -->
+    <div id="jukebox-overlay" class="fixed inset-0 bg-black/90 hidden z-[60] flex items-center justify-center">
+        <div class="bg-gray-900 p-6 rounded-xl max-w-md w-full border-4 border-indigo-500 relative shadow-2xl">
+            <button onclick="closeJukebox()"
+                class="absolute top-2 right-2 text-gray-400 hover:text-white text-2xl">&times;</button>
+            <h2
+                class="text-2xl font-bold mb-6 font-jp text-indigo-300 text-center flex items-center justify-center gap-2">
+                <span class="animate-spin-slow text-3xl">💿</span> Jukebox
+            </h2>
+            <div id="jukebox-list" class="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar"></div>
+            <div class="mt-6 text-center text-gray-500 text-xs font-jp">
+                Playing: <span id="current-bgm-name" class="text-indigo-400 font-bold">Standard Jazz</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fortune Selection Overlay -->
+    <div id="fortune-overlay"
+        class="fixed inset-0 bg-black/90 hidden z-[100] flex flex-col items-center justify-center p-4">
+        <h2 class="text-2xl md:text-3xl font-bold text-indigo-300 mb-6 font-jp flex items-center gap-2">
+            <span class="text-3xl">🔮</span> 今日の占い
+        </h2>
+        <div class="grid grid-cols-3 md:grid-cols-4 gap-3 md:gap-4 max-w-2xl w-full overflow-y-auto max-h-[70vh] custom-scrollbar p-2"
+            id="fortune-grid">
+            <!-- Injected by JS -->
+        </div>
+        <button onclick="closeFortuneMenu()"
+            class="mt-6 bg-gray-700 hover:bg-gray-600 text-white px-8 py-3 rounded-full font-bold font-jp transition-all">閉じる</button>
+    </div>
+
+    <!-- Fortune Result Overlay -->
+    <div id="fortune-result-overlay"
+        class="fixed inset-0 bg-black/95 hidden z-[110] flex flex-col items-center justify-center p-6"
+        onclick="closeFortuneResult()">
+        <div id="fortune-result-content"
+            class="flex flex-col items-center text-center max-w-sm w-full bg-indigo-900/30 p-8 rounded-2xl border border-indigo-500/50 backdrop-blur-sm shadow-[0_0_50px_rgba(79,70,229,0.3)]"
+            onclick="event.stopPropagation()">
+            <!-- Content injected -->
+        </div>
+        <div class="mt-8 text-white/50 text-sm font-jp animate-pulse">Tap anywhere to close</div>
+    </div>
+    <!-- Counseling Overlay -->
+    <div id="counseling-overlay"
+        class="fixed inset-0 bg-black/90 hidden z-[120] flex flex-col items-center justify-center p-6">
+        <div class="bg-slate-800 rounded-2xl p-6 max-w-md w-full border border-slate-600 shadow-2xl">
+            <div class="flex items-center gap-4 mb-4">
+                <img id="counseling-customer-img" src=""
+                    class="w-16 h-16 rounded-full bg-slate-900 border-2 border-slate-500">
+                <div class="font-bold text-slate-200 font-jp text-lg">悩み相談</div>
+            </div>
+            <p id="counseling-question" class="text-xl text-white font-jp mb-6 min-h-[3rem]">...</p>
+            <div id="counseling-choices" class="flex flex-col gap-3">
+                <!-- Injected buttons -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Matchmaking Overlay -->
+    <div id="matchmaking-overlay"
+        class="fixed inset-0 bg-black/90 hidden z-[120] flex flex-col items-center justify-center p-6"
+        onclick="closeMatchmaking()">
+        <div class="bg-slate-800 rounded-2xl p-6 max-w-sm w-full border border-pink-500/50 shadow-2xl relative"
+            onclick="event.stopPropagation()">
+            <h3 class="text-xl font-bold text-pink-400 font-jp mb-4 text-center">誰を紹介する？</h3>
+            <div id="matchmaking-list" class="flex flex-col gap-2 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                <!-- Injected list -->
+            </div>
+            <button onclick="closeMatchmaking()"
+                class="mt-4 w-full py-2 bg-slate-700 text-slate-300 rounded hover:bg-slate-600 font-jp">キャンセル</button>
+        </div>
+    </div>
 </body>
 
 </html>
