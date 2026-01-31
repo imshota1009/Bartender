@@ -3354,7 +3354,15 @@
                 window.resolveMatchmaking = resolveMatchmaking;
                 // Removed unused shake function
 
-                function resetShaker() { state.shakerContents = []; state.shakerHasIce = false; updateShakerVisual(); dom.finalCocktailEl.classList.remove('animate-fill'); dom.finalCocktailEl.style.height = '0%'; dom.resultTextEl.textContent = ''; }
+                function resetShaker() {
+                    state.shakerContents = [];
+                    state.shakerHasIce = false;
+                    updateShakerVisual();
+                    if (typeof generateIngredients === 'function') generateIngredients();
+                    dom.finalCocktailEl.classList.remove('animate-fill');
+                    dom.finalCocktailEl.style.height = '0%';
+                    dom.resultTextEl.textContent = '';
+                }
 
                 function updateGlassVisuals(type) {
                     let pathD = '';
@@ -3512,8 +3520,11 @@
                             };
                         } else {
                             // Normal Customer order generation
-                            const randomCocktail = currentLangData.COCKTAILS[Math.floor(Math.random() * currentLangData.COCKTAILS.length)];
-                            state.currentOrder = { ...randomCocktail, isConstraint: false };
+                            if (!isOkawari) {
+                                const randomCocktail = currentLangData.COCKTAILS[Math.floor(Math.random() * currentLangData.COCKTAILS.length)];
+                                state.currentOrder = { ...randomCocktail, isConstraint: false };
+                            }
+                            // If isOkawari, we keep state.currentOrder as is
                         }
 
                         // === MYSTERY MODE OVERRIDE ===
