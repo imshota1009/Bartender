@@ -2188,20 +2188,15 @@
 
         <!-- Part 3: Character Selection -->
         <div id="character-selection-content" class="hidden w-full max-w-2xl p-6">
-            <h2 class="text-3xl font-bold text-amber-500 mb-8 text-center font-jp">アバターを選択</h2>
-            <div class="grid grid-cols-2 gap-8">
-                <div class="flex flex-col items-center gap-4 cursor-pointer hover:scale-105 transition-transform"
-                    onclick="selectCharacter('images/avatar/man.png')">
-                    <img src="images/avatar/man.png"
-                        class="w-48 h-48 rounded-full border-4 border-amber-500/30 bg-black/40">
-                    <span class="text-xl font-bold text-white font-jp">男性バーテンダー</span>
-                </div>
-                <div class="flex flex-col items-center gap-4 cursor-pointer hover:scale-105 transition-transform"
-                    onclick="selectCharacter('images/avatar/woman.png')">
-                    <img src="images/avatar/woman.png"
-                        class="w-48 h-48 rounded-full border-4 border-amber-500/30 bg-black/40">
-                    <span class="text-xl font-bold text-white font-jp">女性バーテンダー</span>
-                </div>
+            <h2 class="text-3xl font-bold text-amber-500 mb-4 text-center font-jp">スロットアイコンを選択</h2>
+            <div id="icon-selection-grid"
+                class="grid grid-cols-4 sm:grid-cols-6 gap-4 max-h-[60vh] overflow-y-auto p-2 custom-scrollbar">
+                <!-- Javascript will populate this -->
+            </div>
+            <div class="mt-6 flex justify-center">
+                <button
+                    onclick="document.getElementById('character-selection-content').classList.add('hidden'); document.getElementById('slot-selection-content').classList.remove('hidden');"
+                    class="text-gray-400 hover:text-white underline font-jp">戻る</button>
             </div>
         </div>
     </div>
@@ -4155,11 +4150,14 @@
                 // --- Save/Load Game Data ---
                 function saveGameData() {
                     try {
-                        if (!state.currentSaveSlot) {
-                            console.warn("Save slot missing, defaulting to slot 1");
-                            state.currentSaveSlot = 1;
+                        let slot = parseInt(state.currentSaveSlot);
+                        if (!slot || isNaN(slot)) {
+                            console.warn("Invalid save slot, defaulting to 1");
+                            slot = 1;
                         }
-                        const slotKey = `bartenderSave_${state.currentSaveSlot}`;
+                        state.currentSaveSlot = slot;
+
+                        const slotKey = `bartenderSave_${slot}`;
                         const saveData = {
                             interior: state.interior,
                             ownedInterior: state.ownedInterior,
@@ -4173,12 +4171,23 @@
                             totalTalks: state.totalTalks,
                             avatar: state.avatar || 'images/night/bartender_man.png'
                         };
-                        localStorage.setItem(slotKey, JSON.stringify(saveData));
-                        console.log(`Game saved to slot ${state.currentSaveSlot}`);
-                        // showFloatingText("Autosaved", '#4ade80', dom.gameContainerEl); // Optional feedback
+                        const jsonString = JSON.stringify(saveData);
+                        localStorage.setItem(slotKey, jsonString);
+
+                        // Verify immediately
+                        const verify = localStorage.getItem(slotKey);
+                        if (!verify) {
+                            throw new Error("Verification failed: Data not found in localStorage immediately after save.");
+                        }
+
+                        console.log(`Game saved to slot ${slot}`);
+                        // Show explicit success visualization
+                        showFloatingText(`Saved to Slot ${slot}`, '#4ade80', dom.gameContainerEl);
                     } catch (e) {
                         console.error("Save failed:", e);
-                        showFloatingText("Save Failed!", '#ef4444', document.body);
+                        // Using alert to ensure user sees this critical error
+                        alert(`Save Error: ${e.message}\nSlot: ${state.currentSaveSlot}`);
+                        showFloatingText("CRITICAL SAVE ERROR", '#ef4444', document.body);
                     }
                 }
 
@@ -4198,10 +4207,11 @@
                             if (data.ownedIngredients) state.ownedIngredients = data.ownedIngredients;
                             if (data.upgrades) state.upgrades = data.upgrades;
                             if (data.totalTalks) state.totalTalks = data.totalTalks;
-                            state.avatar = data.avatar || 'images/night/bartender_man.png';
-                            state.currentSaveSlot = slotId || 1;
+                            state.avatar = data.avatar || 'images/avatar/man.png'; // Use default fallback if missing, corrected path
+                            state.currentSaveSlot = parseInt(slotId) || 1;
                         } catch (e) {
                             console.error('Failed to load save data:', e);
+                            alert("Corrupted Save Data encountered.");
                         }
                     }
                 }
@@ -4281,7 +4291,41 @@
                 function openCharacterSelection(slotId) {
                     pendingSlotId = slotId;
                     document.getElementById('slot-selection-content').classList.add('hidden');
-                    document.getElementById('character-selection-content').classList.remove('hidden');
+                    const charSelection = document.getElementById('character-selection-content');
+                    charSelection.classList.remove('hidden');
+
+                    const grid = document.getElementById('icon-selection-grid');
+                    grid.innerHTML = '';
+
+                    // Add default avatars first
+                    const defaults = [
+                        { path: 'images/avatar/man.png', label: '男性' },
+                        { path: 'images/avatar/woman.png', label: '女性' }
+                    ];
+
+                    defaults.forEach(def => {
+                        const div = document.createElement('div');
+                        div.className = "flex flex-col items-center gap-2 cursor-pointer hover:scale-105 transition-transform p-2 bg-slate-800/50 rounded-lg border border-slate-700 hover:border-amber-500";
+                        div.onclick = () => selectCharacter(def.path);
+                        div.innerHTML = `
+                            <img src="${def.path}" class="w-16 h-16 rounded-full border-2 border-amber-500/30 bg-black/40 object-cover">
+                            <span class="text-xs text-slate-300 font-jp">${def.label}</span>
+                        `;
+                        grid.appendChild(div);
+                    });
+
+                    // Add 1-48 slot icons
+                    for (let i = 1; i <= 48; i++) {
+                        const path = `images/slot_icon/${i}.png`;
+                        const div = document.createElement('div');
+                        div.className = "flex flex-col items-center gap-2 cursor-pointer hover:scale-105 transition-transform p-2 bg-slate-800/50 rounded-lg border border-slate-700 hover:border-amber-500";
+                        div.onclick = () => selectCharacter(path);
+                        div.innerHTML = `
+                            <img src="${path}" class="w-16 h-16 rounded-full border-2 border-amber-500/30 bg-black/40 object-cover">
+                            <span class="text-xs text-slate-300 font-jp">No.${i}</span>
+                        `;
+                        grid.appendChild(div);
+                    }
                 }
 
                 window.selectCharacter = function (avatarPath) {
