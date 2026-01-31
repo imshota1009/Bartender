@@ -30,8 +30,14 @@
 - 🌃 **Beautiful Design**  
   Moody bar backgrounds and stylish fonts enhance the atmosphere.  
 
-- 🏠 **Bar Interior Customization** *(NEW!)*  
+- 🏠 **Bar Interior Customization**  
   Change wallpapers (Classic/Modern/Fantasy) and lighting (Warm/Cool/Neon) to personalize your bar!
+
+- 📚 **Encyclopedias & Titles** *(NEW!)*  
+  Collect Cocktails and Customer profiles to fill your encyclopedia. Unlock specialized Titles as you play!
+
+- 💾 **Save System** *(NEW!)*  
+  Progress is saved to Slot 1 automatically at the end of each day. (Slots 2 & 3 coming soon!)
 
 - 🔮 **Fortune Cocktail** *(NEW!)*  
   Check your daily luck! Get a lucky color and cocktail recommendation based on your zodiac sign.
@@ -103,6 +109,7 @@
 - Add BGM options for interior customization  
 - Online leaderboard functionality  
 - More wallpaper and lighting themes  
+- **Multi-slot Save System Implementation (Slots 2 & 3)**
 - Additional customer characters and cocktail recipes
 
 ---
