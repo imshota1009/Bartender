@@ -2254,6 +2254,9 @@
             data-lang-key="menuInquiry">
             📮 お問い合わせ
         </button>
+        <button class="menu-btn bg-gray-600 text-white font-jp" onclick="returnToTitle()">
+            🏠 タイトルへ戻る
+        </button>
         <button class="menu-btn menu-btn-close font-jp" onclick="closeMenu()" data-lang-key="menuClose">
             ✖ 閉じる
         </button>
@@ -3054,7 +3057,7 @@
                     saveGameData();
 
                     checkTitles();
-                    hideMenuButton();
+                    // hideMenuButton(); // Keep menu button visible for Day End screen as per request
 
                     if (dom.timerDisplayEl) dom.timerDisplayEl.classList.remove('timer-danger');
 
@@ -4233,35 +4236,51 @@
                     grid.innerHTML = '';
 
                     for (let i = 1; i <= 3; i++) {
-                        const key = `bartenderSave_${i}`;
-                        const saved = localStorage.getItem(key);
-                        let data = null;
-                        if (saved) {
-                            try { data = JSON.parse(saved); } catch (e) { }
-                        }
-
                         const card = document.createElement('div');
-                        card.className = "bg-slate-800/80 p-6 rounded-2xl border-2 border-slate-700 flex flex-col items-center gap-4 relative overflow-hidden";
+                        card.className = "bg-slate-800/80 p-6 rounded-2xl border-2 border-slate-700 flex flex-col items-center gap-4 relative overflow-hidden transition-all";
 
-                        if (data) {
-                            card.innerHTML = `
-                                <button onclick="deleteSave(${i})" class="absolute top-2 right-2 text-red-500 hover:text-red-400 text-xl p-2">🗑️</button>
-                                <img src="${data.avatar || 'images/night/bartender_man.png'}" class="w-24 h-24 rounded-full border-2 border-amber-500/50 bg-black/40">
-                                <div class="text-center">
-                                    <div class="text-amber-400 font-jp font-bold text-xl">Slot ${i}</div>
-                                    <div class="text-white font-jp text-lg">Day ${data.day || 1}</div>
-                                    <div class="text-green-400 font-bold">¥${(data.totalMoney || 0).toLocaleString()}</div>
-                                </div>
-                                <button onclick="loadAndStart(${i})" class="w-full py-3 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg font-jp transition-all hover:scale-105">ロード</button>
-                            `;
+                        if (i === 1) {
+                            // Slot 1: Active
+                            const key = `bartenderSave_${i}`;
+                            const saved = localStorage.getItem(key);
+                            let data = null;
+                            if (saved) {
+                                try { data = JSON.parse(saved); } catch (e) { }
+                            }
+
+                            if (data) {
+                                card.innerHTML = `
+                                    <button onclick="deleteSave(${i})" class="absolute top-2 right-2 text-red-500 hover:text-red-400 text-xl p-2 z-10" title="Delete Save">🗑️</button>
+                                    <img src="${data.avatar || 'images/night/bartender_man.png'}" class="w-24 h-24 rounded-full border-2 border-amber-500/50 bg-black/40">
+                                    <div class="text-center">
+                                        <div class="text-amber-400 font-jp font-bold text-xl">Slot ${i}</div>
+                                        <div class="text-white font-jp text-lg">Day ${data.day || 1}</div>
+                                        <div class="text-green-400 font-bold">¥${(data.totalMoney || 0).toLocaleString()}</div>
+                                    </div>
+                                    <button onclick="loadAndStart(${i})" class="w-full py-3 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg font-jp transition-all hover:scale-105">ロード</button>
+                                `;
+                            } else {
+                                card.innerHTML = `
+                                    <div class="w-24 h-24 rounded-full border-2 border-slate-700 border-dashed flex items-center justify-center text-slate-600 text-4xl">?</div>
+                                    <div class="text-center">
+                                        <div class="text-slate-500 font-jp font-bold text-xl">Slot ${i}</div>
+                                        <div class="text-slate-600 font-jp">空きスロット</div>
+                                    </div>
+                                    <button onclick="openCharacterSelection(${i})" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg font-jp transition-all hover:scale-105">冒険を始める</button>
+                                `;
+                            }
                         } else {
+                            // Slot 2 & 3: Locked (Coming Soon)
+                            card.classList.add('opacity-50', 'grayscale');
                             card.innerHTML = `
-                                <div class="w-24 h-24 rounded-full border-2 border-slate-700 border-dashed flex items-center justify-center text-slate-600 text-4xl">?</div>
+                                <div class="absolute top-2 right-2 text-gray-500 text-xl p-2">🔒</div>
+                                <div class="w-24 h-24 rounded-full border-2 border-slate-700 bg-black/40 flex items-center justify-center text-3xl">🚫</div>
                                 <div class="text-center">
                                     <div class="text-slate-500 font-jp font-bold text-xl">Slot ${i}</div>
-                                    <div class="text-slate-600 font-jp">空きスロット</div>
+                                    <div class="text-slate-500 font-jp">Coming Soon</div>
+                                    <div class="text-slate-600 text-sm font-jp mt-1">追加スロット (課金予定)</div>
                                 </div>
-                                <button onclick="openCharacterSelection(${i})" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg font-jp transition-all hover:scale-105">冒険を始める</button>
+                                <button disabled class="w-full py-3 bg-gray-700 text-gray-500 font-bold rounded-lg font-jp cursor-not-allowed">ロック中</button>
                             `;
                         }
                         grid.appendChild(card);
@@ -4852,6 +4871,14 @@
                 window.closeMarket = closeMarket;
                 window.closeDetailModal = closeDetailModal;
                 window.closeTitleCelebration = closeTitleCelebration;
+
+                function returnToTitle() {
+                    const msg = state.language === 'ja' ? 'タイトルに戻りますか？\n(未保存の進行状況は失われる可能性があります)' : 'Return to Title?\n(Unsaved progress may be lost)';
+                    if (confirm(msg)) {
+                        location.reload();
+                    }
+                }
+                window.returnToTitle = returnToTitle;
 
                 // Load saved data on init
                 loadGameData();

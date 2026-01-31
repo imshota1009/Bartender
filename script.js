@@ -616,13 +616,14 @@ document.addEventListener('DOMContentLoaded', () => {
             state.totalMoney += state.score;
 
             // === NEW: Save progress, check titles, hide menu button ===
+            state.day++; // Auto-increment day
             saveGameData();
             checkTitles();
             hideMenuButton();
 
             if (dom.timerDisplayEl) dom.timerDisplayEl.classList.remove('timer-danger');
 
-            if (state.day >= 7) {
+            if (state.day >= 8) { // Checked against 8 because 7 days are done
                 showEndingScreen();
             } else {
                 showView('room');
@@ -666,14 +667,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function updateRoomUI() {
-            dom.roomDayDisplayEl.textContent = state.day;
+            dom.roomDayDisplayEl.textContent = state.day - 1; // Show completed day
             dom.dailyEarningsDisplayEl.textContent = state.score.toLocaleString();
             dom.roomMoneyDisplayEl.textContent = state.totalMoney.toLocaleString();
             renderUpgrades();
         }
 
         function startNextDay() {
-            state.day++;
+            // state.day is already incremented in endDay
             startDay();
         }
 
@@ -1457,7 +1458,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // ... (existing definitions) ...
                 const allElementIds = [
                     'game-overlay', 'game-container', 'room-container', 'room-day-display',
-                    'room-money-display', 'daily-earnings-display', 'next-day-button', 'upgrades-section',
+                    'room-money-display', 'daily-earnings-display', 'next-day-button', 'return-title-button', 'upgrades-section',
                     'bgm-audio', 'day-display', 'money-display', 'combo-display', 'timer-display', 'timer',
                     'score-display', 'score', 'happy-hour-banner', 'customer-area', 'customer-dialogue', 'customer',
                     'order-bubble', 'customer-name', 'order-text', 'order-ingredients', 'bar-counter',
@@ -1476,6 +1477,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Bind all buttons
                 dom.nextDayButtonEl.addEventListener('click', startNextDay);
+                if (dom.returnTitleButtonEl) dom.returnTitleButtonEl.addEventListener('click', () => location.reload());
                 dom.addIceButtonEl.addEventListener('click', () => { if (state.canInteract) addIce(); });
 
                 // New Bindings
@@ -1765,8 +1767,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <button class="delete-slot-btn" onclick="event.stopPropagation(); deleteSave(${i})">🗑️</button>
                                 <img src="${data.avatar || 'images/night/bartender_man.png'}" class="slot-avatar" alt="Avatar">
                                 <div class="slot-info font-jp">
-                                    <div class="slot-day">Day ${data.day || 1}</div>
-                                    <div class="slot-money">¥${(data.totalMoney || 0).toLocaleString()}</div>
+                                    <div class="slot-day">${state.language === 'ja' ? '営業 ' + (data.day || 1) + '日目' : 'Day ' + (data.day || 1)}</div>
+                                    <div class="slot-money">${state.language === 'ja' ? '資産: ' : 'Assets: '}¥${(data.totalMoney || 0).toLocaleString()}</div>
                                 </div>
                                 <button onclick="loadAndStart(${i})" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-full font-jp shadow-lg hover:scale-105 transition-transform">
                                     再開 (Load)
