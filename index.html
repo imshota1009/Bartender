@@ -1815,6 +1815,165 @@
             transform: scale(1.05);
             border-color: #f59e0b;
         }
+
+        /* --- Bottle Collection & Auction Styles --- */
+        .bottle-grid-item {
+            aspect-ratio: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid #4b5563;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .bottle-grid-item.owned {
+            background: radial-gradient(circle, rgba(251, 191, 36, 0.1), rgba(0, 0, 0, 0.3));
+            border-color: #fbbf24;
+            box-shadow: 0 0 10px rgba(251, 191, 36, 0.2);
+        }
+
+        .bottle-grid-item.owned:hover {
+            transform: scale(1.1);
+            z-index: 10;
+        }
+
+        .bottle-grid-item img {
+            max-width: 80%;
+            max-height: 80%;
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5));
+        }
+
+        .bottle-grid-item.locked img {
+            filter: brightness(0) invert(1) opacity(0.2);
+        }
+
+        .bottle-shiny {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bottle-shiny::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(to bottom right,
+                    rgba(255, 255, 255, 0) 0%,
+                    rgba(255, 255, 255, 0) 40%,
+                    rgba(255, 255, 255, 0.4) 50%,
+                    rgba(255, 255, 255, 0) 60%,
+                    rgba(255, 255, 255, 0) 100%);
+            transform: rotate(45deg) translate(-100%, -100%);
+            animation: shiny-sweep 3s infinite;
+        }
+
+        @keyframes shiny-sweep {
+            0% {
+                transform: rotate(45deg) translate(-100%, -100%);
+            }
+
+            20% {
+                transform: rotate(45deg) translate(100%, 100%);
+            }
+
+            100% {
+                transform: rotate(45deg) translate(100%, 100%);
+            }
+        }
+
+        /* Auction Specifics */
+        .auction-paddle {
+            transition: transform 0.1s;
+        }
+
+        .auction-paddle:active {
+            transform: scale(0.9) rotate(-10deg);
+        }
+
+        .bid-log-entry {
+            animation: fade-in-up 0.3s ease-out;
+        }
+
+        @keyframes fade-in-up {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* --- Vegetable Market Styles --- */
+        .market-grid-item {
+            background: #3f2e21;
+            /* Dark wood */
+            border: 4px solid #8d6e63;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px;
+            position: relative;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+            transition: transform 0.2s;
+        }
+
+        .market-grid-item:hover {
+            transform: translateY(-5px);
+        }
+
+        .market-price-tag {
+            background: #dc2626;
+            color: white;
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            margin-top: 4px;
+        }
+
+        .harvest-item {
+            aspect-ratio: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #ffffff55;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.5;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .harvest-item.owned {
+            background: rgba(34, 197, 94, 0.2);
+            border-color: #4ade80;
+            opacity: 1;
+            box-shadow: 0 0 10px rgba(74, 222, 128, 0.3);
+        }
+
+        .harvest-item img {
+            max-width: 90%;
+            max-height: 90%;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+        }
+
+        .harvest-item.locked img {
+            filter: grayscale(1) brightness(0.3);
+        }
     </style>
 </head>
 
@@ -1943,6 +2102,9 @@
                             <div class="flex gap-1 w-full">
                                 <button id="talk-button" data-lang-key="talk"
                                     class="bg-yellow-600 hover:bg-yellow-700 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md flex-1">話す</button>
+                                <button id="gift-button" onclick="openGiftMenu()"
+                                    class="bg-pink-500 hover:bg-pink-600 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md flex-1">🎁
+                                    渡す</button>
                                 <button id="matchmake-button"
                                     class="bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold py-2 px-2 rounded hover:scale-105 transition-transform font-jp shadow-md hidden flex-1"
                                     onclick="openMatchmaking()">紹介する</button>
@@ -2205,6 +2367,120 @@
         </div>
     </div>
 
+    <!-- Vegetable Collection Overlay -->
+    <div id="collection-overlay"
+        class="absolute inset-0 bg-black/95 z-50 flex flex-col items-center justify-center hidden p-4">
+        <h2 class="text-3xl font-bold text-green-400 mb-2 font-jp">🥬 収穫図鑑</h2>
+        <p class="text-gray-400 mb-6 font-jp text-sm">市場で集めた新鮮な野菜たち (<span id="collection-count">0</span>/19)</p>
+
+        <div id="vegetable-grid"
+            class="grid grid-cols-6 md:grid-cols-8 gap-2 md:gap-3 overflow-y-auto custom-scrollbar p-2 max-h-[60vh] w-full max-w-3xl bg-gray-900/50 rounded-xl border border-gray-700">
+            <!-- Injected by JS -->
+        </div>
+
+        <div class="mt-8 flex gap-4">
+            <button onclick="openMarketOverlay()"
+                class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 px-8 rounded-full font-jp shadow-[0_0_20px_rgba(245,158,11,0.4)] transition-all hover:scale-105 border-2 border-amber-400">
+                🏪 市場へ行く
+            </button>
+            <button onclick="openKitchenOverlay()"
+                class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 px-8 rounded-full font-jp shadow-[0_0_20px_rgba(244,63,94,0.4)] transition-all hover:scale-105 border-2 border-rose-400">
+                🥤 キッチンへ
+            </button>
+            <button onclick="closeCollection()"
+                class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-8 rounded-full font-jp transition-all">
+                閉じる
+            </button>
+        </div>
+    </div>
+
+    <!-- Kitchen Overlay -->
+    <div id="kitchen-overlay"
+        class="absolute inset-0 bg-black/95 z-[70] flex flex-col items-center justify-center hidden p-4">
+        <h2 class="text-3xl font-bold text-rose-400 mb-6 font-jp">🥤 ベジ・キッチン</h2>
+
+        <!-- Mixing Area -->
+        <div class="flex items-center gap-4 mb-8 bg-gray-800 p-6 rounded-xl border border-gray-600">
+            <div id="kitchen-slot-1" onclick="clearKitchenSlot(0)"
+                class="w-24 h-24 bg-black/40 border-2 border-dashed border-gray-500 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-700 transition-colors relative">
+                <span class="text-gray-500 text-2xl font-bold">+</span>
+            </div>
+            <div class="text-white text-2xl font-bold">+</div>
+            <div id="kitchen-slot-2" onclick="clearKitchenSlot(1)"
+                class="w-24 h-24 bg-black/40 border-2 border-dashed border-gray-500 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-700 transition-colors relative">
+                <span class="text-gray-500 text-2xl font-bold">+</span>
+            </div>
+            <div class="text-white text-2xl font-bold">=</div>
+            <button onclick="mixSmoothie()" id="kitchen-mix-btn"
+                class="w-24 h-24 bg-rose-600 hover:bg-rose-500 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg border-4 border-rose-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95">
+                MIX!
+            </button>
+        </div>
+
+        <p class="text-gray-400 mb-2 font-jp text-sm">材料を選んでください</p>
+        <div id="kitchen-inventory-grid"
+            class="grid grid-cols-6 md:grid-cols-8 gap-2 overflow-y-auto custom-scrollbar p-2 max-h-[30vh] w-full max-w-2xl bg-gray-900/50 rounded-xl border border-gray-700 mb-6">
+            <!-- Injected by JS -->
+        </div>
+
+        <button onclick="closeKitchenOverlay()"
+            class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-8 rounded-lg font-jp transition-colors">
+            戻る
+        </button>
+    </div>
+
+    <!-- Gift Overlay -->
+    <div id="gift-overlay"
+        class="absolute inset-0 bg-black/95 z-[80] flex flex-col items-center justify-center hidden p-4">
+        <h2 class="text-3xl font-bold text-pink-400 mb-2 font-jp">🎁 プレゼントする</h2>
+        <p class="text-gray-400 mb-6 font-jp text-sm">お客様に感謝の気持ちを込めて...</p>
+
+        <div id="gift-grid"
+            class="grid grid-cols-6 md:grid-cols-8 gap-2 overflow-y-auto custom-scrollbar p-2 max-h-[60vh] w-full max-w-3xl bg-gray-900/50 rounded-xl border border-gray-700">
+            <!-- Injected by JS -->
+        </div>
+
+        <button onclick="closeGiftMenu()"
+            class="mt-8 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-8 rounded-lg font-jp transition-colors">
+            やめる
+        </button>
+    </div>
+
+    <!-- Market Overlay (Vegetable) -->
+    <div id="vegetable-market-overlay"
+        class="absolute inset-0 bg-black/90 z-[60] flex flex-col items-center justify-center hidden p-4">
+        <div class="bg-[#5d4037] p-6 rounded-lg w-full max-w-4xl border-4 border-[#3e2723] shadow-2xl relative">
+            <h2 class="text-3xl font-bold text-white mb-6 font-jp text-center border-b-2 border-[#8d6e63] pb-4">
+                🏪 本日の青果市場 <span class="text-sm font-normal text-amber-300 ml-2">Every day fresh!</span>
+            </h2>
+
+            <div class="flex justify-between items-center mb-4 px-4">
+                <div class="bg-black/40 px-4 py-2 rounded-lg text-white font-jp">
+                    所持金: <span class="text-yellow-400 font-bold text-xl">¥<span
+                            id="vegetable-market-money-display">0</span></span>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="setMarketMode('buy')" id="market-btn-buy"
+                        class="px-4 py-1 rounded bg-green-600 text-white font-bold font-jp border-2 border-green-400 shadow-lg scale-105 transition-all">買う</button>
+                    <button onclick="setMarketMode('sell')" id="market-btn-sell"
+                        class="px-4 py-1 rounded bg-gray-700 text-gray-400 font-bold font-jp border-2 border-gray-600 hover:bg-red-900/50 hover:text-red-200 hover:border-red-800 transition-all">売る</button>
+                </div>
+            </div>
+
+            <div id="vegetable-market-grid"
+                class="grid grid-cols-2 md:grid-cols-4 gap-4 overflow-y-auto max-h-[50vh] custom-scrollbar p-2">
+                <!-- Market Items Injected Here -->
+            </div>
+
+            <div class="mt-6 flex justify-center">
+                <button onclick="closeMarketOverlay()"
+                    class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-8 rounded-lg font-jp transition-colors">
+                    店を出る
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Ending Overlay -->
     <div id="ending-overlay"
         class="absolute inset-0 bg-black/95 z-50 flex flex-col items-center justify-center hidden text-center p-8">
@@ -2257,6 +2533,11 @@
         <button class="menu-btn menu-btn-inquiry font-jp text-blue-400 border-blue-500/50" onclick="openInquiry()"
             data-lang-key="menuInquiry">
             📮 お問い合わせ
+        </button>
+        <button class="menu-btn menu-btn-collection font-jp text-green-400 border-green-500/50"
+            onclick="openCollection()"
+            style="border: 2px solid rgba(34, 197, 94, 0.5); background: linear-gradient(90deg, rgba(34, 197, 94, 0.1), transparent);">
+            🥦 野菜市場・収穫図鑑
         </button>
         <button class="menu-btn bg-gray-600 text-white font-jp" onclick="returnToTitle()">
             🏠 タイトルへ戻る
@@ -5574,33 +5855,615 @@
                 window.closeInquiry = closeInquiry;
                 window.submitInquiry = submitInquiry;
 
-                // Expose all UI functions
-                window.showSaveSlots = showSaveSlots;
-                window.hideSaveSlots = hideSaveSlots;
-                window.deleteSave = deleteSave;
-                window.loadAndStart = loadAndStart;
-                window.openCharacterSelection = openCharacterSelection;
-                window.selectCharacter = selectCharacter;
-                window.startNewGame = startNewGame;
-                window.openInteriorShop = openInteriorShop;
-                window.closeInteriorShop = closeInteriorShop;
-                window.openCocktailEncyclopedia = openCocktailEncyclopedia;
-                window.closeCocktailEncyclopedia = closeCocktailEncyclopedia;
-                window.openCustomerEncyclopedia = openCustomerEncyclopedia;
-                window.closeCustomerEncyclopedia = closeCustomerEncyclopedia;
-                window.openTitleList = openTitleList;
-                window.closeTitleList = closeTitleList;
-                window.openSettings = openSettings;
-                window.closeSettings = closeSettings;
-                window.saveGameManually = saveGameManually;
-                window.closeTitleCelebration = closeTitleCelebration;
-                window.openMarket = openMarket;
-                window.closeMarket = closeMarket;
-                window.closeDetailModal = closeDetailModal;
-                window.openJukebox = openJukebox;
-                window.closeJukebox = closeJukebox;
-                window.openMatchmaking = openMatchmaking;
-                window.closeMatchmaking = closeMatchmaking;
+                // ===========================================
+                // VEGETABLE MARKET & COLLECTION LOGIC
+                // ===========================================
+
+                // Defined Vegetable List based on images/vegetable/ content (19 items)
+                // Defined Vegetable List based on images/vegetable/ content (19 items)
+                const VEGETABLE_ASSETS = [
+                    { file: 'tomato.png', name: 'トマト', price: 120, tags: ['red', 'vegetable'] },
+                    { file: 'cherry_tomato.png', name: 'ミニトマト', price: 90, tags: ['red', 'vegetable', 'small'] },
+                    { file: 'potato.png', name: 'ジャガイモ', price: 80, tags: ['root', 'vegetable'] },
+                    { file: 'carrot.png', name: 'ニンジン', price: 100, tags: ['red', 'root', 'vegetable'] },
+                    { file: 'onion.png', name: 'タマネギ', price: 80, tags: ['root', 'vegetable', 'pungent'] },
+                    { file: 'green_onion.png', name: 'ネギ', price: 110, tags: ['green', 'vegetable', 'pungent'] },
+                    { file: 'eggplant.png', name: 'ナス', price: 130, tags: ['purple', 'vegetable'] },
+                    { file: 'asparagus.png', name: 'アスパラガス', price: 200, tags: ['green', 'vegetable'] },
+                    { file: 'broccoli.png', name: 'ブロッコリー', price: 150, tags: ['green', 'vegetable'] },
+                    { file: 'cabbage.png', name: 'キャベツ', price: 180, tags: ['green', 'vegetable'] },
+                    { file: 'cauliflower.png', name: 'カリフラワー', price: 190, tags: ['white', 'vegetable'] },
+                    { file: 'chili_pepper.png', name: 'トウガラシ', price: 140, tags: ['red', 'spicy', 'vegetable'] },
+                    { file: 'corn.png', name: 'トウモロコシ', price: 160, tags: ['yellow', 'sweet', 'vegetable'] },
+                    { file: 'daikon.png', name: 'ダイコン', price: 150, tags: ['white', 'root', 'vegetable'] },
+                    { file: 'napa_cabbage.png', name: 'ハクサイ', price: 180, tags: ['green', 'vegetable'] },
+                    { file: 'paprika.png', name: 'パプリカ', price: 170, tags: ['red', 'vegetable', 'colorful'] },
+                    { file: 'pumpkin.png', name: 'カボチャ', price: 250, tags: ['yellow', 'sweet', 'vegetable'] },
+                    { file: 'sweet_potato.png', name: 'サツマイモ', price: 130, tags: ['purple', 'sweet', 'root'] },
+                    { file: '33.png', name: '謎の野菜', price: 500, tags: ['mystery', 'rare'] }
+                ];
+
+                const VEGETABLE_DATA = VEGETABLE_ASSETS.map((item, index) => ({
+                    id: index + 1,
+                    src: `images/vegetable/${item.file}`,
+                    name: item.name,
+                    basePrice: item.price,
+                    tags: item.tags
+                }));
+
+                function openCollection() {
+                    const grid = document.getElementById('vegetable-grid');
+                    grid.innerHTML = '';
+
+                    if (!state.vegetableCollection) state.vegetableCollection = [];
+
+                    document.getElementById('collection-count').textContent = state.vegetableCollection.length;
+
+                    VEGETABLE_DATA.forEach(veg => {
+                        const isOwned = state.vegetableCollection.includes(veg.id);
+                        const el = document.createElement('div');
+                        el.className = `harvest-item ${isOwned ? 'owned' : 'locked'}`;
+                        el.title = veg.name;
+
+                        let innerHTML = `<img src="${veg.src}">`;
+                        if (isOwned) {
+                            innerHTML += `<div class="absolute bottom-0 w-full text-center bg-black/50 text-[10px] text-white font-jp truncate px-1">${veg.name}</div>`;
+                        } else {
+                            innerHTML += `<div class="absolute bottom-0 w-full text-center text-[10px] text-gray-500 font-jp">???</div>`;
+                        }
+
+                        el.innerHTML = innerHTML;
+                        grid.appendChild(el);
+                    });
+
+                    document.getElementById('collection-overlay').classList.remove('hidden');
+                    closeMenu();
+                }
+
+                function closeCollection() {
+                    document.getElementById('collection-overlay').classList.add('hidden');
+                    document.getElementById('menu-overlay').classList.remove('hidden');
+                }
+
+                // Market Functions
+                let currentMarketStock = [];
+                let marketMode = 'buy'; // 'buy' or 'sell'
+
+                function setMarketMode(mode) {
+                    marketMode = mode;
+
+                    // UI Update
+                    const btnBuy = document.getElementById('market-btn-buy');
+                    const btnSell = document.getElementById('market-btn-sell');
+
+                    if (mode === 'buy') {
+                        btnBuy.className = "px-4 py-1 rounded bg-green-600 text-white font-bold font-jp border-2 border-green-400 shadow-lg scale-105 transition-all";
+                        btnSell.className = "px-4 py-1 rounded bg-gray-700 text-gray-400 font-bold font-jp border-2 border-gray-600 hover:bg-red-900/50 hover:text-red-200 hover:border-red-800 transition-all";
+                    } else {
+                        btnBuy.className = "px-4 py-1 rounded bg-gray-700 text-gray-400 font-bold font-jp border-2 border-gray-600 hover:bg-green-900/50 hover:text-green-200 hover:border-green-800 transition-all";
+                        btnSell.className = "px-4 py-1 rounded bg-red-600 text-white font-bold font-jp border-2 border-red-400 shadow-lg scale-105 transition-all";
+                    }
+
+                    renderMarket();
+                }
+
+                function openMarketOverlay() {
+                    // 1. Check Opening Hours (08:00 - 19:00)
+                    const now = new Date();
+                    const hour = now.getHours();
+                    if (hour < 8 || hour >= 19) {
+                        alert("市場は現在閉まっています。\n営業時間: 8:00 - 19:00");
+                        return;
+                    }
+
+                    document.getElementById('collection-overlay').classList.add('hidden');
+                    document.getElementById('vegetable-market-overlay').classList.remove('hidden');
+
+                    document.getElementById('vegetable-market-money-display').textContent = state.totalMoney.toLocaleString();
+
+                    // 2. Check Daily Restock
+                    const today = new Date().toLocaleDateString();
+                    if (state.lastRestockDate !== today) {
+                        restockMarket(today);
+                    } else if (!state.marketStock || state.marketStock.length === 0) {
+                        restockMarket(today); // Fallback if missing
+                    } else {
+                        // Load saved stock
+                        currentMarketStock = state.marketStock;
+                        renderMarket();
+                    }
+                }
+
+                function closeMarketOverlay() {
+                    document.getElementById('vegetable-market-overlay').classList.add('hidden');
+                    openCollection();
+                }
+
+                function restockMarket(todayDate) {
+                    // Pick 8 random items
+                    currentMarketStock = [];
+                    const pool = [...VEGETABLE_DATA];
+
+                    for (let i = 0; i < 8; i++) {
+                        if (pool.length === 0) break;
+                        const idx = Math.floor(Math.random() * pool.length);
+                        const item = pool.splice(idx, 1)[0];
+
+                        // Fluctuating Price (80% - 150%)
+                        const multiplier = 0.8 + (Math.random() * 0.7);
+                        const price = Math.floor(item.basePrice * multiplier);
+
+                        currentMarketStock.push({ ...item, currentPrice: price });
+                    }
+
+                    // Save State
+                    state.marketStock = currentMarketStock;
+                    state.lastRestockDate = todayDate || new Date().toLocaleDateString();
+                    saveGameData();
+
+                    renderMarket();
+                }
+
+                function renderMarket() {
+                    const grid = document.getElementById('vegetable-market-grid');
+                    grid.innerHTML = '';
+
+                    if (marketMode === 'buy') {
+                        // === BUY MODE ===
+                        currentMarketStock.forEach(item => {
+                            const isOwned = state.vegetableCollection && state.vegetableCollection.includes(item.id);
+
+                            const el = document.createElement('div');
+                            el.className = 'market-grid-item bg-[#5d4037]';
+
+                            el.innerHTML = `
+                                <div class="h-24 w-24 bg-black/20 rounded-full flex items-center justify-center mb-2">
+                                    <img src="${item.src}" class="h-20 w-20 object-contain drop-shadow-md">
+                                </div>
+                                <div class="text-white font-bold font-jp text-lg">${item.name}</div>
+                                <div class="market-price-tag">¥${item.currentPrice}</div>
+                                <button onclick="buyVegetable(${item.id}, ${item.currentPrice})" 
+                                    class="mt-2 w-full py-1 rounded font-bold text-sm transition-colors ${isOwned
+                                    ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                                    : 'bg-green-600 hover:bg-green-500 text-white'
+                                }" ${isOwned ? 'disabled' : ''}>
+                                    ${isOwned ? '購入済' : '購入'}
+                                </button>
+                            `;
+                            grid.appendChild(el);
+                        });
+                    } else {
+                        // === SELL MODE ===
+                        // Display items user owns
+                        const userItems = VEGETABLE_DATA.filter(v => state.vegetableCollection.includes(v.id));
+
+                        if (userItems.length === 0) {
+                            grid.innerHTML = '<div class="col-span-full text-center text-gray-400 font-jp py-8">売れる野菜を持っていません</div>';
+                            return;
+                        }
+
+                        // Daily Market Fluctuation for Selling
+                        // We use the date string hash to make it deterministic per day per item if we wanted, 
+                        // but simple randomization seeded by date is hard in JS without lib. 
+                        // Let's just use a global daily multiplier generated in restockMarket?
+                        // Actually, let's just generate a Sell Price on fly but keep it consistent? 
+                        // For simplicity MVP: Sell Price = Base Price * 0.5 (Standard) + Random Daily logic?
+                        // To make it fun, we need high variance.
+
+                        // Let's use the currentMarketStock pricing if the item is "In Season" (in stock)?
+                        // Idea: If item is in Market Stock today, Sell Price is higher!
+                        // Else: Low base price.
+
+                        userItems.forEach(item => {
+                            // Determine Sell Price
+                            const inStock = currentMarketStock.find(s => s.id === item.id);
+                            let sellPrice = 0;
+                            let priceLabel = "";
+                            let tagClass = "bg-gray-500";
+
+                            if (inStock) {
+                                // "In Demand" - Sell for 80% of current Buy Price (Good deal usually)
+                                sellPrice = Math.floor(inStock.currentPrice * 0.9);
+                                priceLabel = "🔥高価買取中";
+                                tagClass = "bg-red-500 animate-pulse";
+                            } else {
+                                // Standard - Sell for 30-40% of Base
+                                sellPrice = Math.floor(item.basePrice * 0.4);
+                                tagClass = "bg-blue-500";
+                            }
+
+                            const el = document.createElement('div');
+                            el.className = 'market-grid-item bg-[#3e2723] border-red-900/50'; // Darker for sell
+
+                            el.innerHTML = `
+                                <div class="h-24 w-24 bg-black/20 rounded-full flex items-center justify-center mb-2 relative">
+                                    <img src="${item.src}" class="h-20 w-20 object-contain drop-shadow-md">
+                                    ${priceLabel ? `<div class="absolute -top-2 -right-2 text-[10px] bg-yellow-500 text-black font-bold px-2 py-0.5 rounded-full shadow-md animate-bounce">${priceLabel}</div>` : ''}
+                                </div>
+                                <div class="text-white font-bold font-jp text-lg">${item.name}</div>
+                                <div class="market-price-tag ${tagClass}">売値: ¥${sellPrice}</div>
+                                <button onclick="sellVegetable(${item.id}, ${sellPrice}, '${item.name}')" 
+                                    class="mt-2 w-full py-1 rounded font-bold text-sm transition-colors bg-red-700 hover:bg-red-600 text-white">
+                                    売却
+                                </button>
+                            `;
+                            grid.appendChild(el);
+                        });
+                    }
+                }
+
+                function sellVegetable(id, price, name) {
+                    if (!confirm(`${name} を ¥${price} で売却しますか？`)) return;
+
+                    // Remove from collection
+                    // Note: collection is array of IDs.
+                    const idx = state.vegetableCollection.indexOf(id);
+                    if (idx > -1) {
+                        state.vegetableCollection.splice(idx, 1);
+                        state.totalMoney = (Number(state.totalMoney) || 0) + price;
+
+                        document.getElementById('vegetable-market-money-display').textContent = state.totalMoney.toLocaleString();
+
+                        renderMarket(); // re-render to remove item
+                        saveGameData();
+
+                        showFloatingText(`💰 ¥${price} GET!`, '#fbbf24', document.getElementById('vegetable-market-overlay'));
+                    }
+                }
+
+                function buyVegetable(id, price) {
+                    const currentMoney = Number(state.totalMoney) || 0;
+                    const cost = Number(price) || 0;
+
+                    if (currentMoney < cost) {
+                        alert("お金が足りません！");
+                        return;
+                    }
+                    if (state.vegetableCollection.includes(id)) {
+                        return; // Should be disabled anyway
+                    }
+
+                    // Purchase
+                    state.totalMoney = currentMoney - cost;
+                    state.vegetableCollection.push(id);
+                    document.getElementById('vegetable-market-money-display').textContent = state.totalMoney.toLocaleString();
+
+                    // Update UI
+                    renderMarket();
+                    saveGameData();
+
+                    // Simple Feedback
+                    const veg = VEGETABLE_DATA.find(v => v.id === id);
+                    const vegName = veg ? veg.name : '野菜';
+                    showFloatingText(`🥬 ${vegName} GET!`, '#4ade80', document.getElementById('vegetable-market-overlay'));
+                }
+
+                // Expose
+                window.openMarketOverlay = openMarketOverlay;
+                window.closeMarketOverlay = closeMarketOverlay;
+                window.restockMarket = restockMarket;
+                window.setMarketMode = setMarketMode;
+                window.buyVegetable = buyVegetable;
+                window.sellVegetable = sellVegetable;
+                window.openCollection = openCollection;
+                window.closeCollection = closeCollection;
+
+                // ===========================================
+                // KITCHEN LOGIC
+                // ===========================================
+                let kitchenSlots = [null, null];
+                const SMOOTHIE_RECIPES = [
+                    { id: 'S1', name: '🥤 レッドビタミン', ingredients: [1, 4], price: 500, desc: 'トマトとニンジンの健康的ミックス' }, // Tomato + Carrot
+                    { id: 'S2', name: '🥤 グリーンデトックス', ingredients: [9, 8], price: 600, desc: 'ブロッコリーとアスパラガスの最強コンビ' }, // Broccoli + Asparagus
+                    { id: 'S3', name: '🥣 ルートポタージュ', ingredients: [3, 5], price: 450, desc: 'ジャガイモとタマネギの優しい味' }, // Potato + Onion
+                    { id: 'S4', name: '🌽 ゴールデンスープ', ingredients: [13, 17], price: 700, desc: 'トウモロコシとカボチャの甘い誘惑' }, // Corn + Pumpkin
+                    { id: 'S5', name: '🔥 スパイシーレッド', ingredients: [12, 16], price: 550, desc: 'トウガラシとパプリカの刺激的体験' } // Chili + Paprika
+                ];
+
+                function openKitchenOverlay() {
+                    document.getElementById('collection-overlay').classList.add('hidden');
+                    document.getElementById('vegetable-market-overlay').classList.add('hidden'); // Ensure market is closed
+                    document.getElementById('kitchen-overlay').classList.remove('hidden');
+
+                    kitchenSlots = [null, null];
+                    updateKitchenUI();
+                    renderKitchenInventory();
+                }
+
+                function closeKitchenOverlay() {
+                    document.getElementById('kitchen-overlay').classList.add('hidden');
+                    openCollection(); // Return to collection
+                }
+
+                function renderKitchenInventory() {
+                    const grid = document.getElementById('kitchen-inventory-grid');
+                    grid.innerHTML = '';
+
+                    // Filter: Owned Items AND NOT currently in slots
+                    const userItems = VEGETABLE_DATA.filter(v => state.vegetableCollection.includes(v.id));
+
+                    userItems.forEach(item => {
+                        // Count how many we have? Logic assumes 1 of each ID for now (Set).
+                        // If slots handle consumption, we need to check if used.
+                        // Since collection is unique IDs list, if we put "Tomato" in slot, we effectively "hold" it.
+                        // Filter out if ID is in slot
+                        if (kitchenSlots.includes(item.id)) return;
+
+                        const el = document.createElement('div');
+                        el.className = 'bg-gray-800 p-2 rounded cursor-pointer hover:bg-gray-700 border border-gray-600 flex flex-col items-center';
+                        el.onclick = () => addToKitchenSlot(item.id);
+                        el.innerHTML = `
+                            <img src="${item.src}" class="w-10 h-10 object-contain">
+                            <span class="text-[10px] text-white font-jp truncate w-full text-center">${item.name}</span>
+                        `;
+                        grid.appendChild(el);
+                    });
+                }
+
+                function addToKitchenSlot(id) {
+                    if (kitchenSlots[0] === null) kitchenSlots[0] = id;
+                    else if (kitchenSlots[1] === null) kitchenSlots[1] = id;
+                    else return; // Full
+
+                    updateKitchenUI();
+                    renderKitchenInventory();
+                }
+
+                function clearKitchenSlot(index) {
+                    kitchenSlots[index] = null;
+                    updateKitchenUI();
+                    renderKitchenInventory();
+                }
+
+                function updateKitchenUI() {
+                    [0, 1].forEach(i => {
+                        const div = document.getElementById(`kitchen-slot-${i + 1}`);
+                        const id = kitchenSlots[i];
+                        if (id) {
+                            const item = VEGETABLE_DATA.find(v => v.id === id);
+                            div.innerHTML = `<img src="${item.src}" class="w-16 h-16 object-contain">`;
+                            div.classList.replace('border-dashed', 'border-solid');
+                            div.classList.add('bg-gray-700');
+                        } else {
+                            div.innerHTML = `<span class="text-gray-500 text-2xl font-bold">+</span>`;
+                            div.classList.replace('border-solid', 'border-dashed');
+                            div.classList.remove('bg-gray-700');
+                        }
+                    });
+
+                    // Check Mix Button
+                    const btn = document.getElementById('kitchen-mix-btn');
+                    btn.disabled = kitchenSlots[0] === null || kitchenSlots[1] === null;
+                }
+
+                function mixSmoothie() {
+                    const [id1, id2] = kitchenSlots;
+
+                    // Find Recipe (Order doesn't matter)
+                    const recipe = SMOOTHIE_RECIPES.find(r =>
+                        (r.ingredients[0] === id1 && r.ingredients[1] === id2) ||
+                        (r.ingredients[0] === id2 && r.ingredients[1] === id1)
+                    );
+
+                    if (recipe) {
+                        // Success!
+                        // Remove ingredients? Or keep? Usually crafting consumes.
+                        // Logic: Remove IDs from state.vegetableCollection
+                        const idx1 = state.vegetableCollection.indexOf(id1);
+                        if (idx1 > -1) state.vegetableCollection.splice(idx1, 1);
+                        const idx2 = state.vegetableCollection.indexOf(id2);
+                        if (idx2 > -1) state.vegetableCollection.splice(idx2, 1);
+
+                        // Add Result to Collection (Special ID)
+                        // But wait, our collection logic assumes numeric IDs for vegetables?
+                        // If we add "S1", renderMarket/renderCollection might fail if they expect Number or check VEGETABLE_DATA.
+                        // We need to add "Smoothies" to VEGETABLE_DATA or handle them separately.
+                        // Let's add them to a new state.smoothieStock?
+                        if (!state.smoothieStock) state.smoothieStock = [];
+                        state.smoothieStock.push(recipe.id);
+
+                        saveGameData();
+
+                        alert(`成功！\n${recipe.name} が完成しました！\n"${recipe.desc}"`);
+
+                        kitchenSlots = [null, null];
+                        updateKitchenUI();
+                        renderKitchenInventory();
+                    } else {
+                        // Fail
+                        alert("失敗...\nこの組み合わせはおいしくないようです。\n(材料は戻ってきました)");
+                        kitchenSlots = [null, null];
+                        updateKitchenUI();
+                        renderKitchenInventory();
+                    }
+                }
+
+                window.openKitchenOverlay = openKitchenOverlay;
+                window.closeKitchenOverlay = closeKitchenOverlay;
+                window.addToKitchenSlot = addToKitchenSlot;
+                window.clearKitchenSlot = clearKitchenSlot;
+                window.mixSmoothie = mixSmoothie;
+
+                // ===========================================
+                // GIFTING LOGIC
+                // ===========================================
+
+                // Helper to define preferences based on Customer Name
+                const GIFT_PREFERENCES = {
+                    // Morning
+                    "若い農民": { likes: ['green', 'vegetable'], dislikes: ['spicy'] },
+                    "年配の農婦": { likes: ['root', 'soft'], dislikes: ['mystery'] },
+                    "農民の娘": { likes: ['sweet', 'red'], dislikes: ['spicy', 'bitter'] },
+
+                    // Noon
+                    "ハゲた商人": { likes: ['gold', 'yellow'], dislikes: ['common'] },
+                    "貴婦人": { likes: ['smoothie', 'colorful'], dislikes: ['root', 'dirt'] },
+                    "町娘": { likes: ['sweet', 'cute', 'pink'], dislikes: ['bitter'] },
+                    "鍛冶屋": { likes: ['spicy', 'root'], dislikes: ['sweet'] },
+
+                    // Night
+                    "老賢者": { likes: ['mystery', 'root'], dislikes: ['artificial'] },
+                    "傭兵": { likes: ['spicy', 'meat'], dislikes: ['sweet'] },
+                    "王様": { likes: ['smoothie', 'rare'], dislikes: ['common'] },
+                    "魔女": { likes: ['mystery', 'purple'], dislikes: ['holy'] },
+                    "伝説の魔女": { likes: ['mystery', 'rare', 'smoothie'], dislikes: ['common'] },
+                    "赤い王様": { likes: ['red', 'spicy'], dislikes: ['green'] }
+                };
+
+                const DEFAULT_PREFS = { likes: ['vegetable'], dislikes: [] };
+
+                function openGiftMenu() {
+                    if (!state.currentCustomer) {
+                        alert("お客様がいません！");
+                        return;
+                    }
+
+                    document.getElementById('gift-overlay').classList.remove('hidden');
+                    renderGiftInventory();
+                }
+
+                function closeGiftMenu() {
+                    document.getElementById('gift-overlay').classList.add('hidden');
+                }
+
+                function renderGiftInventory() {
+                    const grid = document.getElementById('gift-grid');
+                    grid.innerHTML = '';
+
+                    // 1. Vegetables
+                    if (state.vegetableCollection) {
+                        // Unique counts logic could be useful, but for gifting, simple list is fine. Or grouped.
+                        // Let's list individual items so user can give one of many.
+                        // Actually, grouped is better for UI.
+
+                        const vegCounts = {};
+                        state.vegetableCollection.forEach(id => {
+                            vegCounts[id] = (vegCounts[id] || 0) + 1;
+                        });
+
+                        Object.keys(vegCounts).forEach(idStr => {
+                            const id = parseInt(idStr);
+                            const count = vegCounts[id];
+                            const data = VEGETABLE_DATA.find(v => v.id === id);
+                            if (!data) return;
+
+                            const el = document.createElement('div');
+                            el.className = 'bg-gray-800 p-2 rounded flex flex-col items-center cursor-pointer hover:bg-gray-700 border border-gray-600';
+                            el.innerHTML = `
+                                <img src="${data.src}" class="w-12 h-12 object-contain mb-1">
+                                <span class="text-xs font-bold text-white font-jp">${data.name}</span>
+                                <span class="text-xs text-gray-400">x${count}</span>
+                            `;
+                            el.onclick = () => giveGift(id, 'vegetable', data.name);
+                            grid.appendChild(el);
+                        });
+                    }
+
+                    // 2. Smoothies
+                    if (state.smoothieStock) {
+                        const smoothieCounts = {};
+                        state.smoothieStock.forEach(id => {
+                            smoothieCounts[id] = (smoothieCounts[id] || 0) + 1;
+                        });
+
+                        Object.keys(smoothieCounts).forEach(sId => {
+                            const count = smoothieCounts[sId];
+                            const data = SMOOTHIE_RECIPES.find(r => r.id === sId);
+                            if (!data) return;
+
+                            const el = document.createElement('div');
+                            el.className = 'bg-pink-900/50 p-2 rounded flex flex-col items-center cursor-pointer hover:bg-pink-800/50 border border-pink-600';
+                            el.innerHTML = `
+                                <div class="text-2xl mb-1">🥤</div>
+                                <span class="text-xs font-bold text-white font-jp">${data.name}</span>
+                                <span class="text-xs text-gray-400">x${count}</span>
+                            `;
+                            el.onclick = () => giveGift(sId, 'smoothie', data.name);
+                            grid.appendChild(el);
+                        });
+                    }
+                }
+
+                function giveGift(itemId, type, itemName) {
+                    if (!confirm(`${itemName} をプレゼントしますか？`)) return;
+
+                    closeGiftMenu();
+
+                    // Remove item
+                    if (type === 'vegetable') {
+                        const idx = state.vegetableCollection.indexOf(itemId);
+                        if (idx > -1) state.vegetableCollection.splice(idx, 1);
+                    } else if (type === 'smoothie') {
+                        const idx = state.smoothieStock.indexOf(itemId);
+                        if (idx > -1) state.smoothieStock.splice(idx, 1);
+                    }
+                    saveGameData();
+
+                    // Check Preferences
+                    const custName = state.currentCustomer.name;
+                    const prefs = GIFT_PREFERENCES[custName] || DEFAULT_PREFS;
+
+                    let itemTags = [];
+                    if (type === 'vegetable') {
+                        const v = VEGETABLE_DATA.find(i => i.id === itemId);
+                        if (v && v.tags) itemTags = v.tags;
+                    } else if (type === 'smoothie') {
+                        // Inherit tags from ingredients? Or just generic tags?
+                        itemTags = ['smoothie', 'sweet', 'drink', 'special'];
+                        // Find recipe to get ingredients
+                        const r = SMOOTHIE_RECIPES.find(i => i.id === itemId);
+                        if (r) {
+                            r.ingredients.forEach(ingId => {
+                                const ing = VEGETABLE_DATA.find(v => v.id === ingId);
+                                if (ing && ing.tags) itemTags.push(...ing.tags);
+                            });
+                        }
+                    }
+
+                    // Matching Logic
+                    let score = 0; // Neutral
+                    // Check Match
+                    const isLike = prefs.likes.some(tag => itemTags.includes(tag));
+                    const isDislike = prefs.dislikes.some(tag => itemTags.includes(tag));
+
+                    if (isDislike) {
+                        score = -1;
+                    } else if (isLike) {
+                        score = 1;
+                    }
+
+                    // Result Effect
+                    if (score === 1) {
+                        // LOVE IT
+                        playSound('success');
+                        state.score += 500;
+                        state.totalMoney += 200; // Tip
+                        showDialogue([`わぁ！これ、大好きなんだ！ありがとう！`, `なんて素敵な贈り物なんだ！`, `君は最高だよ！`]);
+                        showFloatingText("❤️ LOVE IT! +¥200", "#f472b6", dom.customerEl);
+                        createHearts(dom.customerEl);
+                    } else if (score === -1) {
+                        // HATE IT
+                        playSound('fail');
+                        showDialogue([`え…これ、苦手なんだ…`, `贈り物だから受け取るけど…`, `……（苦い顔）`]);
+                        showFloatingText("💔 Oh no...", "#94a3b8", dom.customerEl);
+                    } else {
+                        // NEUTRAL
+                        state.score += 100;
+                        showDialogue([`ありがとう、大事にするよ。`, `お、気が利くね。`, `受け取っておくよ。`]);
+                        showFloatingText("🎁 Thanks!", "#fbbf24", dom.customerEl);
+                    }
+
+                    updateScore();
+                    updateUIDisplays();
+                }
+
+                // Expose globally
+                window.openGiftMenu = openGiftMenu;
+                window.closeGiftMenu = closeGiftMenu;
+                window.giveGift = giveGift;
+
+                // Ensure state init
+                if (!state.vegetableCollection) state.vegetableCollection = [];
 
                 initialSetup();
             } catch (e) {
