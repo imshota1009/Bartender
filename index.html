@@ -2241,9 +2241,14 @@
             <!-- Secrets Section Removed -->
         </main>
         <footer class="text-center pt-6 pb-24 md:pb-6 flex flex-col gap-4 items-center" style="padding-bottom: 200px;">
-            <button onclick="openMarket()"
-                class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg text-xl shadow-lg transition-transform transform font-jp">🛒
-                材料を仕入れる</button>
+            <div class="flex gap-4">
+                <button onclick="openMarket()"
+                    class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg text-xl shadow-lg transition-transform transform font-jp">🛒
+                    材料を仕入れる</button>
+                <button id="room-save-button" onclick="saveGameManually()"
+                    class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 px-8 rounded-lg text-xl shadow-lg transition-transform transform font-jp">💾
+                    セーブする</button>
+            </div>
             <button id="next-day-button" data-lang-key="nextDayButton"
                 class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-xl shadow-lg transition-transform transform font-jp button-pulse">次の日へ</button>
         </footer>
@@ -2333,38 +2338,44 @@
         class="absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-500 z-30 bg-black/90">
 
         <!-- Part 1: Initial Start Screen -->
-        <div id="title-screen-content" class="flex flex-col items-center justify-center">
-            <h1 class="font-title text-6xl md:text-8xl mb-8 text-blue-500 animate-pulse">Bartender</h1>
-            <button id="initial-start-btn" onclick="openCharacterSelection(1)" data-lang-key="gameStartBtn"
-                class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-6 px-12 rounded-full text-3xl shadow-[0_0_30px_rgba(37,99,235,0.5)] transition-all hover:scale-105 active:scale-95 font-jp">開始</button>
+        <div id="title-screen-content" class="flex flex-col items-center justify-center gap-4">
+            <h1 class="font-title text-6xl md:text-8xl mb-4 text-blue-500 animate-pulse">Bartender</h1>
+            <div class="flex flex-col gap-6 w-full max-w-xs">
+                <button id="new-game-btn" onclick="openCharacterSelection(1)"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-full text-2xl shadow-lg transition-all hover:scale-105 active:scale-95 font-jp">はじめから</button>
+                <button id="continue-game-btn" onclick="loadAndStart(1)"
+                    class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-4 px-8 rounded-full text-2xl shadow-lg transition-all hover:scale-105 active:scale-95 font-jp disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed">続きから</button>
+            </div>
             <button id="help-start-btn" data-lang-key="helpViewBtn"
                 class="mt-6 text-blue-400 hover:text-blue-300 font-jp text-lg border-b border-blue-500/30">📖
                 遊び方を見る</button>
         </div>
 
-        <!-- Part 2: Slot Selection -->
-        <div id="slot-selection-content" class="hidden w-full max-w-4xl p-6">
-            <h2 class="text-3xl font-bold text-amber-500 mb-8 text-center font-jp">セーブスロットを選択</h2>
-            <div id="save-slots-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Injected by JS -->
-            </div>
-            <button onclick="hideSaveSlots()"
-                class="mt-8 text-gray-400 hover:text-white w-full text-center font-jp">戻る</button>
-        </div>
-
-        <!-- Part 3: Character Selection (Disabled / Hidden)
+        <!-- Part 3: Character Selection -->
         <div id="character-selection-content" class="hidden w-full max-w-2xl p-6">
-            <h2 class="text-3xl font-bold text-amber-500 mb-4 text-center font-jp">スロットアイコンを選択</h2>
-            <div id="icon-selection-grid"
-                class="grid grid-cols-4 sm:grid-cols-6 gap-4 max-h-[60vh] overflow-y-auto p-2 custom-scrollbar">
+            <h2 class="text-3xl font-bold text-amber-500 mb-8 text-center font-jp">キャラクターを選択</h2>
+            <div class="flex justify-center gap-12">
+                <!-- Male Character -->
+                <div onclick="startNewGame(1, 'images/avatar/man.png')"
+                    class="flex flex-col items-center gap-4 cursor-pointer hover:scale-110 transition-transform group">
+                    <img src="images/avatar/man.png"
+                        class="w-32 h-32 rounded-full border-4 border-blue-500/50 bg-black/40 object-cover group-hover:border-blue-400 shadow-xl">
+                    <span class="text-xl font-bold text-blue-400 font-jp">男性</span>
+                </div>
+                <!-- Female Character -->
+                <div onclick="startNewGame(1, 'images/avatar/woman.png')"
+                    class="flex flex-col items-center gap-4 cursor-pointer hover:scale-110 transition-transform group">
+                    <img src="images/avatar/woman.png"
+                        class="w-32 h-32 rounded-full border-4 border-pink-500/50 bg-black/40 object-cover group-hover:border-pink-400 shadow-xl">
+                    <span class="text-xl font-bold text-pink-400 font-jp">女性</span>
+                </div>
             </div>
-            <div class="mt-6 flex justify-center">
+            <div class="mt-12 flex justify-center">
                 <button
-                    onclick="document.getElementById('character-selection-content').classList.add('hidden'); document.getElementById('slot-selection-content').classList.remove('hidden');"
-                    class="text-gray-400 hover:text-white underline font-jp">戻る</button>
+                    onclick="document.getElementById('character-selection-content').classList.add('hidden'); document.getElementById('title-screen-content').classList.remove('hidden');"
+                    class="text-gray-400 hover:text-white underline font-jp text-lg">戻る</button>
             </div>
         </div>
-        -->
     </div>
 
     <!-- Vegetable Collection Overlay -->

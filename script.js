@@ -1770,8 +1770,9 @@ document.addEventListener('DOMContentLoaded', () => {
         let pendingSlotId = null;
 
         function openCharacterSelection(slotId) {
-            // Immediately start new game with default avatar
-            startNewGame(slotId, 'images/night/bartender_man.png');
+            // Show the character selection UI instead of skipping
+            document.getElementById('title-screen-content').classList.add('hidden');
+            document.getElementById('character-selection-content').classList.remove('hidden');
         }
 
         function startNewGame(slotId, avatarImage) {
@@ -1798,56 +1799,77 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function saveGameManually() {
-            const dayEndScreen = document.getElementById('day-end-screen');
-            const isDayEnd = dayEndScreen && dayEndScreen.classList.contains('active');
+            // Check if we are in the "Room" view (Day End screen / Upgrade Screen)
+            const roomContainer = document.getElementById('room-container');
+            const isRoomVisible = roomContainer && !roomContainer.classList.contains('hidden');
 
-            // Restriction: Cannot save during business hours
-            if (state.isGameRunning && state.day > 0 && !isDayEnd) {
-                const msg = state.language === 'ja' ? "営業中はセーブできません！" : "Cannot save during business hours!";
+            if (isRoomVisible) {
+                // Perform Save
+                saveGameData();
 
-                // Create a robust, high-visibility notification
+                // Success Notification
+                const msg = state.language === 'ja' ? "セーブしました！" : "Game Saved!";
+                playSound('success');
+
+                // Show a clear notification
                 const notifyEl = document.createElement('div');
                 notifyEl.textContent = msg;
                 notifyEl.style.cssText = `
-                            position: fixed;
-                            top: 50%;
-                            left: 50%;
-                            transform: translate(-50%, -50%);
-                            background: rgba(220, 38, 38, 0.9);
-                            color: white;
-                            padding: 20px 40px;
-                            border-radius: 10px;
-                            font-weight: bold;
-                            font-size: 1.5rem;
-                            z-index: 9999;
-                            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-                            pointer-events: none;
-                            animation: fadeOut 2s forwards;
-                            font-family: 'Noto Serif JP', serif;
-                        `;
-
-                // Add fadeOut animation if not exists
-                // (Assuming fadeOut isn't defined globally, usage of 'forwards' might need explicit keyframes or just simple opacity transition)
-                // Simpler approach: transition opacity
-                notifyEl.style.transition = "opacity 0.5s ease-out";
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: rgba(34, 197, 94, 0.95); /* Green */
+                    color: white;
+                    padding: 20px 40px;
+                    border-radius: 12px;
+                    font-weight: bold;
+                    font-size: 1.5rem;
+                    z-index: 9999;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+                    pointer-events: none;
+                    animation: fadeOut 2s forwards;
+                    font-family: 'Noto Serif JP', serif;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                `;
+                // Add icon
+                const icon = document.createElement('span');
+                icon.textContent = "💾";
+                notifyEl.prepend(icon);
 
                 document.body.appendChild(notifyEl);
+                setTimeout(() => notifyEl.remove(), 2500);
 
+            } else {
+                // Error: Cannot save right now
+                const msg = state.language === 'ja' ? "営業中はセーブできません！\n(一日の終わりの部屋でセーブできます)" : "Cannot save now!\n(Save from the Day End screen)";
                 playSound('fail');
 
-                setTimeout(() => {
-                    notifyEl.style.opacity = '0';
-                    setTimeout(() => notifyEl.remove(), 500);
-                }, 1500);
-
-                return;
+                const notifyEl = document.createElement('div');
+                notifyEl.innerText = msg;
+                notifyEl.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: rgba(220, 38, 38, 0.95); /* Red */
+                    color: white;
+                    padding: 20px 40px;
+                    border-radius: 12px;
+                    font-weight: bold;
+                    font-size: 1.2rem;
+                    text-align: center;
+                    z-index: 9999;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+                    pointer-events: none;
+                    animation: fadeOut 3s forwards;
+                    font-family: 'Noto Serif JP', serif;
+                `;
+                document.body.appendChild(notifyEl);
+                setTimeout(() => notifyEl.remove(), 3500);
             }
-
-            saveGameData();
-            const msg = state.language === 'ja' ? "セーブしました！" : "Game Saved!";
-            const targetEl = document.getElementById('game-container') || document.body;
-            showFloatingText(msg, '#4ade80', targetEl);
-            playSound('success');
         }
 
         // Make interior functions globally accessible
@@ -2869,24 +2891,83 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('fortune-result-overlay').classList.add('hidden');
         }
 
-        // --- Character Selection & Immediate Start ---
-        function startNewGameDirectly() {
-            // Use default character image
-            state.avatar = 'images/night/bartender_man.png';
-            state.currentSaveSlot = 1;
-
-            // Hide title screen
-            const overlay = document.getElementById('game-overlay');
-            if (overlay) overlay.style.display = 'none';
-
-            // Start the game
-            startDay();
+        function saveGameData() {
+            if (state.currentSaveSlot) {
+                const key = `bartenderSave_${state.currentSaveSlot}`;
+                const data = {
+                    totalMoney: state.totalMoney,
+                    day: state.day,
+                    ownedIngredients: state.ownedIngredients,
+                    discoveredCocktails: state.discoveredCocktails,
+                    metCustomers: state.metCustomers,
+                    currentTitle: state.currentTitle,
+                    unlockedTitles: state.unlockedTitles,
+                    ownedInterior: state.ownedInterior,
+                    interior: state.interior,
+                    upgrades: state.upgrades,
+                    avatar: state.avatar,
+                    language: state.language,
+                    timestamp: Date.now()
+                };
+                localStorage.setItem(key, JSON.stringify(data));
+            }
         }
 
-        window.startNewGameDirectly = startNewGameDirectly;
+        function loadGameData(slotId) {
+            const key = `bartenderSave_${slotId}`;
+            const saved = localStorage.getItem(key);
+            if (saved) {
+                const data = JSON.parse(saved);
+                state.currentSaveSlot = slotId;
+                state.totalMoney = data.totalMoney || 1000;
+                state.day = data.day || 1;
+                state.ownedIngredients = data.ownedIngredients || [...STARTER_INGREDIENTS];
+                state.discoveredCocktails = data.discoveredCocktails || [];
+                state.metCustomers = data.metCustomers || [];
+                state.currentTitle = data.currentTitle || 'beginner';
+                state.unlockedTitles = data.unlockedTitles || ['beginner'];
+                state.ownedInterior = data.ownedInterior || { wallpaper: ['classic'], lighting: ['warm'], bgm: ['jazz'] };
+                state.interior = data.interior || { wallpaper: 'classic', lighting: 'warm', bgm: 'jazz' };
+                state.upgrades = data.upgrades || { iceMachine: { purchased: false }, shaker: { purchased: false }, barManual: { purchased: false } };
+                state.avatar = data.avatar || 'images/avatar/man.png';
+                state.language = data.language || 'ja';
+                updateUI();
+                return true;
+            }
+            return false;
+        }
+
+        function initialSetup() {
+            // Check for existing save data to handle "Continue" button
+            const saved = localStorage.getItem('bartenderSave_1');
+            const continueBtn = document.getElementById('continue-game-btn');
+            if (continueBtn) {
+                if (saved) {
+                    continueBtn.disabled = false;
+                } else {
+                    continueBtn.disabled = true;
+                }
+            }
+
+            // Other init logic...
+            updateUI();
+        }
+
+        function loadAndStart(slotId) {
+            if (loadGameData(slotId)) {
+                startAudio();
+                const overlay = document.getElementById('game-overlay');
+                if (overlay) overlay.classList.add('opacity-0');
+                setTimeout(() => {
+                    if (overlay) overlay.style.display = 'none';
+                    startDay();
+                }, 500);
+            }
+        }
 
         function openCharacterSelection(slotId) {
-            startNewGameDirectly();
+            document.getElementById('title-screen-content').classList.add('hidden');
+            document.getElementById('character-selection-content').classList.remove('hidden');
         }
 
         function showSaveSlots() {
@@ -2903,10 +2984,10 @@ document.addEventListener('DOMContentLoaded', () => {
         window.openFortuneMenu = openFortuneMenu;
         window.closeFortuneMenu = closeFortuneMenu;
         window.closeFortuneResult = closeFortuneResult;
-        window.showSaveSlots = showSaveSlots;
-        window.hideSaveSlots = hideSaveSlots;
         window.openCharacterSelection = openCharacterSelection;
         window.deleteSave = deleteSave;
+        window.loadAndStart = loadAndStart;
+        window.saveGameManually = saveGameManually;
 
         initialSetup();
     } catch (e) {
