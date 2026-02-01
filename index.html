@@ -2335,7 +2335,7 @@
         <!-- Part 1: Initial Start Screen -->
         <div id="title-screen-content" class="flex flex-col items-center justify-center">
             <h1 class="font-title text-6xl md:text-8xl mb-8 text-blue-500 animate-pulse">Bartender</h1>
-            <button id="initial-start-btn" onclick="showSaveSlots()" data-lang-key="gameStartBtn"
+            <button id="initial-start-btn" onclick="openCharacterSelection(1)" data-lang-key="gameStartBtn"
                 class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-6 px-12 rounded-full text-3xl shadow-[0_0_30px_rgba(37,99,235,0.5)] transition-all hover:scale-105 active:scale-95 font-jp">開始</button>
             <button id="help-start-btn" data-lang-key="helpViewBtn"
                 class="mt-6 text-blue-400 hover:text-blue-300 font-jp text-lg border-b border-blue-500/30">📖
@@ -2352,12 +2352,11 @@
                 class="mt-8 text-gray-400 hover:text-white w-full text-center font-jp">戻る</button>
         </div>
 
-        <!-- Part 3: Character Selection -->
+        <!-- Part 3: Character Selection (Disabled / Hidden)
         <div id="character-selection-content" class="hidden w-full max-w-2xl p-6">
             <h2 class="text-3xl font-bold text-amber-500 mb-4 text-center font-jp">スロットアイコンを選択</h2>
             <div id="icon-selection-grid"
                 class="grid grid-cols-4 sm:grid-cols-6 gap-4 max-h-[60vh] overflow-y-auto p-2 custom-scrollbar">
-                <!-- Javascript will populate this -->
             </div>
             <div class="mt-6 flex justify-center">
                 <button
@@ -2365,6 +2364,7 @@
                     class="text-gray-400 hover:text-white underline font-jp">戻る</button>
             </div>
         </div>
+        -->
     </div>
 
     <!-- Vegetable Collection Overlay -->
@@ -4735,43 +4735,9 @@
 
                 let pendingSlotId = 1;
                 function openCharacterSelection(slotId) {
-                    pendingSlotId = slotId;
-                    document.getElementById('slot-selection-content').classList.add('hidden');
-                    const charSelection = document.getElementById('character-selection-content');
-                    charSelection.classList.remove('hidden');
-
-                    const grid = document.getElementById('icon-selection-grid');
-                    grid.innerHTML = '';
-
-                    // Add default avatars first
-                    const defaults = [
-                        { path: 'images/avatar/man.png', label: '男性' },
-                        { path: 'images/avatar/woman.png', label: '女性' }
-                    ];
-
-                    defaults.forEach(def => {
-                        const div = document.createElement('div');
-                        div.className = "flex flex-col items-center gap-2 cursor-pointer hover:scale-105 transition-transform p-2 bg-slate-800/50 rounded-lg border border-slate-700 hover:border-amber-500";
-                        div.onclick = () => selectCharacter(def.path);
-                        div.innerHTML = `
-                            <img src="${def.path}" class="w-16 h-16 rounded-full border-2 border-amber-500/30 bg-black/40 object-cover">
-                            <span class="text-xs text-slate-300 font-jp">${def.label}</span>
-                        `;
-                        grid.appendChild(div);
-                    });
-
-                    // Add 1-48 slot icons
-                    for (let i = 1; i <= 48; i++) {
-                        const path = `images/slot_icon/${i}.png`;
-                        const div = document.createElement('div');
-                        div.className = "flex flex-col items-center gap-2 cursor-pointer hover:scale-105 transition-transform p-2 bg-slate-800/50 rounded-lg border border-slate-700 hover:border-amber-500";
-                        div.onclick = () => selectCharacter(path);
-                        div.innerHTML = `
-                            <img src="${path}" class="w-16 h-16 rounded-full border-2 border-amber-500/30 bg-black/40 object-cover">
-                            <span class="text-xs text-slate-300 font-jp">No.${i}</span>
-                        `;
-                        grid.appendChild(div);
-                    }
+                    // Default avatar for immediate start
+                    const defaultAvatar = 'images/avatar/man.png';
+                    startNewGame(slotId, defaultAvatar);
                 }
 
                 window.selectCharacter = function (avatarPath) {
