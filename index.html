@@ -2783,7 +2783,7 @@
                 };
 
                 // --- Starter Ingredients ---
-                const STARTER_INGREDIENTS = ['vodka', 'gin', 'rum', 'lime', 'orangeJuice', 'tonic', 'cola', 'soda'];
+                const STARTER_INGREDIENTS = ['vodka', 'rum', 'cola', 'orangeJuice', 'cassis', 'kahlua', 'grenadine', 'tomatoJuice', 'beer'];
 
                 // --- Title Definitions ---
                 const TITLES = [
@@ -3511,17 +3511,26 @@
 
                         // Generate Cocktail Order
                         if (state.currentCustomer.constraints) {
-                            // Boss logic handled in startBossEncounter, this block might be redundant or for debug custom boss injection
-                            // If we assigned a boss template to currentCustomer manually:
                             state.currentOrder = {
                                 isConstraint: true,
                                 constraints: state.currentCustomer.constraints,
-                                text: state.currentCustomer.quotes.order[0] // Use first quote as order text
+                                text: state.currentCustomer.quotes.order[0]
                             };
                         } else {
                             // Normal Customer order generation
                             if (!isOkawari) {
-                                const randomCocktail = currentLangData.COCKTAILS[Math.floor(Math.random() * currentLangData.COCKTAILS.length)];
+                                // 85% Chance to order something makable with current ingredients
+                                const makableCocktails = currentLangData.COCKTAILS.filter(c =>
+                                    c.ingredients.every(ing => state.ownedIngredients.includes(ing))
+                                );
+
+                                let randomCocktail;
+                                if (Math.random() < 0.85 && makableCocktails.length > 0) {
+                                    randomCocktail = makableCocktails[Math.floor(Math.random() * makableCocktails.length)];
+                                } else {
+                                    // 15% chance (or if no makable cocktails) to pick any
+                                    randomCocktail = currentLangData.COCKTAILS[Math.floor(Math.random() * currentLangData.COCKTAILS.length)];
+                                }
                                 state.currentOrder = { ...randomCocktail, isConstraint: false };
                             }
                             // If isOkawari, we keep state.currentOrder as is
@@ -3539,15 +3548,33 @@
                             };
                         }
 
+                        // Check for missing ingredients
+                        const isMissing = checkMissingIngredients();
+                        if (isMissing) {
+                            // Show Recommendation Button
+                            setTimeout(() => {
+                                showRecommendationOption();
+                            }, 800);
+                        }
+
                         setTimeout(() => {
-                            dom.orderTextEl.textContent = state.currentOrder.isConstraint
-                                ? state.currentOrder.text
-                                : state.currentOrder.name;
+                            if (!state.currentOrder.isFreeChoice) {
+                                dom.orderTextEl.textContent = state.currentOrder.isConstraint
+                                    ? state.currentOrder.text
+                                    : state.currentOrder.name;
+                            } else {
+                                dom.orderTextEl.textContent = state.language === 'ja' ? 'おまかせ (おすすめ)' : 'Recommendation';
+                            }
 
                             dom.orderIngredientsEl.innerHTML = '';
-                            // For constraints, we might want to hint ingredients or show "?"
-                            if (state.currentOrder.isConstraint) {
-                                // Show nothing or hint? Bosses usually don't show ingredients list directly
+                            if (state.currentOrder.isConstraint || state.currentOrder.isFreeChoice) {
+                                // Show nothing or hint
+                                if (state.currentOrder.isFreeChoice) {
+                                    const div = document.createElement('div');
+                                    div.textContent = '✨';
+                                    div.className = 'animate-pulse text-2xl';
+                                    dom.orderIngredientsEl.appendChild(div);
+                                }
                             } else {
                                 state.currentOrder.ingredients.forEach(ingKey => {
                                     const ingredient = currentLangData.INGREDIENTS[ingKey];
@@ -3563,8 +3590,14 @@
                             }
 
                             dom.orderBubbleEl.style.opacity = '1';
-                            showDialogue(isOkawari ? currentLangData.okawariMsg : state.currentCustomer.quotes.order);
+                            const orderMsg = state.currentOrder.isFreeChoice
+                                ? (state.language === 'ja' ? 'じゃあ、君のおすすめを頼むよ！' : 'Alright, surprise me!')
+                                : (isOkawari ? currentLangData.okawariMsg : state.currentCustomer.quotes.order);
+
+                            showDialogue(orderMsg);
+
                             updateRecipeDisplay();
+                            // ... existing update code ...
                             if (isOkawari) {
                                 showFloatingText(currentLangData.okawari, '#f472b6', dom.customerEl);
                                 playSound('tip');
@@ -3707,17 +3740,42 @@
                         let countMatch = true;
                         if (c.exactCount) countMatch = state.shakerContents.length === c.exactCount;
 
-                        iceMatch = true;
-                        if (state.currentOrder.needsIce) iceMatch = state.shakerHasIce;
+                        // Constraints Logic
+                        isCorrect = glassMatch && includesMatch && alcoholMatch && countMatch;
 
-                        ingredientMatch = includesMatch && alcoholMatch && countMatch;
-                        isCorrect = glassMatch && ingredientMatch && iceMatch;
+                    } else if (state.currentOrder.isFreeChoice) {
+                        // Free Choice / Recommendation Logic
+                        // Correct if Shaker is not empty
+                        isCorrect = state.shakerContents.length > 0;
+                        glassMatch = true;
+                        ingredientMatch = true;
+                        iceMatch = true; // lenient
+
+                        // Check if it matches a real cocktail for bonus?
+                        const foundCocktail = currentLangData.COCKTAILS.find(c => {
+                            if (c.ingredients.length !== state.shakerContents.length) return false;
+                            const sortedA = [...c.ingredients].sort();
+                            const sortedB = [...state.shakerContents].sort();
+                            return sortedA.every((val, index) => val === sortedB[index]);
+                        });
+
+                        if (foundCocktail) {
+                            // Bonus handling could go here
+                            state.discoveredCocktails.push(foundCocktail.name);
+                        }
+
                     } else {
+                        // Normal Recipe Logic
                         const madeRecipeSorted = JSON.stringify([...state.shakerContents].sort());
                         const targetRecipeSorted = JSON.stringify([...state.currentOrder.ingredients].sort());
 
                         ingredientMatch = madeRecipeSorted === targetRecipeSorted;
                         iceMatch = state.currentOrder.needsIce === state.shakerHasIce;
+                        if (state.currentOrder.needsIce === false) iceMatch = true; // Lenient on ice if not needed? Or strict? 
+                        // Original was: iceMatch = state.currentOrder.needsIce === state.shakerHasIce;
+                        // Actually, looking at previous code, let's restore exact logic.
+                        iceMatch = state.currentOrder.needsIce === state.shakerHasIce;
+
                         glassMatch = state.selectedGlass === state.currentOrder.glass;
 
                         isCorrect = ingredientMatch && iceMatch && glassMatch;
@@ -3891,25 +3949,102 @@
                     document.getElementById('ingredient-selection-overlay').classList.add('hidden');
                 };
 
+                function checkMissingIngredients() {
+                    if (!state.currentOrder || state.currentOrder.isConstraint || state.currentOrder.isFreeChoice) return false;
+                    // Check if we own all required ingredients
+                    return state.currentOrder.ingredients.some(ing => !state.ownedIngredients.includes(ing));
+                }
+
+                function showRecommendationOption() {
+                    // Create a temporary button near the talk button
+                    let btn = document.getElementById('recommend-btn');
+                    if (!btn) {
+                        btn = document.createElement('button');
+                        btn.id = 'recommend-btn';
+                        // Positioned at bottom-32 left-4 to avoid recipe overlap (top-right) and talk button (bottom-center/right)
+                        btn.className = 'absolute bottom-32 left-4 bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded-full shadow-lg font-jp animate-bounce z-50';
+                        btn.onclick = applyRecommendation;
+                        dom.customerAreaEl.appendChild(btn);
+                    }
+                    // Update text to "Tell them you are out of stock"
+                    btn.textContent = state.language === 'ja' ? '🗣️ 在庫切れを伝える' : '🗣️ Inform Out of Stock';
+                    btn.classList.remove('hidden');
+                }
+
+                function applyRecommendation() {
+                    const btn = document.getElementById('recommend-btn');
+                    if (btn) btn.classList.add('hidden');
+
+                    // Step 1: Customer reacts to the bad news
+                    const msg1 = state.language === 'ja' ? 'えっ？材料がないのかい？困ったな…' : 'Huh? You\'re out of ingredients? That\'s a problem...';
+                    showDialogue(msg1);
+                    playSound('low_tone'); // A sad/confused sound if available, otherwise reuse pop or omit
+
+                    // Step 2: Customer agrees to a recommendation
+                    setTimeout(() => {
+                        const msg2 = state.language === 'ja' ? '…仕方ない。じゃあ、君のおすすめを作ってくれ。' : '...Well, can\'t be helped. Just make me your recommendation.';
+                        showDialogue(msg2);
+
+                        state.currentOrder = {
+                            isFreeChoice: true,
+                            name: 'Recommendation',
+                            ingredients: [], // No specific constraints
+                            glass: 'any'
+                        };
+
+                        // Update UI text
+                        dom.orderTextEl.textContent = state.language === 'ja' ? 'おまかせ (おすすめ)' : 'Recommendation';
+                        dom.orderIngredientsEl.innerHTML = '<div class="animate-pulse text-2xl">✨</div>';
+                        dom.recipeDisplayEl.style.opacity = '0';
+                        playSound('sparkle');
+                    }, 2000); // 2 second delay for reading
+                }
+
                 function generateIngredients() {
                     const grid = document.getElementById('ingredient-grid');
                     grid.innerHTML = '';
                     const currentLangData = translations[state.language];
                     Object.keys(currentLangData.INGREDIENTS).forEach(key => {
                         const ing = currentLangData.INGREDIENTS[key];
+                        const isOwned = state.ownedIngredients.includes(key);
                         const btn = document.createElement('button');
-                        btn.className = 'w-full aspect-square rounded shadow-md flex items-center justify-center text-xs md:text-sm font-bold font-jp break-words p-1 md:p-2 hover:scale-105 transition-transform border-2 border-transparent hover:border-white';
-                        btn.style.backgroundColor = ing.color;
-                        btn.style.color = '#333';
-                        if (['cassis', 'cola', 'kahlua', 'coffee'].includes(key)) btn.style.color = '#fff';
+
+                        // Visual Feedback for Selection
+                        const isSelected = state.shakerContents.includes(key);
+                        let baseClasses = 'w-full aspect-square rounded shadow-md flex items-center justify-center text-xs md:text-sm font-bold font-jp break-words p-1 md:p-2 transition-transform border-2 border-transparent';
+
+                        if (isOwned) {
+                            const selectedClass = isSelected ? 'ring-4 ring-white scale-95' : 'hover:scale-105 hover:border-white';
+                            btn.className = `${baseClasses} ${selectedClass}`;
+                            btn.style.backgroundColor = ing.color;
+                            btn.style.color = '#333';
+                            if (['cassis', 'cola', 'kahlua', 'coffee'].includes(key)) btn.style.color = '#fff';
+                        } else {
+                            // Locked State
+                            btn.className = `${baseClasses} opacity-40 grayscale cursor-not-allowed`;
+                            btn.style.backgroundColor = ing.color; // Show color but grayscale filter will mute it
+                            btn.style.color = '#333';
+                        }
+
                         btn.textContent = ing.name;
-                        btn.onclick = () => {
-                            if (state.canInteract && state.shakerContents.length < 5) {
-                                state.shakerContents.push(key);
-                                updateShakerVisual();
-                                playSound('pour');
-                            }
-                        };
+
+                        if (isOwned) {
+                            btn.onclick = () => {
+                                if (state.canInteract) {
+                                    if (state.shakerContents.length < 5) {
+                                        state.shakerContents.push(key);
+                                        updateShakerVisual();
+                                        playSound('pour');
+                                        generateIngredients(); // Refresh to show selection
+                                    }
+                                }
+                            };
+                        } else {
+                            // Optional: Click on locked item prompt "Buy in Market"
+                            btn.onclick = () => {
+                                showFloatingText(state.language === 'ja' ? '市場で購入できます' : 'Available in Market', '#fbbf24', btn);
+                            };
+                        }
                         grid.appendChild(btn);
                     });
                 }
