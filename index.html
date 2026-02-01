@@ -1978,7 +1978,7 @@
 </head>
 
 <body class="text-white flex items-center justify-center min-h-screen">
-    <audio id="bgm-audio" loop></audio>
+
     <!-- Weather Overlay -->
     <div id="weather-overlay"></div>
 
@@ -3110,18 +3110,15 @@
                     selectedGlass: null,
                     discoveredSecrets: [],
                     timeOfDay: 'morning',
-                    // === NEW FEATURES ===
                     ownedIngredients: [...STARTER_INGREDIENTS],
                     discoveredCocktails: [],
                     metCustomers: [],
                     currentTitle: 'beginner',
-                    totalTalks: 0,
-                    // === PHASE 2: Weather, Drunk, Events ===
-                    currentWeather: 'sunny', // sunny, rainy, snowy
-                    currentEvent: null, // null, 'summer', 'christmas'
-                    customerDrunkLevel: 0, // 0-100, 100+ = passed out
                     unlockedTitles: ['beginner'],
-                    // === PHASE 3: Interior Customization ===
+                    totalTalks: 0,
+                    currentWeather: 'sunny',
+                    currentEvent: null,
+                    customerDrunkLevel: 0,
                     interior: {
                         wallpaper: 'classic',
                         lighting: 'warm',
@@ -3133,12 +3130,11 @@
                         bgm: ['standard_jazz']
                     },
                     isMysteryMode: false,
-                    // === SOCIAL FEATURES ===
-                    // === SAVE SLOTS & AVATAR ===
                     currentSaveSlot: 1,
                     avatar: 'images/night/bartender_man.png',
-                    timer: 300 // Added explicitly to match startDay/updateTimer logic
+                    timer: 300
                 };
+
 
                 // --- Sound Engine ---
                 let sounds = {};
@@ -5628,25 +5624,38 @@
                 let BGM_TRACKS = [];
 
                 async function fetchBGMList() {
+                    // 外部サーバーへの依存を減らし、ローカルのジュークボックスフォルダ内の曲を優先します
+                    BGM_TRACKS = [
+                        { id: 'standard_jazz', name: '🍸 Standard Jazz', src: 'jukebox/standard_jazz.mp3', icon: '🎷' },
+                        { id: 'barcarolle', name: '🌙 Barcarolle of the Blue Moonlit Night', src: 'jukebox/Barcarolle of the Blue Moonlit Night.mp3', icon: '🎻' },
+                        { id: 'barcarolle_jp', name: '🌙 蒼の月夜のバルカローレ', src: 'jukebox/蒼の月夜のバルカローレ.mp3', icon: '🎻' },
+                        { id: 'coffee_break', name: '☕ Coffee Break', src: 'jukebox/Coffee_Break.mp3', icon: '☕' },
+                        { id: 'whisky_nights', name: '🥃 Whisky Nights', src: 'jukebox/Whisky_Nights.mp3', icon: '🥃' },
+                        { id: 'winter_night', name: '❄️ Winter Night Street', src: 'jukebox/Winter_Night_Street.mp3', icon: '❄️' }
+                    ];
+
                     try {
                         const response = await fetch('http://localhost:3000/api/music');
                         if (response.ok) {
                             const tracks = await response.json();
-                            BGM_TRACKS = tracks.map(t => ({
-                                id: t.id,
-                                name: t.name,
-                                src: t.src,
-                                icon: t.icon || '🎵'
-                            }));
-                            console.log('BGM List loaded:', BGM_TRACKS);
+                            if (tracks && tracks.length > 0) {
+                                BGM_TRACKS = tracks.map(t => ({
+                                    id: t.id,
+                                    name: t.name,
+                                    src: t.src,
+                                    icon: t.icon || '🎵'
+                                }));
+                            }
                         }
                     } catch (e) {
-                        console.error('Failed to fetch BGM list:', e);
-                        // Fallback
-                        BGM_TRACKS = [
-                            { id: 'standard_jazz', name: 'Standard Jazz', src: 'jukebox/standard_jazz.mp3', icon: '🎷' }
-                        ];
+                        console.log('Using local BGM list.');
                     }
+
+                    // ゲーム開始時のBGMを設定
+                    if (!state.interior.bgm) {
+                        state.interior.bgm = BGM_TRACKS[0].id;
+                    }
+                    applyBGM(state.interior.bgm);
                 }
 
                 function openJukebox() {
@@ -6461,6 +6470,46 @@
                 window.openGiftMenu = openGiftMenu;
                 window.closeGiftMenu = closeGiftMenu;
                 window.giveGift = giveGift;
+                window.openCocktailEncyclopedia = openCocktailEncyclopedia;
+                window.closeCocktailEncyclopedia = closeCocktailEncyclopedia;
+                window.openCustomerEncyclopedia = openCustomerEncyclopedia;
+                window.closeCustomerEncyclopedia = closeCustomerEncyclopedia;
+                window.openTitleList = openTitleList;
+                window.closeTitleList = closeTitleList;
+                window.openInteriorShop = openInteriorShop;
+                window.closeInteriorShop = closeInteriorShop;
+                window.saveGameManually = saveGameManually;
+                window.openInquiry = openInquiry;
+                window.closeInquiry = closeInquiry;
+                window.submitInquiry = submitInquiry;
+                window.openCollection = openCollection;
+                window.closeCollection = closeCollection;
+                window.returnToTitle = returnToTitle;
+                window.closeMenu = closeMenu;
+                window.closeDetailModal = closeDetailModal;
+                window.closeTitleCelebration = closeTitleCelebration;
+                window.openMarketOverlay = openMarketOverlay;
+                window.closeMarketOverlay = closeMarketOverlay;
+                window.openJukebox = openJukebox;
+                window.closeJukebox = closeJukebox;
+                window.openFortuneMenu = openFortuneMenu;
+                window.closeFortuneMenu = closeFortuneMenu;
+                window.openMarket = openMarket;
+                window.closeMarket = closeMarket;
+                window.setMarketMode = setMarketMode;
+                window.showSaveSlots = showSaveSlots;
+                window.hideSaveSlots = hideSaveSlots;
+                window.clearKitchenSlot = clearKitchenSlot;
+                window.mixSmoothie = mixSmoothie;
+                window.selectGlass = selectGlass;
+                window.toggleGestureShake = toggleGestureShake;
+                window.openPhotoMode = openPhotoMode;
+                window.closePhotoMode = closePhotoMode;
+                window.downloadPhoto = downloadPhoto;
+                window.shareToTwitter = shareToTwitter;
+                window.shareToLINE = shareToLINE;
+                window.openKitchenOverlay = openKitchenOverlay;
+                window.closeKitchenOverlay = closeKitchenOverlay;
 
                 // Ensure state init
                 if (!state.vegetableCollection) state.vegetableCollection = [];
@@ -6471,6 +6520,8 @@
             }
         });
     </script>
+    <audio id="bgm-audio" loop></audio>
+
     <!-- Jukebox Overlay (Merged) -->
     <div id="jukebox-overlay" class="fixed inset-0 bg-black/90 hidden z-[60] flex items-center justify-center">
         <div class="bg-gray-900 p-6 rounded-xl max-w-md w-full border-4 border-indigo-500 relative shadow-2xl">

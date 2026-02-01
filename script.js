@@ -2714,42 +2714,62 @@ document.addEventListener('DOMContentLoaded', () => {
             // ===========================================
             // JUKEBOX FEATURE
             // ===========================================
-            let BGM_TRACKS = [];
+            let BGM_TRACKS = [
+                { id: 'standard_jazz', name: '🍸 Standard Jazz', src: 'jukebox/standard_jazz.mp3', icon: '🎷' },
+                { id: 'barcarolle', name: '🌙 Barcarolle of the Blue Moonlit Night', src: 'jukebox/Barcarolle of the Blue Moonlit Night.mp3', icon: '🎻' },
+                { id: 'barcarolle_jp', name: '🌙 蒼の月夜のバルカローレ', src: 'jukebox/蒼の月夜のバルカローレ.mp3', icon: '🎻' },
+                { id: 'coffee_break', name: '☕ Coffee Break', src: 'jukebox/Coffee_Break.mp3', icon: '☕' },
+                { id: 'whisky_nights', name: '🥃 Whisky Nights', src: 'jukebox/Whisky_Nights.mp3', icon: '🥃' },
+                { id: 'winter_night', name: '❄️ Winter Night Street', src: 'jukebox/Winter_Night_Street.mp3', icon: '❄️' }
+            ];
 
+            // Automatic fetch disabled by user request. Using hardcoded list.
             async function fetchMusicList() {
+                /*
                 try {
                     const res = await fetch('http://localhost:3000/api/music');
                     if (!res.ok) throw new Error('Failed to fetch music');
                     const tracks = await res.json();
 
-                    // Transform API data to BGM_TRACKS format
-                    BGM_TRACKS = tracks.map(t => ({
-                        id: t.id,
-                        name: `🎵 ${t.name}`,
-                        src: t.src, // 'jukebox/filename.mp3'
-                        icon: '💿'
-                    }));
-
-                    // If "standard_jazz" exists, make it default if not set
-                    if (!state.interior.bgm) {
-                        const defaultTrack = BGM_TRACKS.find(t => t.id === 'standard_jazz') || BGM_TRACKS[0];
-                        if (defaultTrack) {
-                            state.interior.bgm = defaultTrack.id;
-                            // Update audio src if it's the initial load
-                            const audioEl = document.getElementById('bgm-audio');
-                            if (audioEl && audioEl.getAttribute('src') === 'background.mp3') {
-                                // Only override if it was the default placeholder
-                                // But we already hardcoded it to 'jukebox/standard_jazz.mp3' in previous step.
-                                // Let's just ensure it matches the track list.
-                            }
-                        }
+                    // Only override if we got tracks
+                    if (tracks && tracks.length > 0) {
+                        BGM_TRACKS = tracks.map(t => ({
+                            id: t.id,
+                            name: `🎵 ${t.name}`,
+                            src: t.src, // 'jukebox/filename.mp3'
+                            icon: '💿'
+                        }));
                     }
                 } catch (e) {
-                    console.error("Music Fetch Error:", e);
-                    // Fallback if server is down
-                    BGM_TRACKS = [
-                        { id: 'jazz', name: '🍸 Standard Jazz', src: 'jukebox/standard_jazz.mp3', icon: '🎷' }
-                    ];
+                    console.error("Music Fetch Error (Using Offline Tracks):", e);
+                }
+                */
+
+                // We use the hardcoded BGM_TRACKS above.
+
+                // Set default BGM if not set
+                if (!state.interior.bgm) {
+                    const defaultTrack = BGM_TRACKS.find(t => t.id === 'standard_jazz') || BGM_TRACKS[0];
+                    if (defaultTrack) {
+                        state.interior.bgm = defaultTrack.id;
+                    }
+                }
+
+                // Ensure the audio element has the correct src
+                const currentId = state.interior.bgm;
+                const currentTrack = BGM_TRACKS.find(t => t.id === currentId);
+                // Use dom.bgmAudioEl if possible, but fallback to direct ID if not yet assigned
+                const audioEl = (dom && dom.bgmAudioEl) ? dom.bgmAudioEl : document.getElementById('bgm-audio');
+
+                if (audioEl && currentTrack) {
+                    // If audio has no src or is just a placeholder, update it
+                    const currentSrc = audioEl.getAttribute('src');
+                    if (!currentSrc || currentSrc === 'background.mp3' || currentSrc !== currentTrack.src) {
+                        audioEl.src = currentTrack.src;
+                        // If game is running, we might want to ensure it's playing/ready
+                        // But usually startAudio() handles the play() call.
+                        // We just need to make sure the src is valid.
+                    }
                 }
             }
 
@@ -2758,7 +2778,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!listEl) return;
                 listEl.innerHTML = '';
 
-                const currentId = state.interior.bgm || 'jazz';
+                const currentId = state.interior.bgm || 'standard_jazz';
 
                 BGM_TRACKS.forEach(track => {
                     const div = document.createElement('div');
