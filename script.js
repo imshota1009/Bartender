@@ -2688,7 +2688,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let BGM_TRACKS = [
             { id: 'standard_jazz', name: '🍸 Standard Jazz', src: 'jukebox/standard_jazz.mp3', icon: '🎷' },
             { id: 'barcarolle', name: '🌙 Barcarolle of the Blue Moonlit Night', src: 'jukebox/Barcarolle of the Blue Moonlit Night.mp3', icon: '🎻' },
-            { id: 'barcarolle_jp', name: '🌙 蒼の月夜のバルカローレ', src: 'jukebox/蒼の月夜のバルカローレ.mp3', icon: '🎻' },
+
             { id: 'coffee_break', name: '☕ Coffee Break', src: 'jukebox/Coffee_Break.mp3', icon: '☕' },
             { id: 'whisky_nights', name: '🥃 Whisky Nights', src: 'jukebox/Whisky_Nights.mp3', icon: '🥃' },
             { id: 'winter_night', name: '❄️ Winter Night Street', src: 'jukebox/Winter_Night_Street.mp3', icon: '❄️' }
