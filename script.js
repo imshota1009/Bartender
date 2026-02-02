@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 helpStep4: "グラスをタップして、正しいグラスを選ぶ",
                 helpStep5: "「シェイク」ボタンでカクテル完成！",
                 helpButtonsTitle: "🔘 ボタンの説明",
-                helpButtonsText: "<ul><li><strong>材料</strong> - カクテルの材料を選ぶ</li><li><strong>氷を入れる</strong> - 氷を追加する</li><li><strong>グラス</strong> - グラスの種類を選ぶ</li><li><strong>シェイク</strong> - カクテルを完成させる</li><li><strong>話す</strong> - お客さんと話す（ボーナスポイント！）</li><li><strong>リセット</strong> - 作り直す</li><li><strong>今日の占い</strong> - 毎日の運勢とラッキーカクテルをチェック！</li><li><strong>紹介する</strong> - お客さんをマッチング</li></ul>",
+                helpButtonsText: "<ul><li><strong>材料</strong> - カクテルの材料を選ぶ</li><li><strong>氷を入れる</strong> - 氷を追加する</li><li><strong>グラス</strong> - グラスの種類を選ぶ</li><li><strong>シェイク</strong> - カクテルを完成させる</li><li><strong>話す</strong> - お客さんと話す（ボーナスポイント！）</li><li><strong>リセット</strong> - 作り直す</li><li><strong>紹介する</strong> - お客さんをマッチング</li></ul>",
                 helpTipsTitle: "⭐ コツ",
                 helpTipsText: "<ul><li>レシピ通りに作ると<strong>連続ボーナス</strong>がもらえる！</li><li>お客さんと<strong>話す</strong>とチップがもらえる</li><li>1日の終わりに<strong>アップグレード</strong>を買おう</li><li>時間内にたくさん作れば高得点！</li></ul>",
                 helpHint: "<strong>💡 ヒント</strong> いつでもこの画面を見たいときは、右上の「？」ボタンをタップしてね！",
@@ -500,8 +500,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        // Get time of day based on real world time
+        function getRealTimeOfDay() {
+            const hour = new Date().getHours();
+            if (hour >= 6 && hour < 12) return 'morning';
+            if (hour >= 12 && hour < 18) return 'noon';
+            return 'night';
+        }
+
         function startDay() {
-            Object.assign(state, { score: 0, timer: 300, isGameRunning: false, canInteract: false, combo: 0, isHappyHour: false, currentCustomer: null, currentOrder: null, isBossActive: false, hasTalked: false, timeOfDay: 'morning' });
+            const realTimeOfDay = getRealTimeOfDay();
+            Object.assign(state, { score: 0, timer: 300, isGameRunning: false, canInteract: false, combo: 0, isHappyHour: false, currentCustomer: null, currentOrder: null, isBossActive: false, hasTalked: false, timeOfDay: realTimeOfDay });
             dom.gameContainerEl.classList.remove('boss-mode');
 
             showView('game');
@@ -538,22 +547,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.timer--;
                 dom.timerEl.textContent = state.timer;
 
-                // Game Time Logic (90s total)
-                let newTimeOfDay = state.timeOfDay;
-                if (state.timer > 60) newTimeOfDay = 'morning';
-                else if (state.timer > 30) newTimeOfDay = 'noon';
-                else newTimeOfDay = 'night';
-
-                if (newTimeOfDay !== state.timeOfDay) {
-                    state.timeOfDay = newTimeOfDay;
-                    updateEnvironmentVisuals();
-
-                    // Notification
-                    const timeText = newTimeOfDay === 'noon' ? '☀️ こんにちは！ (お昼)' : '🌙 こんばんは！ (夜)';
-                    showFloatingText(timeText, '#fbbf24', dom.gameContainerEl);
-                }
-
-                // Boss Trigger Check (moved to generateOrder for better flow)
+                // Real-time based visuals - timeOfDay is set at startDay based on real time
+                // No in-game time progression needed
             } else {
                 endDay();
             }
@@ -1044,7 +1039,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (Math.random() < 0.05 && state.timeOfDay === 'night') { // Death/Witch (Night only)
                     state.currentCustomer = JSON.parse(JSON.stringify(currentLangData.DEATH_CUSTOMER));
                 } else {
-                    const template = potentialCustomers[Math.floor(Math.random() * potentialCustomers.length)];
+                    // Prevent consecutive same customer
+                    let template;
+                    let attempts = 0;
+                    const maxAttempts = 5;
+                    do {
+                        template = potentialCustomers[Math.floor(Math.random() * potentialCustomers.length)];
+                        attempts++;
+                    } while (
+                        potentialCustomers.length > 1 &&
+                        state.lastCustomerId &&
+                        template.name === state.lastCustomerId &&
+                        attempts < maxAttempts
+                    );
+                    state.lastCustomerId = template.name; // Store for next check
                     state.currentCustomer = JSON.parse(JSON.stringify(template));
                 }
 
@@ -2805,91 +2813,6 @@ document.addEventListener('DOMContentLoaded', () => {
             showFloatingText(`🎵 BGM: ${track.name}`, '#8b5cf6', dom.gameContainerEl);
         }
 
-        // ===========================================
-        // FORTUNE COCKTAIL FEATURE
-        // ===========================================
-        const CONSTELLATIONS = [
-            { id: 'aries', name: '牡羊座', icon: '♈', date: '3/21-4/19' },
-            { id: 'taurus', name: '牡牛座', icon: '♉', date: '4/20-5/20' },
-            { id: 'gemini', name: '双子座', icon: '♊', date: '5/21-6/21' },
-            { id: 'cancer', name: '蟹座', icon: '♋', date: '6/22-7/22' },
-            { id: 'leo', name: '獅子座', icon: '♌', date: '7/23-8/22' },
-            { id: 'virgo', name: '乙女座', icon: '♍', date: '8/23-9/22' },
-            { id: 'libra', name: '天秤座', icon: '♎', date: '9/23-10/23' },
-            { id: 'scorpio', name: '蠍座', icon: '♏', date: '10/24-11/22' },
-            { id: 'sagittarius', name: '射手座', icon: '♐', date: '11/23-12/21' },
-            { id: 'capricorn', name: '山羊座', icon: '♑', date: '12/22-1/19' },
-            { id: 'aquarius', name: '水瓶座', icon: '♒', date: '1/20-2/18' },
-            { id: 'pisces', name: '魚座', icon: '♓', date: '2/19-3/20' }
-        ];
-
-        function openFortuneMenu() {
-            const grid = document.getElementById('fortune-grid');
-            if (grid) {
-                grid.innerHTML = '';
-                CONSTELLATIONS.forEach(sign => {
-                    const el = document.createElement('div');
-                    el.className = 'bg-indigo-900/80 p-4 rounded-xl flex flex-col items-center gap-2 cursor-pointer hover:bg-indigo-800 hover:scale-105 transition-all border border-indigo-500/30';
-                    el.onclick = () => showFortuneResult(sign);
-                    el.innerHTML = `
-                                <div class="text-4xl text-indigo-200">${sign.icon}</div>
-                                <div class="font-bold text-white font-jp text-sm">${sign.name}</div>
-                                <div class="text-xs text-indigo-400">${sign.date}</div>
-                            `;
-                    grid.appendChild(el);
-                });
-                document.getElementById('fortune-overlay').classList.remove('hidden');
-            }
-        }
-
-        function closeFortuneMenu() {
-            document.getElementById('fortune-overlay').classList.add('hidden');
-        }
-
-        function showFortuneResult(sign) {
-            closeFortuneMenu();
-
-            // Simple random logic for demo
-            const cocktails = translations[state.language].COCKTAILS;
-            const luckyCocktail = cocktails[Math.floor(Math.random() * cocktails.length)];
-            const luckStars = Math.floor(Math.random() * 5) + 1; // 1-5
-            const colors = ['赤', '青', '緑', '黄', '紫', '白', '黒', '金', '銀', 'オレンジ', 'ピンク'];
-            const luckyColor = colors[Math.floor(Math.random() * colors.length)];
-
-            const starsStr = '⭐'.repeat(luckStars);
-
-            // Populate Result Overlay
-            const resultOverlay = document.getElementById('fortune-result-overlay');
-            const content = document.getElementById('fortune-result-content');
-
-            content.innerHTML = `
-                        <div class="text-6xl mb-4 animate-bounce">${sign.icon}</div>
-                        <h2 class="text-2xl font-bold font-jp text-indigo-300 mb-2">${sign.name}の今日の運勢</h2>
-                        <div class="text-3xl text-yellow-400 mb-4">${starsStr}</div>
-                        
-                        <div class="bg-indigo-950/50 p-4 rounded-lg w-full mb-4">
-                            <p class="text-sm text-gray-400 font-jp mb-1">ラッキーカクテル</p>
-                            <p class="text-xl font-bold text-pink-300 font-jp">🍸 ${luckyCocktail.name}</p>
-                        </div>
-                        
-                        <div class="bg-indigo-950/50 p-4 rounded-lg w-full">
-                            <p class="text-sm text-gray-400 font-jp mb-1">ラッキーカラー</p>
-                            <p class="text-xl font-bold text-${getColorClass(luckyColor)}-400 font-jp">${luckyColor}</p>
-                        </div>
-                    `;
-
-            resultOverlay.classList.remove('hidden');
-        }
-
-        function getColorClass(colorName) {
-            // Simple mapping for Tailwind classes
-            const map = { '赤': 'red', '青': 'blue', '緑': 'green', '黄': 'yellow', '紫': 'purple', '白': 'gray', '黒': 'gray', '金': 'yellow', '銀': 'slate', 'オレンジ': 'orange', 'ピンク': 'pink' };
-            return map[colorName] || 'white';
-        }
-
-        function closeFortuneResult() {
-            document.getElementById('fortune-result-overlay').classList.add('hidden');
-        }
 
         function saveGameData() {
             if (state.currentSaveSlot) {
@@ -2981,9 +2904,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('slot-selection-content').classList.add('hidden');
         }
 
-        window.openFortuneMenu = openFortuneMenu;
-        window.closeFortuneMenu = closeFortuneMenu;
-        window.closeFortuneResult = closeFortuneResult;
+
         window.openCharacterSelection = openCharacterSelection;
         window.deleteSave = deleteSave;
         window.loadAndStart = loadAndStart;

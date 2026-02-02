@@ -39,8 +39,8 @@
 - 💾 **Save System** *(NEW!)*  
   Progress is saved to Slot 1 automatically at the end of each day. (Slots 2 & 3 coming soon!)
 
-- 🔮 **Fortune Cocktail** *(NEW!)*  
-  Check your daily luck! Get a lucky color and cocktail recommendation based on your zodiac sign.
+
+
 
 - 📸 **Photo Mode**  
   Take screenshots of your cocktails and share on Twitter/LINE!
