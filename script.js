@@ -1708,15 +1708,63 @@ document.addEventListener('DOMContentLoaded', () => {
             roomContainer?.classList.add(`light-${state.interior.lighting}`);
         }
 
-        // --- Save/Load Game Data (Disabled) ---
+        // --- Save/Load Game Data ---
         function saveGameData() {
-            // Saving is disabled per user request
-            console.log("Save disabled");
+            const slotId = state.currentSaveSlot || 1;
+            const saveData = {
+                day: state.day,
+                totalMoney: state.totalMoney,
+                upgrades: state.upgrades,
+                ownedIngredients: state.ownedIngredients,
+                discoveredCocktails: state.discoveredCocktails,
+                metCustomers: state.metCustomers,
+                currentTitle: state.currentTitle,
+                unlockedTitles: state.unlockedTitles,
+                totalTalks: state.totalTalks,
+                interior: state.interior,
+                ownedInterior: state.ownedInterior,
+                avatar: state.avatar,
+                language: state.language,
+                savedAt: new Date().toISOString()
+            };
+            try {
+                localStorage.setItem(`bartenderSave_${slotId}`, JSON.stringify(saveData));
+                console.log(`Game saved to slot ${slotId}`);
+            } catch (e) {
+                console.error('Failed to save game:', e);
+            }
         }
 
         function loadGameData(slotId) {
-            // Loading is disabled per user request
-            console.log("Load disabled");
+            const key = `bartenderSave_${slotId}`;
+            const savedData = localStorage.getItem(key);
+            if (!savedData) {
+                console.log(`No save data found in slot ${slotId}`);
+                return false;
+            }
+            try {
+                const data = JSON.parse(savedData);
+                // Restore state from saved data
+                state.day = data.day || 1;
+                state.totalMoney = data.totalMoney || 0;
+                state.upgrades = data.upgrades || JSON.parse(JSON.stringify(UPGRADES_DATA));
+                state.ownedIngredients = data.ownedIngredients || [...STARTER_INGREDIENTS];
+                state.discoveredCocktails = data.discoveredCocktails || [];
+                state.metCustomers = data.metCustomers || [];
+                state.currentTitle = data.currentTitle || 'beginner';
+                state.unlockedTitles = data.unlockedTitles || ['beginner'];
+                state.totalTalks = data.totalTalks || 0;
+                state.interior = data.interior || { wallpaper: 'classic', lighting: 'warm', bgm: 'jazz' };
+                state.ownedInterior = data.ownedInterior || { wallpaper: ['classic'], lighting: ['warm'], bgm: ['jazz'] };
+                state.avatar = data.avatar || 'images/night/bartender_man.png';
+                state.language = data.language || 'ja';
+                state.currentSaveSlot = slotId;
+                console.log(`Game loaded from slot ${slotId}`);
+                return true;
+            } catch (e) {
+                console.error('Failed to load game:', e);
+                return false;
+            }
         }
 
         // --- Slot System Functions ---
@@ -2861,15 +2909,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function initialSetup() {
-            // Check for existing save data to handle "Continue" button
-            const saved = localStorage.getItem('bartenderSave_1');
+            // 「続きから」ボタンを常に有効化
             const continueBtn = document.getElementById('continue-game-btn');
             if (continueBtn) {
-                if (saved) {
-                    continueBtn.disabled = false;
-                } else {
-                    continueBtn.disabled = true;
-                }
+                continueBtn.disabled = false;
+                continueBtn.onclick = function () {
+                    loadAndStart(1);
+                };
+                console.log('Continue button ready');
             }
 
             // Other init logic...
@@ -2877,15 +2924,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function loadAndStart(slotId) {
-            if (loadGameData(slotId)) {
-                startAudio();
-                const overlay = document.getElementById('game-overlay');
-                if (overlay) overlay.classList.add('opacity-0');
-                setTimeout(() => {
-                    if (overlay) overlay.style.display = 'none';
-                    startDay();
-                }, 500);
+            // セーブデータがあれば読み込む、なければ初期状態で開始
+            const hasData = loadGameData(slotId);
+            if (!hasData) {
+                // 初期状態をセット
+                state.currentSaveSlot = slotId;
+                state.day = 1;
+                state.totalMoney = 0;
+                state.score = 0;
+                console.log('No save data found, starting new game');
             }
+
+            startAudio();
+            const overlay = document.getElementById('game-overlay');
+            if (overlay) overlay.classList.add('opacity-0');
+            setTimeout(() => {
+                if (overlay) overlay.style.display = 'none';
+                startDay();
+            }, 500);
         }
 
         function openCharacterSelection(slotId) {
