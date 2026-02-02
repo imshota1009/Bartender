@@ -2344,7 +2344,8 @@
                 <button id="new-game-btn" onclick="openCharacterSelection(1)"
                     class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-full text-2xl shadow-lg transition-all hover:scale-105 active:scale-95 font-jp">はじめから</button>
                 <button id="continue-game-btn" onclick="loadAndStart(1)"
-                    class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-4 px-8 rounded-full text-2xl shadow-lg transition-all hover:scale-105 active:scale-95 font-jp disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed">続きから</button>
+                    class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-4 px-8 rounded-full text-2xl shadow-lg transition-all hover:scale-105 active:scale-95 font-jp disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed"
+                    disabled>続きから</button>
             </div>
             <button id="help-start-btn" data-lang-key="helpViewBtn"
                 class="mt-6 text-blue-400 hover:text-blue-300 font-jp text-lg border-b border-blue-500/30">📖
@@ -6492,6 +6493,17 @@
                 if (!state.vegetableCollection) state.vegetableCollection = [];
 
                 initialSetup();
+
+                // Fix: Ensure Continue button is disabled if no save data exists
+                const savedData = localStorage.getItem('bartenderSaveData');
+                const continueBtn = document.getElementById('continue-game-btn');
+                if (continueBtn) {
+                    if (savedData) {
+                        continueBtn.removeAttribute('disabled');
+                    } else {
+                        continueBtn.setAttribute('disabled', 'true');
+                    }
+                }
             } catch (e) {
                 alert("Init Error: " + e.message + "\n" + e.stack);
             }
