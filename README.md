@@ -13,6 +13,12 @@
 
 ---
 
+## 🎮 Play Now
+
+**▶️ [Play on Plicy (ブラウザで今すぐプレイ)](https://plicy.net/GamePlay/222550)**
+
+---
+
 ## ✨ Features
 
 - 🍹 **Interactive Cocktail Making**  
