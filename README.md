@@ -15,7 +15,7 @@
 
 ## 🎮 Play Now
 
-**▶️ [Play](imshota1009.github.io/Bartender/)**
+**▶️ [Click](https://imshota1009.github.io/Bartender/)**
 
 ---
 
