@@ -11,6 +11,10 @@
   <i>"You are the bar master. Mix cocktails as ordered and aim to become the ultimate bartender!"</i>
 </p>
 
+## 📸 Screenshot
+
+![App Screenshot](./images/title.jpg)
+
 ---
 
 ## 🎮 Play Now
