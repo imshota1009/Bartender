@@ -373,6 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 { id: 'neon', name: 'ネオン', nameEn: 'Neon', price: 6000, description: 'パーティー向けカラフル', descEn: 'Colorful party lights', customerBonus: ['dancer', 'bard'] }
             ],
             bgm: [
+                { id: 'skyline_serenity', name: 'スカイライン', nameEn: 'Skyline', price: 0, description: '都会の静寂', descEn: 'Urban Serenity', customerBonus: [] },
                 { id: 'jazz', name: 'ジャズ', nameEn: 'Jazz', price: 0, description: '落ち着いたジャズ', descEn: 'Relaxing jazz', customerBonus: [] },
                 { id: 'medieval', name: '中世風', nameEn: 'Medieval', price: 4000, description: 'リュートの調べ', descEn: 'Lute melodies', customerBonus: ['knight', 'princess'] },
                 { id: 'tavern', name: '酒場風', nameEn: 'Tavern', price: 4000, description: '賑やかな酒場BGM', descEn: 'Lively tavern music', customerBonus: ['sailor', 'mercenary'] }
@@ -409,12 +410,12 @@ document.addEventListener('DOMContentLoaded', () => {
             interior: {
                 wallpaper: 'classic',
                 lighting: 'warm',
-                bgm: 'jazz'
+                bgm: 'skyline_serenity'
             },
             ownedInterior: {
                 wallpaper: ['classic'],
                 lighting: ['warm'],
-                bgm: ['jazz']
+                bgm: ['skyline_serenity', 'jazz']
             },
             isMysteryMode: false,
             // === SOCIAL FEATURES ===
@@ -1754,8 +1755,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.currentTitle = data.currentTitle || 'beginner';
                 state.unlockedTitles = data.unlockedTitles || ['beginner'];
                 state.totalTalks = data.totalTalks || 0;
-                state.interior = data.interior || { wallpaper: 'classic', lighting: 'warm', bgm: 'jazz' };
-                state.ownedInterior = data.ownedInterior || { wallpaper: ['classic'], lighting: ['warm'], bgm: ['jazz'] };
+                state.interior = data.interior || { wallpaper: 'classic', lighting: 'warm', bgm: 'skyline_serenity' };
+                state.ownedInterior = data.ownedInterior || { wallpaper: ['classic'], lighting: ['warm'], bgm: ['skyline_serenity', 'jazz'] };
                 state.avatar = data.avatar || 'images/night/bartender_man.png';
                 state.language = data.language || 'ja';
                 state.currentSaveSlot = slotId;
@@ -1841,8 +1842,8 @@ document.addEventListener('DOMContentLoaded', () => {
             state.metCustomers = [];
             state.currentTitle = 'beginner';
             state.unlockedTitles = ['beginner'];
-            state.ownedInterior = { wallpaper: ['classic'], lighting: ['warm'], bgm: ['jazz'] };
-            state.interior = { wallpaper: 'classic', lighting: 'warm', bgm: 'jazz' };
+            state.ownedInterior = { wallpaper: ['classic'], lighting: ['warm'], bgm: ['skyline_serenity', 'jazz'] };
+            state.interior = { wallpaper: 'classic', lighting: 'warm', bgm: 'skyline_serenity' };
             state.upgrades = { iceMachine: { purchased: false }, shaker: { purchased: false }, barManual: { purchased: false } };
             state.avatar = avatarImage;
 
@@ -2742,6 +2743,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // JUKEBOX FEATURE
         // ===========================================
         let BGM_TRACKS = [
+            { id: 'skyline_serenity', name: '🏙️ Skyline Serenity', src: 'jukebox/Skyline_Serenity.mp3', icon: '🏙️' },
             { id: 'standard_jazz', name: '🍸 Standard Jazz', src: 'jukebox/standard_jazz.mp3', icon: '🎷' },
             { id: 'barcarolle', name: '🌙 Barcarolle of the Blue Moonlit Night', src: 'jukebox/Barcarolle of the Blue Moonlit Night.mp3', icon: '🎻' },
 
@@ -2776,7 +2778,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Set default BGM if not set
             if (!state.interior.bgm) {
-                const defaultTrack = BGM_TRACKS.find(t => t.id === 'standard_jazz') || BGM_TRACKS[0];
+                const defaultTrack = BGM_TRACKS.find(t => t.id === 'skyline_serenity') || BGM_TRACKS[0];
                 if (defaultTrack) {
                     state.interior.bgm = defaultTrack.id;
                 }
@@ -2793,9 +2795,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const currentSrc = audioEl.getAttribute('src');
                 if (!currentSrc || currentSrc === 'background.mp3' || currentSrc !== currentTrack.src) {
                     audioEl.src = currentTrack.src;
-                    // If game is running, we might want to ensure it's playing/ready
-                    // But usually startAudio() handles the play() call.
-                    // We just need to make sure the src is valid.
+
+                    // Show valid visual feedback that BGM is updated
+                    if (state.isGameRunning) {
+                        const msg = state.language === 'ja' ? `♪ BGM: ${currentTrack.name}` : `♪ Now Playing: ${currentTrack.name}`;
+                        if (typeof showFloatingText === 'function' && dom.gameContainerEl) {
+                            showFloatingText(msg, '#8b5cf6', dom.gameContainerEl);
+                        }
+                    }
                 }
             }
         }
@@ -2805,7 +2812,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!listEl) return;
             listEl.innerHTML = '';
 
-            const currentId = state.interior.bgm || 'standard_jazz';
+            const currentId = state.interior.bgm || 'skyline_serenity';
 
             BGM_TRACKS.forEach(track => {
                 const div = document.createElement('div');
@@ -2897,12 +2904,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.metCustomers = data.metCustomers || [];
                 state.currentTitle = data.currentTitle || 'beginner';
                 state.unlockedTitles = data.unlockedTitles || ['beginner'];
-                state.ownedInterior = data.ownedInterior || { wallpaper: ['classic'], lighting: ['warm'], bgm: ['jazz'] };
-                state.interior = data.interior || { wallpaper: 'classic', lighting: 'warm', bgm: 'jazz' };
+                state.ownedInterior = data.ownedInterior || { wallpaper: ['classic'], lighting: ['warm'], bgm: ['skyline_serenity', 'jazz'] };
+                state.interior = data.interior || { wallpaper: 'classic', lighting: 'warm', bgm: 'skyline_serenity' };
                 state.upgrades = data.upgrades || { iceMachine: { purchased: false }, shaker: { purchased: false }, barManual: { purchased: false } };
                 state.avatar = data.avatar || 'images/avatar/man.png';
                 state.language = data.language || 'ja';
+                state.currentSaveSlot = slotId;
+
+                // --- MIGRATION: Ensure new BGM is available ---
+                if (state.ownedInterior && state.ownedInterior.bgm) {
+                    if (!state.ownedInterior.bgm.includes('skyline_serenity')) {
+                        state.ownedInterior.bgm.unshift('skyline_serenity');
+                    }
+                }
+                // Determine if we should force update the current BGM
+                // If current BGM is 'jazz' (old default) or invalid, switch to skyline_serenity
+                if (state.interior.bgm === 'jazz' || !state.interior.bgm) {
+                    state.interior.bgm = 'skyline_serenity';
+                }
+
                 updateUI();
+                fetchMusicList(); // Ensure BGM src is set based on loaded data
                 return true;
             }
             return false;
@@ -2920,7 +2942,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Other init logic...
+            // Other init logic...
             updateUI();
+            fetchMusicList(); // Initial fetch
         }
 
         function loadAndStart(slotId) {
@@ -2933,6 +2957,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.totalMoney = 0;
                 state.score = 0;
                 console.log('No save data found, starting new game');
+                fetchMusicList(); // Ensure default BGM is set
             }
 
             startAudio();

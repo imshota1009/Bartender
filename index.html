@@ -1974,6 +1974,74 @@
         .harvest-item.locked img {
             filter: grayscale(1) brightness(0.3);
         }
+
+        /* Cyberpunk Title Animation */
+        .cyber-title-enter {
+            animation: cyber-slide-in 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards, cyber-glitch 3s infinite alternate;
+            background: linear-gradient(90deg, #22d3ee, #e879f9);
+            /* Cyan to Pink */
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 5px rgba(34, 211, 238, 0.5));
+            position: relative;
+            display: inline-block;
+        }
+
+        @keyframes cyber-slide-in {
+            0% {
+                transform: translateX(-100vw) skewX(-20deg);
+                opacity: 0;
+                filter: blur(10px) hue-rotate(90deg);
+            }
+
+            70% {
+                transform: translateX(20px) skewX(10deg);
+                opacity: 1;
+                filter: blur(0);
+            }
+
+            100% {
+                transform: translateX(0) skewX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes cyber-glitch {
+            0% {
+                text-shadow: 2px 2px 0px #0ff, -2px -2px 0px #f0f;
+            }
+
+            90% {
+                text-shadow: 2px 2px 0px #0ff, -2px -2px 0px #f0f;
+            }
+
+            92% {
+                text-shadow: -2px 1px 0px #0ff, 1px -1px 0px #f0f;
+                transform: translateX(2px);
+            }
+
+            94% {
+                text-shadow: 1px -2px 0px #0ff, -1px 2px 0px #f0f;
+                transform: translateX(-2px);
+            }
+
+            96% {
+                text-shadow: -1px 2px 0px #0ff, 2px -1px 0px #f0f;
+            }
+
+            100% {
+                text-shadow: 2px 2px 0px #0ff, -2px -2px 0px #f0f;
+            }
+        }
+
+        /* Title Screen Background */
+        #game-overlay {
+            background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('images/background/background.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            backdrop-filter: blur(5px);
+        }
     </style>
 </head>
 
@@ -2338,7 +2406,7 @@
 
         <!-- Part 1: Initial Start Screen -->
         <div id="title-screen-content" class="flex flex-col items-center justify-center gap-4">
-            <h1 class="font-title text-6xl md:text-8xl mb-4 text-blue-500 animate-pulse">Bartender</h1>
+            <h1 class="font-title text-6xl md:text-8xl mb-4 cyber-title-enter">Bartender</h1>
             <div class="flex flex-col gap-6 w-full max-w-xs">
                 <button id="new-game-btn" onclick="openCharacterSelection(1)"
                     class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-full text-2xl shadow-lg transition-all hover:scale-105 active:scale-95 font-jp">はじめから</button>
@@ -2728,6 +2796,23 @@
         };
 
         document.addEventListener('DOMContentLoaded', () => {
+            // Attempt to play Title BGM on load
+            const titleBgm = document.getElementById('title-bgm');
+            if (titleBgm) {
+                // Browsers often block autoplay, so we catch the error.
+                // It might require a user click first, which is handled by the "Start" buttons implicitly if it wasn't playing.
+                titleBgm.volume = 0.5; // Set reasonable volume
+                titleBgm.play().catch(e => console.log('Title BGM autoplay blocked:', e));
+
+                // Ensure it plays on first interaction if blocked
+                document.body.addEventListener('click', function playTitleBgmOnce() {
+                    if (titleBgm.paused && !document.getElementById('game-overlay').classList.contains('hidden')) {
+                        titleBgm.play().catch(e => { });
+                    }
+                    document.body.removeEventListener('click', playTitleBgmOnce);
+                }, { once: true });
+            }
+
             try {
                 // --- Language Data ---
                 const translations = {
@@ -3132,12 +3217,12 @@
                     interior: {
                         wallpaper: 'classic',
                         lighting: 'warm',
-                        bgm: 'standard_jazz'
+                        bgm: 'skyline_serenity'
                     },
                     ownedInterior: {
                         wallpaper: ['classic'],
                         lighting: ['warm'],
-                        bgm: ['standard_jazz']
+                        bgm: ['skyline_serenity']
                     },
                     isMysteryMode: false,
                     currentSaveSlot: 1,
@@ -4489,8 +4574,7 @@
 
                     const categories = [
                         { key: 'wallpaper', label: lang.wallpaperLabel },
-                        { key: 'lighting', label: lang.lightingLabel },
-                        { key: 'bgm', label: lang.bgmLabel }
+                        { key: 'lighting', label: lang.lightingLabel }
                     ];
 
                     categories.forEach(cat => {
@@ -4747,6 +4831,13 @@
                     document.getElementById('game-overlay').classList.add('opacity-0');
                     setTimeout(() => {
                         document.getElementById('game-overlay').classList.add('hidden');
+
+                        // Stop Title BGM
+                        const titleBgm = document.getElementById('title-bgm');
+                        if (titleBgm) {
+                            titleBgm.pause();
+                        }
+
                         startAudio();
                         showView('room');
                         updateRoomUI();
@@ -4775,12 +4866,22 @@
                     state.ownedIngredients = [...STARTER_INGREDIENTS];
                     state.upgrades = JSON.parse(JSON.stringify(UPGRADES_DATA));
                     state.totalTalks = 0;
+                    // Reset BGM preferences to default
+                    state.interior.bgm = 'skyline_serenity';
+                    state.ownedInterior.bgm = ['skyline_serenity'];
 
                     saveGameData();
 
                     document.getElementById('game-overlay').classList.add('opacity-0');
                     setTimeout(() => {
                         document.getElementById('game-overlay').classList.add('hidden');
+
+                        // Stop Title BGM
+                        const titleBgm = document.getElementById('title-bgm');
+                        if (titleBgm) {
+                            titleBgm.pause();
+                        }
+
                         startAudio();
                         startDay();
                     }, 500);
@@ -5612,6 +5713,7 @@
                 async function fetchBGMList() {
                     // 外部サーバーへの依存を減らし、ローカルのジュークボックスフォルダ内の曲を優先します
                     BGM_TRACKS = [
+                        { id: 'skyline_serenity', name: '🏙️ Skyline Serenity', src: 'jukebox/Skyline_Serenity.mp3', icon: '🏙️' },
                         { id: 'standard_jazz', name: '🍸 Standard Jazz', src: 'jukebox/standard_jazz.mp3', icon: '🎷' },
                         { id: 'barcarolle', name: '🌙 Barcarolle of the Blue Moonlit Night', src: 'jukebox/Barcarolle of the Blue Moonlit Night.mp3', icon: '🎻' },
 
@@ -5637,11 +5739,11 @@
                         console.log('Using local BGM list.');
                     }
 
-                    // ゲーム開始時のBGMを設定
+                    // ゲーム開始時のBGMを設定 (再生は待機)
                     if (!state.interior.bgm) {
-                        state.interior.bgm = BGM_TRACKS[0].id;
+                        state.interior.bgm = BGM_TRACKS[0].id; // Defaults to skyline_serenity
                     }
-                    applyBGM(state.interior.bgm);
+                    applyBGM(state.interior.bgm, false); // false = Don't play immediately
                 }
 
                 function openJukebox() {
@@ -5679,16 +5781,25 @@
                 window.openJukebox = openJukebox;
                 window.closeJukebox = closeJukebox;
 
-                function applyBGM(trackId) {
+                function applyBGM(trackId, shouldPlay = true) {
                     const track = BGM_TRACKS.find(t => t.id === trackId);
                     if (!track) return;
 
                     const audioEl = dom.bgmAudioEl;
                     if (audioEl) {
-                        audioEl.src = track.src;
+                        // Only change src if different to avoid reloading if already set
+                        if (audioEl.getAttribute('src') !== track.src) {
+                            audioEl.src = track.src;
+                        }
                         audioEl.loop = true;
-                        if (!state.isMysteryMode) {
+
+                        // FIX: Play if game-overlay IS hidden (Game is active)
+                        const isGameActive = document.getElementById('game-overlay').classList.contains('hidden');
+
+                        if (shouldPlay && !state.isMysteryMode && isGameActive) {
                             audioEl.play().catch(e => console.log('Playback failed:', e));
+                        } else if (!shouldPlay) {
+                            audioEl.pause();
                         }
                     }
                 }
@@ -5701,7 +5812,7 @@
                     state.ownedInterior.bgm = [trackId];
                     saveGameData();
 
-                    applyBGM(trackId);
+                    applyBGM(trackId, true);
                     openJukebox();
                     showFloatingText(`🎵 BGM: ${track.name}`, '#8b5cf6', dom.gameContainerEl);
                 }
@@ -6425,6 +6536,7 @@
         });
     </script>
     <audio id="bgm-audio" loop></audio>
+    <audio id="title-bgm" src="sound/街の道路.mp3" loop preload="auto"></audio>
 
     <!-- Jukebox Overlay (Merged) -->
     <div id="jukebox-overlay" class="fixed inset-0 bg-black/90 hidden z-[60] flex items-center justify-center">
