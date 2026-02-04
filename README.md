@@ -15,7 +15,7 @@
 
 ## 🎮 Play Now
 
-**▶️ [Play on Plicy (ブラウザで今すぐプレイ)](https://plicy.net/GamePlay/222550)**
+**▶️ [Play on Plicy](https://plicy.net/GamePlay/222550)**
 
 ---
 
