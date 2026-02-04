@@ -42,6 +42,9 @@
 - 📚 **Encyclopedias & Titles** *(NEW!)*  
   Collect Cocktails and Customer profiles to fill your encyclopedia. Unlock specialized Titles as you play!
 
+- 🎓 **Tutorial Mode** *(NEW!)*  
+  Learn the basics of bartending from the Master Bartender with a step-by-step guide.
+
 - 💾 **Save System** *(NEW!)*  
   Progress is saved to Slot 1 automatically at the end of each day. (Slots 2 & 3 coming soon!)
 
@@ -65,7 +68,8 @@
 ## 🕹️ How to Play
 
 1. **Start the Game**  
-   Press the central "Start" button to open your bar!  
+1. **Start the Game**  
+   Press "START" to open your bar, or "TUTORIAL" to learn the basics!  
 
 2. **Check Orders**  
    Customers show their "title" and "cocktail name," plus a color-coded hint.  
