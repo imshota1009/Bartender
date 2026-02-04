@@ -13,7 +13,7 @@
 
 ## 📸 Screenshot
 
-![App Screenshot](./images/title.jpg)
+![App Screenshot](./images/title.png)
 
 ---
 
