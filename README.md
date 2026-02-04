@@ -15,7 +15,7 @@
 
 ## 🎮 Play Now
 
-**▶️ [Play on Plicy](https://plicy.net/GamePlay/222550)**
+**▶️ [Play](imshota1009.github.io/Bartender/)**
 
 ---
 
