@@ -2232,6 +2232,10 @@
                     data-lang-key="glassCocktail">カクテル</span>
             </div>
         </div>
+        <button onclick="document.getElementById('glass-selection-overlay').classList.add('hidden')"
+            class="mt-8 px-6 py-2 bg-red-600 text-white rounded font-bold hover:bg-red-700 transition-colors font-jp shadow-lg border-2 border-red-400">
+            キャンセル
+        </button>
     </div>
 
     <!-- Photo Mode Overlay -->
@@ -2412,6 +2416,9 @@
                     class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-full text-2xl shadow-lg transition-all hover:scale-105 active:scale-95 font-jp">はじめから</button>
                 <button id="continue-game-btn" onclick="loadAndStart(1)"
                     class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-4 px-8 rounded-full text-2xl shadow-lg transition-all hover:scale-105 active:scale-95 font-jp">続きから</button>
+                <button id="tutorial-btn" onclick="startTutorial()"
+                    class="bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-8 rounded-full text-2xl shadow-lg transition-all hover:scale-105 active:scale-95 font-jp">🔰
+                    チュートリアル</button>
             </div>
             <button id="help-start-btn" data-lang-key="helpViewBtn"
                 class="mt-6 text-blue-400 hover:text-blue-300 font-jp text-lg border-b border-blue-500/30">📖
@@ -3193,6 +3200,8 @@
                 // --- Game State ---
                 let state = {
                     score: 0, timeLeft: 300, timerInterval: null,
+                    isTutorial: false, tutorialStep: 0,
+                    shakerContents: [], shakerHasIce: false, isGameRunning: false,
                     shakerContents: [], shakerHasIce: false, isGameRunning: false,
                     canInteract: true, combo: 0, isHappyHour: false,
                     happyHourTimeout: null, garnishTimeout: null,
@@ -3507,7 +3516,11 @@
                     }, 2000);
                 }
                 // Removed obsolete populateShelf and addIngredient functions
-                function addIce() { if (!state.isGameRunning || !state.canInteract || state.shakerHasIce) return; state.shakerHasIce = true; updateShakerVisual(); playSound('ice'); }
+                function addIce() {
+                    if (!state.isGameRunning || !state.canInteract || state.shakerHasIce) return;
+                    if (!checkTutorialStep('ice')) return;
+                    state.shakerHasIce = true; updateShakerVisual(); playSound('ice');
+                }
                 function talk() {
                     if (!state.isGameRunning || !state.canInteract || !state.currentCustomer || state.hasTalked) return;
                     state.hasTalked = true;
@@ -4037,6 +4050,7 @@
 
                 window.finishCocktail = function (method) {
                     if (!state.isGameRunning || !state.canInteract || (state.shakerContents.length === 0 && !state.shakerHasIce)) return;
+                    if (!checkTutorialStep('shake')) return;
 
                     // Animation - always shake for now since it's the "Finish" button
                     let sound = 'shake';
@@ -4053,7 +4067,12 @@
                     setTimeout(() => {
                         dom.shakerAreaEl.classList.remove('shake-animation');
                         removeLiquidWaveEffect(); // Remove wave after shake
-                        validateCocktail();
+
+                        if (state.isTutorial) {
+                            runTutorialEnding();
+                        } else {
+                            validateCocktail();
+                        }
                     }, 800);
                 };
 
@@ -4308,6 +4327,11 @@
                 // --- Glass Selection Logic ---
                 window.selectGlass = function (type) {
                     state.selectedGlass = type;
+                    if (!checkTutorialStep('glass', type)) {
+                        // Even if validation fails, close the overlay so user can see the hint/try again
+                        document.getElementById('glass-selection-overlay').classList.add('hidden');
+                        return;
+                    }
                     state.canInteract = true;
                     updateGlassVisuals(type);
                     document.getElementById('glass-selection-overlay').classList.add('hidden');
@@ -4388,6 +4412,7 @@
                         const ing = currentLangData.INGREDIENTS[key];
                         const isOwned = state.ownedIngredients.includes(key);
                         const btn = document.createElement('button');
+                        btn.id = 'ing-' + key;
 
                         // Visual Feedback for Selection
                         const isSelected = state.shakerContents.includes(key);
@@ -4411,6 +4436,7 @@
                         if (isOwned) {
                             btn.onclick = () => {
                                 if (state.canInteract) {
+                                    if (!checkTutorialStep('ingredient', key)) return;
                                     if (state.shakerContents.length < 5) {
                                         state.shakerContents.push(key);
                                         updateShakerVisual();
@@ -4430,6 +4456,228 @@
                 }
 
                 // ... (initialSetup) ...
+                // --- Tutorial Functions ---
+                function startTutorial() {
+                    state.isTutorial = true;
+                    state.tutorialStep = 1;
+                    state.day = 1;
+                    state.totalMoney = 1000;
+                    state.timeOfDay = 'night'; // Tutorial is set at night
+                    state.score = 0;
+
+                    // Reset Game State (similar to startDay)
+                    Object.assign(state, {
+                        isGameRunning: true, // Start running immediately
+                        canInteract: false,
+                        isHappyHour: false,
+                        currentCustomer: null,
+                        currentOrder: null,
+                        isBossActive: false,
+                        hasTalked: false,
+                        shakerContents: [],
+                        shakerHasIce: false,
+                        combo: 0
+                    });
+
+                    dom.gameContainerEl.classList.remove('boss-mode');
+                    showView('game');
+                    dom.gameOverlayEl.style.opacity = '0';
+                    dom.gameOverlayEl.style.pointerEvents = 'none';
+
+                    showMenuButton();
+                    updateTitleDisplay();
+                    updateUIDisplays();
+                    updateScore();
+
+                    // Tutorial Customer
+                    state.currentCustomer = {
+                        name: "Master Bartender",
+                        image: "images/night/red_beard_man.png",
+                        quotes: {
+                            order: ["..."],
+                            success: ["Good job. You have potential."],
+                            fail: ["No, no. Focus."],
+                            chat: ["Pay attention to the order."]
+                        }
+                    };
+
+                    // Start Sequence
+                    setTimeout(() => {
+                        showFloatingText("Welcome to the Tutorial", "#fff", dom.gameContainerEl);
+
+                        // Fake Arrival
+                        dom.customerEl.src = state.currentCustomer.image;
+                        dom.customerEl.classList.remove('slide-out');
+                        dom.customerEl.classList.add('slide-in');
+                        dom.customerEl.style.opacity = '1';
+
+                        setTimeout(() => {
+                            showDialogue(["兼業バーテンダーへようこそ。", "まずは基本のカクテル『スクリュードライバー』を作ってもらおう。"]);
+
+                            setTimeout(() => {
+                                // Set Order
+                                state.currentOrder = {
+                                    name: 'Screwdriver',
+                                    ingredients: ['vodka', 'orangeJuice'],
+                                    needsIce: true,
+                                    glass: 'collins',
+                                    isConstraint: false
+                                };
+
+                                updateRecipeDisplay();
+                                showDialogue("注文は『スクリュードライバー』だ。レシピは右上に表示されているぞ。");
+
+                                // Step 1: Vodka
+                                state.tutorialStep = 1;
+                                highlightElement('ing-vodka');
+                                showFloatingText("Select Vodka", "#fbbf24", dom.gameContainerEl);
+                                state.canInteract = true;
+
+                            }, 3000);
+                        }, 1000);
+                    }, 500);
+                }
+                window.startTutorial = startTutorial;
+
+                function checkTutorialStep(action, value) {
+                    if (!state.isTutorial) return true;
+
+                    const currentStep = state.tutorialStep;
+                    let valid = false;
+                    let nextStep = currentStep;
+                    let hint = "";
+
+                    // Step 1: Add Vodka
+                    if (currentStep === 1) {
+                        if (action === 'ingredient' && value === 'vodka') {
+                            valid = true;
+                            nextStep = 2;
+                            showDialogue("いいぞ。次は『オレンジジュース』を入れろ。");
+                            highlightElement('ing-orangeJuice');
+                        } else {
+                            hint = "まずは『ウォッカ』を選んでくれ。";
+                            highlightElement('ing-vodka');
+                        }
+                    }
+                    // Step 2: Add Orange Juice
+                    else if (currentStep === 2) {
+                        if (action === 'ingredient' && value === 'orangeJuice') {
+                            valid = true;
+                            nextStep = 3;
+                            showDialogue("よし。材料は揃ったな。次は氷を入れるんだ。");
+                            highlightElement('add-ice-button');
+                        } else {
+                            hint = "次は『オレンジジュース』だ。";
+                            highlightElement('ing-orangeJuice');
+                        }
+                    }
+                    // Step 3: Add Ice
+                    else if (currentStep === 3) {
+                        if (action === 'ice') {
+                            valid = true;
+                            nextStep = 4;
+                            showDialogue("次はグラスを選ぶぞ。スクリュードライバーには『ロンググラス』がいい。");
+                            highlightElement('cocktail-glass');
+                        } else {
+                            hint = "『氷を入れる』ボタンを押してくれ。";
+                            highlightElement('add-ice-button');
+                        }
+                    }
+                    // Step 4: Select Glass
+                    else if (currentStep === 4) {
+                        if (action === 'glass' && value === 'collins') {
+                            valid = true;
+                            nextStep = 5;
+                            showDialogue("準備完了だ！『シェイク』して仕上げろ！");
+                            highlightElement('shake-button');
+                        } else if (action === 'glass') { // Wrong glass
+                            hint = "スクリュードライバーには『ロンググラス』(Collins) を選ぶんだ。";
+                            highlightElement('cocktail-glass');
+                        } else {
+                            hint = "グラスをタップして選んでくれ。";
+                            highlightElement('cocktail-glass');
+                        }
+                    }
+                    // Step 5: Shake / Finish
+                    else if (currentStep === 5) {
+                        if (action === 'shake') {
+                            valid = true;
+                            nextStep = 0; // Done
+                            // Previous logic removed. Now delegated to runTutorialEnding via finishCocktail check.
+                            highlightElement(null); // Clear
+                        } else {
+                            hint = "『シェイク』ボタンで完成させるんだ！";
+                            highlightElement('shake-button');
+                        }
+                    }
+
+                    if (!valid && hint) {
+                        showFloatingText(hint, '#f59e0b', dom.gameContainerEl);
+                        playSound('fail');
+                        return false;
+                    }
+
+                    if (valid && nextStep !== currentStep) {
+                        state.tutorialStep = nextStep;
+                    }
+                    return true;
+                }
+
+                function runTutorialEnding() {
+                    // Visuals: Fill Glass
+                    dom.finalCocktailEl.style.background = dom.shakerContentsEl.style.background;
+                    dom.finalCocktailEl.style.setProperty('--fill-height', '80%');
+                    dom.finalCocktailEl.classList.add('animate-fill');
+
+                    // Sequential Dialogue for ending
+                    const dialogues = [
+                        "よくやった！それが基本だ。",
+                        "筋がいいな。これなら店を任せられるだろう。",
+                        "さあ、お前の店を開ける時が来たぞ。健闘を祈る！"
+                    ];
+
+                    let delay = 500; // Start slightly after shake ends
+                    dialogues.forEach((text) => {
+                        setTimeout(() => {
+                            showDialogue(text);
+                        }, delay);
+                        delay += 3500; // Time to read
+                    });
+
+                    setTimeout(() => {
+                        showFloatingText("Tutorial Complete!", "#4ade80", dom.gameContainerEl);
+                        playSound('success');
+                        setTimeout(() => {
+                            location.reload(); // Return to title screen
+                        }, 3000);
+                    }, delay + 500);
+                }
+
+                function highlightElement(id) {
+                    // Remove existing highlights and cancel animations
+                    document.querySelectorAll('.tutorial-highlight').forEach(el => {
+                        el.classList.remove('tutorial-highlight');
+                        el.getAnimations().forEach(anim => anim.cancel());
+                        el.style.transform = '';
+                        el.style.boxShadow = '';
+                    });
+
+                    if (id) {
+                        const el = document.getElementById(id);
+                        if (el) {
+                            el.classList.add('tutorial-highlight');
+                            el.animate([
+                                { transform: 'scale(1)', boxShadow: '0 0 0 rgba(255,255,0,0)' },
+                                { transform: 'scale(1.1)', boxShadow: '0 0 20px rgba(251, 191, 36, 0.8)' },
+                                { transform: 'scale(1)', boxShadow: '0 0 0 rgba(255,255,0,0)' }
+                            ], {
+                                duration: 1000,
+                                iterations: Infinity
+                            });
+                        }
+                    }
+                }
+
                 function initialSetup() {
                     const allElementIds = [
                         'initial-start-btn', 'game-overlay', 'game-container', 'room-container', 'room-day-display',
