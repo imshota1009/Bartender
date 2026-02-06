@@ -1,75 +1,74 @@
 # 📘 LEARN.md
 
-## 🧭 Overview
+## 🧭 概要
 
-**Bartender Game** is a browser-based cocktail-making simulation where you play as the bar master.  
-By checking customer orders, selecting ingredients, adding ice, and shaking, you create cocktails and aim for a high score.  
+**Bartender Game** は、バーのマスターとなって楽しむブラウザベースのカクテル作りシミュレーションゲームです。  
+お客様の注文を確認し、材料を選び、氷を入れ、シェイクしてカクテルを作り、ハイスコアを目指します。
 
-This project is also designed as an educational resource for learning **interactive game development with web technologies**.
-
----
-
-## 🔍 What You’ll Learn
-
-By exploring the code, you will learn:
-
-1. 🎮 **Game Logic in JavaScript**  
-   - Managing game states (start, order, shake, result)  
-   - Handling timers and score calculations  
-
-2. 🧩 **User Interaction**  
-   - Click events for bottles, buttons, and shaker controls  
-   - Updating the UI dynamically based on player actions  
-
-3. 🍹 **Animation & Visual Effects**  
-   - Simulating pouring, shaking, and liquid effects  
-   - Using CSS and Tailwind to create immersive design  
-
-4. 🎵 **Audio Integration**  
-   - Adding background music and sound effects with **Tone.js**  
-   - Toggle options for sound ON/OFF  
-
-5. 👤 **Character Design**  
-   - Customers with unique dialogues and reactions  
-   - Randomized interactions for replayability  
-
-6. 📱 **Responsive Design**  
-   - Layout optimization with Tailwind CSS  
-   - Adapting controls for mobile and desktop  
+また、このプロジェクトは **Web技術を使ったインタラクティブなゲーム開発** を学ぶための教育リソースとしても設計されています。
 
 ---
 
-## 🛠️ Key Technologies
+## 🔍 学べること
 
-- **HTML5** – Structure of the game  
-- **CSS3 / Tailwind CSS** – Styling and responsive UI  
-- **JavaScript (ES6+)** – Core game logic and event handling  
-- **Tone.js** – Sound effects and background music  
-- **Google Fonts** – Stylish typography for atmosphere  
+コードを探索することで、以下のことを学習できます：
+
+1. 🎮 **JavaScriptでのゲームロジック**  
+   - ゲーム状態の管理（開始、注文、シェイク、結果）  
+   - タイマーとスコア計算の処理
+
+2. 🧩 **ユーザーインタラクション**  
+   - ボトル、ボタン、シェイカー操作のクリックイベント  
+   - プレイヤーのアクションに基づいた動的なUI更新
+
+3. 🍹 **アニメーションと視覚効果**  
+   - 注ぐ、シェイクする、液体の動きなどのシミュレーション  
+   - CSSとTailwindを使用した没入感のあるデザインの作成
+
+4. 🎵 **オーディオ統合**  
+   - **Tone.js** を使用した効果音とBGMの追加  
+   - 音声ON/OFFの切り替えオプション
+
+5. 👤 **キャラクターデザイン**  
+   - 独自のセリフや反応を持つお客様  
+   - リプレイ性を高めるランダムなインタラクション
+
+6. 📱 **レスポンシブデザイン**  
+   - Tailwind CSSを使用したレイアウトの最適化  
+   - モバイルとデスクトップに対応した操作系
 
 ---
 
-## 🧪 Try It Yourself
+## 🛠️ キーテクノロジー
 
-1. Clone the repository  
-2. Open `bartender-game.html` in your browser  
-3. Click **Start** and try making cocktails as customers order  
-4. Modify the code to add new cocktails, change music, or adjust time limits  
-
----
-
-## 📚 Recommended Next Steps
-
-- Add more cocktail recipes and special effects  
-- Introduce **multiple game modes** (Endless / Time Attack)  
-- Store high scores in **localStorage** or implement an online leaderboard  
-- Enhance **mobile controls** for smoother gameplay  
-- Expand **customer variety** with new professions and dialogues  
+- **HTML5** – ゲームの構造  
+- **CSS3 / Tailwind CSS** – スタイリングとレスポンシブUI  
+- **JavaScript (ES6+)** – コアゲームロジックとイベント処理  
+- **Tone.js** – 効果音とBGM  
+- **Google Fonts** – 雰囲気を高めるスタイリッシュなタイポグラフィ
 
 ---
 
-## ✨ Learning Goal
+## 🧪 試してみよう
 
-This project is a fun way to practice **JavaScript game development**,  
-**UI/UX design with Tailwind**, and **multimedia integration** (sound + animation).  
-By experimenting with the code, you’ll gain skills directly applicable to other interactive web apps.  
+1. リポジトリをクローンする  
+2. `bartender-game.html` をブラウザで開く  
+3. **Start** をクリックして、注文通りにカクテルを作ってみる  
+4. コードを修正して、新しいカクテルを追加したり、音楽を変えたり、制限時間を調整してみる
+
+---
+
+## 📚 次のステップ
+
+- カクテルのレシピや特殊効果を追加する  
+- **複数のゲームモード**（エンドレス / タイムアタック）を導入する  
+- **localStorage** にハイスコアを保存するか、オンラインランキングを実装する  
+- スムーズなゲームプレイのために **モバイル操作** を強化する  
+- 新しい職業やセリフを追加して **お客様のバリエーション** を増やす
+
+---
+
+## ✨ 学習目標
+
+このプロジェクトは、**JavaScriptゲーム開発**、**TailwindでのUI/UXデザイン**、そして**マルチメディア統合**（音響 + アニメーション）を楽しく練習する方法です。  
+コードをいじって試すことで、他のインタラクティブなWebアプリに直接応用できるスキルが身につきます。
