@@ -126,6 +126,8 @@
 - **複数スロットセーブシステムの実装（スロット2 & 3）**
 - 顧客キャラクターとカクテルレシピの追加
 
+![](./images/cyberpunk_background.gif)
+
 ---
 
 <div align="center">
