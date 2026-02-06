@@ -300,14 +300,46 @@
             }
         }
 
-        @keyframes fill-glass {
-            from {
-                height: 0%;
-            }
+        /* Performance Mode Styles */
+        body.low-quality * {
+            text-shadow: none !important;
+            box-shadow: none !important;
+            transition: none !important;
+            animation: none !important;
+            filter: none !important;
+        }
 
-            to {
-                height: var(--fill-height, 80%);
-            }
+        body.low-quality .boss-mode::after,
+        body.low-quality #game-overlay,
+        body.low-quality .ice-cube,
+        body.low-quality .floating-text,
+        body.low-quality .particle {
+            display: none !important;
+        }
+
+        /* Settings Range Slider Customization */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #eab308;
+            cursor: pointer;
+            margin-top: -6px;
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #4b5563;
+            border-radius: 2px;
         }
 
         .animate-fill {
@@ -3223,6 +3255,10 @@
                     currentWeather: 'sunny',
                     currentEvent: null,
                     customerDrunkLevel: 0,
+                    settings: {
+                        volume: { bgm: 30, se: 100 },
+                        performanceMode: false
+                    },
                     interior: {
                         wallpaper: 'classic',
                         lighting: 'warm',
@@ -3244,66 +3280,48 @@
                 let sounds = {};
                 let isAudioReady = false;
                 function setupSounds() { try { sounds = { pour: new Tone.Synth({ oscillator: { type: 'fmsine' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.05, release: 0.2 } }).toDestination(), shake: new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.01, decay: 0.15, sustain: 0, release: 0.1 } }).toDestination(), ice: new Tone.MetalSynth({ frequency: 200, envelope: { attack: 0.001, decay: 0.1, release: 0.01 }, harmonicity: 5.1, modulationIndex: 32, resonance: 4000, octaves: 1.5 }).toDestination(), success: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sine" }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.2 } }).toDestination(), fail: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "square" }, envelope: { attack: 0.01, decay: 0.4, sustain: 0, release: 0.2 } }).toDestination(), tip: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sine" }, envelope: { attack: 0.01, decay: 0.4, sustain: 0.2, release: 0.3 } }).toDestination(), combo: new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'fmsquare' }, envelope: { attack: 0.01, decay: 0.1, release: 0.1 } }).toDestination(), happyHour: new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'pulse' }, envelope: { attack: 0.01, decay: 0.5, release: 0.2 } }).toDestination(), cash: new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.2, release: 0.1 } }).toDestination() }; isAudioReady = true; } catch (e) { console.error("Sound engine failed to initialize:", e); } }
-                async function startAudio() { if (isAudioReady && Tone.context.state !== 'running') { await Tone.start(); } if (dom.bgmAudioEl) { dom.bgmAudioEl.volume = 0.3; dom.bgmAudioEl.play().catch(e => { }); } }
+                async function startAudio() {
+                    if (isAudioReady && Tone.context.state !== 'running') { await Tone.start(); }
+
+                    const savedSettings = localStorage.getItem('bartenderSettings');
+                    let bgmVol = 0.3;
+                    if (savedSettings) {
+                        try {
+                            const s = JSON.parse(savedSettings);
+                            if (s.volume && s.volume.bgm !== undefined) {
+                                bgmVol = (s.volume.bgm / 100) * 0.3; // Scale to max 0.3
+                            }
+                        } catch (e) { }
+                    }
+
+                    if (dom.bgmAudioEl) {
+                        dom.bgmAudioEl.volume = bgmVol;
+                        dom.bgmAudioEl.play().catch(e => { });
+                    }
+                }
                 function stopAudio() { if (dom.bgmAudioEl) { dom.bgmAudioEl.pause(); dom.bgmAudioEl.currentTime = 0; } }
-                function playSound(sound, ...args) { if (!isAudioReady) return; try { if (sound === 'success') sounds.success.triggerAttackRelease(['C4', 'E4', 'G4'], '8n'); else if (sound === 'fail') sounds.fail.triggerAttackRelease(['C3', 'C#3'], '4n'); else if (sound === 'ice') sounds.ice.triggerAttackRelease('C3', '8n', Tone.now() + 0.05); else if (sound === 'tip') sounds.tip.triggerAttackRelease(['C5', 'E5', 'G5', 'C6'], '4n'); else if (sound === 'happyHour') sounds.happyHour.triggerAttackRelease(['C4', 'E4', 'G4', 'C5'], '2n'); else if (sound === 'cash') sounds.cash.triggerAttackRelease(['E5', 'G5', 'C6'], '8n'); else if (sound === 'combo' && sounds.combo) { const notes = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5']; sounds.combo.triggerAttackRelease(notes[Math.min(state.combo - 1, notes.length - 1)], '8n'); } else if (sounds[sound]) sounds[sound].triggerAttackRelease(...args); } catch (e) { } }
+                function playSound(sound, ...args) {
+                    if (!isAudioReady) return;
+
+                    // SE Volume Check
+                    const seVol = (state.settings && state.settings.volume) ? state.settings.volume.se / 100 : 1.0;
+                    if (seVol <= 0) return;
+
+                    const db = seVol > 0 ? 20 * Math.log10(seVol) : -Infinity;
+                    try { Tone.Destination.volume.value = db; } catch (e) { }
+
+                    try { if (sound === 'success') sounds.success.triggerAttackRelease(['C4', 'E4', 'G4'], '8n'); else if (sound === 'fail') sounds.fail.triggerAttackRelease(['C3', 'C#3'], '4n'); else if (sound === 'ice') sounds.ice.triggerAttackRelease('C3', '8n', Tone.now() + 0.05); else if (sound === 'tip') sounds.tip.triggerAttackRelease(['C5', 'E5', 'G5', 'C6'], '4n'); else if (sound === 'happyHour') sounds.happyHour.triggerAttackRelease(['C4', 'E4', 'G4', 'C5'], '2n'); else if (sound === 'cash') sounds.cash.triggerAttackRelease(['E5', 'G5', 'C6'], '8n'); else if (sound === 'combo' && sounds.combo) { const notes = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5']; sounds.combo.triggerAttackRelease(notes[Math.min(state.combo - 1, notes.length - 1)], '8n'); } else if (sounds[sound]) sounds[sound].triggerAttackRelease(...args); } catch (e) { }
+                }
 
                 // --- Language & View Management ---
                 function setLanguage(lang) {
-                    state.language = lang;
-                    document.documentElement.lang = lang;
-                    localStorage.setItem('bartenderLang', lang);
+                    // Deprecated functionality - enforcing Japanese
+                    state.language = 'ja';
+                    document.documentElement.lang = 'ja';
 
-                    // Update all static text
-                    document.querySelectorAll('[data-lang-key]').forEach(el => {
-                        const key = el.dataset.langKey;
-                        if (translations[lang][key]) {
-                            el.innerHTML = translations[lang][key];
-                        }
-                    });
-
-                    // Update dynamic content
-                    generateIngredients(); // Was populateShelf
+                    // Simple refresh of ingredients/upgrades
+                    generateIngredients();
                     renderUpgrades();
-                    document.title = lang === 'ja' ? 'バーテンダーゲーム' : 'Bartender Game';
-                    dom.languageSwitchEl.classList.toggle('en', lang === 'en');
-                    // If a game is in progress, update the current order text
-                    if (state.isGameRunning && state.currentOrder) {
-                        const currentLangData = translations[state.language];
-                        const cocktailData = currentLangData.COCKTAILS.find(c => c.ingredients.join(',') === state.currentOrder.ingredients.join(','));
-                        if (cocktailData) {
-                            dom.orderTextEl.textContent = cocktailData.name;
-                        }
-                        updateRecipeDisplay();
-                    }
-
-                    // === Update Phase 2 displays ===
-                    if (typeof updateWeatherDisplay === 'function') updateWeatherDisplay();
-                    if (typeof checkSeasonalEvent === 'function') checkSeasonalEvent();
-                    if (typeof updateTitleDisplay === 'function') updateTitleDisplay();
-
-                    // === Update current customer name/dialogue for new language ===
-                    if (state.isGameRunning && state.currentCustomer) {
-                        const newLangData = translations[lang];
-                        // Find matching customer in new language by image path
-                        const allCustomers = [
-                            ...newLangData.CUSTOMERS,
-                            newLangData.MILLIONAIRE_CUSTOMER,
-                            newLangData.DEATH_CUSTOMER
-                        ];
-                        const matchingCustomer = allCustomers.find(c => c && c.image === state.currentCustomer.image);
-                        if (matchingCustomer) {
-                            // Update customer name and quotes to new language
-                            state.currentCustomer.name = matchingCustomer.name;
-                            state.currentCustomer.quotes = matchingCustomer.quotes;
-                            // Update displayed name
-                            const customerNameEl = document.getElementById('customer-name');
-                            if (customerNameEl) customerNameEl.textContent = matchingCustomer.name;
-                            // Hide current dialogue (displayed text can't be translated live)
-                            // It will show new language text on next interaction
-                            dom.customerDialogueEl.classList.remove('show');
-                        }
-                    }
                 }
 
                 function showView(view) {
@@ -4689,7 +4707,7 @@
                         'shake-button', 'glass-button',
                         'talk-button',
                         'reset-button', 'cocktail-glass', 'final-cocktail', 'result-text', 'ingredient-shelf',
-                        'garnish-container', 'recipe-display', 'language-switch'
+                        'garnish-container', 'recipe-display'
                     ];
                     allElementIds.forEach(id => {
                         const camelCaseId = id.replace(/-(\w)/g, (_, c) => c.toUpperCase());
@@ -4714,10 +4732,7 @@
                     dom.cocktailGlassEl.addEventListener('click', openGlassSelection);
                     dom.cocktailGlassEl.style.cursor = 'pointer'; // Make it look clickable
 
-                    dom.languageSwitchEl.addEventListener('click', () => {
-                        const newLang = state.language === 'ja' ? 'en' : 'ja';
-                        setLanguage(newLang);
-                    });
+                    // Language switch removed
                     dom.glassButtonEl.addEventListener('click', () => { if (state.canInteract) openGlassSelection(); });
                     // Add ingredient button listener
                     document.getElementById('ingredient-button').addEventListener('click', () => { if (state.canInteract) openIngredientSelection(); });
@@ -4730,9 +4745,17 @@
                         console.log('BGM Tracks initialized');
                     });
 
-                    // Set initial language (load from localStorage or default to Japanese)
-                    const savedLang = localStorage.getItem('bartenderLang') || 'ja';
-                    setLanguage(savedLang);
+                    // Load Settings
+                    const savedSettings = localStorage.getItem('bartenderSettings');
+                    if (savedSettings) {
+                        try {
+                            state.settings = JSON.parse(savedSettings);
+                            if (state.settings.performanceMode) {
+                                document.body.classList.add('low-quality');
+                            }
+                        } catch (e) { }
+                    }
+                    setLanguage('ja');
 
                     // Force hide old shelf logic if any
                     if (dom.ingredientShelfEl) dom.ingredientShelfEl.style.display = 'none';
@@ -4784,30 +4807,91 @@
                 }
 
                 // --- Settings Functions ---
+                window.updateVolume = function (type, value) {
+                    state.settings.volume[type] = parseInt(value);
+                    const displayEl = document.getElementById(type + '-val');
+                    if (displayEl) displayEl.textContent = value + '%';
+
+                    if (type === 'bgm') {
+                        if (dom.bgmAudioEl) dom.bgmAudioEl.volume = (value / 100) * 0.3; // max 0.3
+                    }
+                    // SE volume is checked in playSound dynamically
+
+                    localStorage.setItem('bartenderSettings', JSON.stringify(state.settings));
+                };
+
+                window.togglePerformanceMode = function () {
+                    state.settings.performanceMode = !state.settings.performanceMode;
+                    if (state.settings.performanceMode) {
+                        document.body.classList.add('low-quality');
+                    } else {
+                        document.body.classList.remove('low-quality');
+                    }
+                    // Update button UI
+                    const btn = document.getElementById('perf-toggle');
+                    if (btn) {
+                        btn.className = `px-4 py-2 rounded font-bold font-jp transition-colors ${state.settings.performanceMode ? 'bg-green-600 text-white' : 'bg-gray-600 text-gray-300'}`;
+                        btn.textContent = state.settings.performanceMode ? 'ON' : 'OFF';
+                    }
+                    localStorage.setItem('bartenderSettings', JSON.stringify(state.settings));
+                };
+
                 function openSettings() {
                     closeMenu();
                     const overlay = document.getElementById('settings-overlay');
-                    const langSelect = document.getElementById('language-select');
-                    // Set current selection based on saved language
-                    const savedLang = localStorage.getItem('bartenderLang') || 'ja';
-                    langSelect.value = savedLang;
+                    const modalInner = overlay.querySelector('.bg-gray-900') || overlay.querySelector('.bg-gray-800') || overlay.firstElementChild; // Flexible selector
+
+                    if (modalInner) {
+                        modalInner.innerHTML = `
+                        <h2 class="text-2xl font-bold font-jp text-white mb-6 text-center">⚙️ 設定</h2>
+                        
+                        <div class="space-y-6">
+                            <!-- BGM Volume -->
+                            <div>
+                                <div class="flex justify-between text-white font-jp mb-2">
+                                    <span>🎵 BGM音量</span>
+                                    <span id="bgm-val">${state.settings.volume.bgm}%</span>
+                                </div>
+                                <input type="range" min="0" max="100" value="${state.settings.volume.bgm}" 
+                                       oninput="updateVolume('bgm', this.value)" class="w-full">
+                            </div>
+
+                            <!-- SE Volume -->
+                            <div>
+                                <div class="flex justify-between text-white font-jp mb-2">
+                                    <span>🔊 効果音音量</span>
+                                    <span id="se-val">${state.settings.volume.se}%</span>
+                                </div>
+                                <input type="range" min="0" max="100" value="${state.settings.volume.se}" 
+                                       oninput="updateVolume('se', this.value)" class="w-full">
+                            </div>
+
+                            <!-- Performance Mode -->
+                            <div class="flex items-center justify-between">
+                                <span class="text-white font-jp">🚀 軽量モード (Performance)</span>
+                                <button id="perf-toggle" onclick="togglePerformanceMode()" 
+                                        class="px-4 py-2 rounded font-bold font-jp transition-colors ${state.settings.performanceMode ? 'bg-green-600 text-white' : 'bg-gray-600 text-gray-300'}">
+                                    ${state.settings.performanceMode ? 'ON' : 'OFF'}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mt-8 flex justify-center">
+                            <button onclick="closeSettings()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-8 rounded-full font-jp">
+                                閉じる
+                            </button>
+                        </div>
+                       `;
+                    }
                     overlay.classList.add('active');
                 }
                 function closeSettings() {
                     document.getElementById('settings-overlay').classList.remove('active');
                 }
-                function saveSettingsAndRestart() {
-                    const langSelect = document.getElementById('language-select');
-                    const selectedLang = langSelect.value;
-                    localStorage.setItem('bartenderLang', selectedLang);
-                    // Show confirmation and reload
-                    alert(selectedLang === 'ja' ? '設定を保存しました。再起動します。' : 'Settings saved. Restarting...');
-                    location.reload();
-                }
+
                 // Make settings functions globally accessible
                 window.openSettings = openSettings;
                 window.closeSettings = closeSettings;
-                window.saveSettingsAndRestart = saveSettingsAndRestart;
 
                 // --- Interior Shop Functions ---
                 function openInteriorShop() {
